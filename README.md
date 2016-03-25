@@ -9,3 +9,7 @@ Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:
 6. Generate FastTree or RAxML gene trees  
 7. Root gene trees with outgroup  
 8. Estimate species tree (ASTRAL, ASTRID, MP-EST, MRL, concatenation)  
+  
+Uses many additional software that must be installed and put in the PATH prior tu run scripts.  
+Also utilizes many scripts developed by others. PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPipe!  
+
