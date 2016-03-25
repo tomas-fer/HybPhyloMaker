@@ -11,5 +11,5 @@ Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:
 8. Estimate species tree (ASTRAL, ASTRID, MP-EST, MRL, concatenation)  
   
 Uses many additional software that must be installed and put in the PATH prior tu run scripts.  
-Also utilizes many scripts developed by others. PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPipe!  
+Also utilizes many scripts developed by others (located in HybSeqSource folder). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPipe!  
 
