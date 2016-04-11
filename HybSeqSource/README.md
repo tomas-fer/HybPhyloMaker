@@ -48,8 +48,8 @@ http://www.ncbi.nlm.nih.gov/nuccore/9626372
 _part of HybPipe_ and https://github.com/marekborowiec/good_genes/blob/master/plotting_correlations.R  
 **resolvepolytomies.R**  
 _part of HybPipe_  
-**tree_props.r** and https://github.com/marekborowiec/good_genes/blob/master/tree_props.R  
-_part of HybPipe_  
+**tree_props.r**  
+_part of HybPipe_ and https://github.com/marekborowiec/good_genes/blob/master/tree_props.R  
 **treepropsPlot.r**  
 _part of HybPipe_  
 **trimmomatic-0.33.jar**  
