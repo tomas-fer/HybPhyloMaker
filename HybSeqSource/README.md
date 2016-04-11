@@ -6,30 +6,45 @@ Use of these scripts should be properly cited, e.g. as follows:
 http://abacas.sourceforge.net/Manual.html  
 **AfterPhylo.pl**  
 https://github.com/qiyunzhu/AfterPhylo  
-
-alignmentSummary.R
-assembled_exons_to_fastas.py
-astral.4.10.2.jar
-BaCoCa.v1.107.pl
-catfasta2phyml.pl
-CompareToBootstrap.pl
-CompareTree.pl
-convert_unit_to_100_support.pl
-create_beast_input.pl
-cutfasta.pl
-FASconCAT-G_v1.0.pl
-fastq2fasta.pl
-histogram.r
-LBscores.R
-merge_FASTA.pl
-MOTree.pm
-mrp.jar
-NEBNext-PE.fa
-PhiX.fsa
-plotting_correlations.R
-README.md
-resolvepolytomies.R
-tree_props.r
-treepropsPlot.r
-trimmomatic-0.33.jar
-  
+**alignmentSummary.R**  
+_part of HybPipe_  
+**assembled_exons_to_fastas.py**  
+https://github.com/listonlab/Hyb-Seq_protocol/blob/master/assembled_exons_to_fastas/assembled_exons_to_fastas.py  
+**astral.4.10.2.jar**  
+https://github.com/smirarab/ASTRAL  
+**BaCoCa.v1.107.pl**  
+https://www.zfmk.de/en/research/research-centres-and-groups/bacoca  
+**catfasta2phyml.pl**  
+https://github.com/nylander/catfasta2phyml  
+**CompareToBootstrap.pl**  
+http://meta.microbesonline.org/fasttree/treecmp.html  
+**CompareTree.pl**  
+http://meta.microbesonline.org/fasttree/treecmp.html  
+**convert_unit_to_100_support.pl** 
+https://github.com/smirarab/global/blob/master/src/perl/convert_unit_to_100_support.pl  
+**create_beast_input.pl**  
+http://www.cs.utexas.edu/users/phylo/datasets/bbca/create_beast_input.pl  
+**cutfasta.pl**  
+_part of HybPipe_  
+**FASconCAT-G_v1.0.pl**  
+https://www.zfmk.de/en/research/research-centres-and-groups/fasconcat  
+**fastq2fasta.pl** 
+http://brianknaus.com/software/srtoolbox/fastq2fasta.pl  
+**histogram.r**  
+_part of HybPipe_  
+**LBscores.R**  
+**merge_FASTA.pl**  
+**MOTree.pm**  
+**mrp.jar**  
+**NEBNext-PE.fa**  
+**PhiX.fsa**  
+**plotting_correlations.R**  
+_part of HybPipe_  
+**resolvepolytomies.R**  
+_part of HybPipe_  
+**tree_props.r**  
+_part of HybPipe_  
+**treepropsPlot.r**  
+_part of HybPipe_  
+**trimmomatic-0.33.jar**  
+http://www.usadellab.org/cms/?page=trimmomatic  
