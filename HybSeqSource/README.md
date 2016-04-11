@@ -35,11 +35,12 @@ _part of HybPipe_
 **LBscores.R**  
 _part of HybPipe_  
 **merge_FASTA.pl**  
+https://sourceforge.net/projects/ngs-toolbox/files/merge_FASTA.pl/download  
 **MOTree.pm**  
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **mrp.jar**  
 https://github.com/smirarab/mrpmatrix  
-**NEBNext-PE.fa** 
+**NEBNext-PE.fa**  
 Oligonucleotide sequences © 2006-2010 Illumina, Inc. All rights reserved.  
 **PhiX.fsa**  
 http://www.ncbi.nlm.nih.gov/nuccore/9626372  
