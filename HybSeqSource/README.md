@@ -28,7 +28,7 @@ http://www.cs.utexas.edu/users/phylo/datasets/bbca/create_beast_input.pl
 _part of HybPipe_  
 **FASconCAT-G_v1.0.pl**  
 https://www.zfmk.de/en/research/research-centres-and-groups/fasconcat  
-**fastq2fasta.pl** 
+**fastq2fasta.pl**  
 http://brianknaus.com/software/srtoolbox/fastq2fasta.pl  
 **histogram.r**  
 _part of HybPipe_  
@@ -40,14 +40,14 @@ http://meta.microbesonline.org/fasttree/treecmp.html
 **mrp.jar**  
 https://github.com/smirarab/mrpmatrix  
 **NEBNext-PE.fa** 
-Oligonucleotide sequences © 2006-2010 Illumina, Inc. All rights reserved. 
+Oligonucleotide sequences © 2006-2010 Illumina, Inc. All rights reserved.  
 **PhiX.fsa**  
 http://www.ncbi.nlm.nih.gov/nuccore/9626372  
 **plotting_correlations.R**  
-_part of HybPipe_  
+_part of HybPipe_ and https://github.com/marekborowiec/good_genes/blob/master/plotting_correlations.R  
 **resolvepolytomies.R**  
 _part of HybPipe_  
-**tree_props.r**  
+**tree_props.r** and https://github.com/marekborowiec/good_genes/blob/master/tree_props.R  
 _part of HybPipe_  
 **treepropsPlot.r**  
 _part of HybPipe_  
