@@ -20,7 +20,7 @@ https://github.com/nylander/catfasta2phyml
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **CompareTree.pl**  
 http://meta.microbesonline.org/fasttree/treecmp.html  
-**convert_unit_to_100_support.pl** 
+**convert_unit_to_100_support.pl**  
 https://github.com/smirarab/global/blob/master/src/perl/convert_unit_to_100_support.pl  
 **create_beast_input.pl**  
 http://www.cs.utexas.edu/users/phylo/datasets/bbca/create_beast_input.pl  
@@ -33,11 +33,16 @@ http://brianknaus.com/software/srtoolbox/fastq2fasta.pl
 **histogram.r**  
 _part of HybPipe_  
 **LBscores.R**  
+_part of HybPipe_  
 **merge_FASTA.pl**  
 **MOTree.pm**  
+http://meta.microbesonline.org/fasttree/treecmp.html  
 **mrp.jar**  
-**NEBNext-PE.fa**  
+https://github.com/smirarab/mrpmatrix  
+**NEBNext-PE.fa** 
+Oligonucleotide sequences © 2006-2010 Illumina, Inc. All rights reserved. 
 **PhiX.fsa**  
+http://www.ncbi.nlm.nih.gov/nuccore/9626372  
 **plotting_correlations.R**  
 _part of HybPipe_  
 **resolvepolytomies.R**  
