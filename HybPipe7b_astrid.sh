@@ -9,8 +9,8 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                       Script 07b - Astrid species tree                       *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -50,9 +50,29 @@ else
 	mkdir workdir06b
 	cd workdir06b
 fi
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=80concatenated_exon_alignments_corrected
+	alnpathselected=81selected_corrected
+	treepath=82trees_corrected
+else
+	alnpath=70concatenated_exon_alignments
+	alnpathselected=71selected
+	treepath=72trees
+fi
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	type="_cp"
+else
+	type=""
+fi
 
 #Copy genetree file
-cp $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+if [[ $update =~ "yes" ]]; then
+	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+else
+	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+fi
 #Modify labels in gene tree
 sed -i 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 sed -i 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
@@ -62,33 +82,54 @@ if [[ $tree =~ "RAxML" ]]; then
 	#Make dir for for bootstraped trees
 	mkdir boot
 	#Copy RAxML bootstraped trees
-	cp $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bootstrap* boot/
+	if [[ $update =~ "yes" ]]; then
+		cp $path/${alnpathselected}${type}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+		for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
+			cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_${i}.result boot/
+		done
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bootstrap* boot/
+	fi
 	#Make a list of bootstraped trees
 	ls boot/*bootstrap* > bs-files
 elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 	#Make dir for for bootstraped trees
 	mkdir boot
 	#Copy FastTree bootstraped trees
-	cp $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
+	if [[ $update =~ "yes" ]]; then
+		cp $path/${alnpathselected}${type}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+		for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
+			cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_${i}_*.boot.fast.trees boot/
+		done
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
+	fi
 	#Make a list of bootstraped trees
 	ls boot/*.boot.fast.trees > bs-files
 fi
 #Make dir for results
-mkdir $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+if [[ $update =~ "yes" ]]; then
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+else
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+fi
 
 #Run ASTRID
-ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-#ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated.tre
+#ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated.tre
 if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-	#Run Astral bootstrap
-	ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
+	#Run Astrid bootstrap
+	ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_allbootstraptrees.tre
 	#Extract last tree (main species tree based on non-bootstrapped dataset + bootstrap values mapped on it)
-	cat Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | tail -n1 > Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+	cat Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_allbootstraptrees.tre | tail -n1 > Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_withbootstrap.tre
 fi
 
 #Copy results to home
-cp Astrid*.tre $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
-
+if [[ $update =~ "yes" ]]; then
+	cp Astrid*.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+else
+	cp Astrid*.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+fi
 #Clean scratch/work directory
 if [ ! $LOGNAME == "" ]; then
 	#delete scratch

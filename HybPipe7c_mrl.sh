@@ -1,17 +1,17 @@
 #!/bin/bash
-#PBS -l walltime=1d
+#PBS -l walltime=4d
 #PBS -l nodes=1:ppn=12
 #PBS -j oe
-#PBS -l mem=1gb
-#PBS -l scratch=1gb
+#PBS -l mem=4gb
+#PBS -l scratch=8gb
 #PBS -N MRL
 #PBS -m abe
 
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 07c - MRL species tree                         *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -48,15 +48,39 @@ else
 	mkdir workdir07c
 	cd workdir07c
 fi
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=80concatenated_exon_alignments_corrected
+	alnpathselected=81selected_corrected
+	treepath=82trees_corrected
+else
+	alnpath=70concatenated_exon_alignments
+	alnpathselected=71selected
+	treepath=72trees
+fi
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	type="_cp"
+else
+	type=""
+fi
 
 #Add necessary programs and files
 cp $source/mrp.jar .
 
 #Copy genetree file
-cp $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+if [[ $update =~ "yes" ]]; then
+	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+else
+	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+fi
 
 #Make dir for results
-mkdir $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+if [[ $update =~ "yes" ]]; then
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+else
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+fi
 
 #Make MRP matrix
 #java -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRPmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex NEXUS
@@ -70,7 +94,11 @@ sed -i 's/XX/ /g' RAxML_bipartitions.MRLresult
 sed -i 's/YY/ /g' RAxML_bipartitions.MRLresult
 
 #Copy results to home
-cp *MR* $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+if [[ $update =~ "yes" ]]; then
+	cp *MR* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+else
+	cp *MR* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+fi
 
 #Clean scratch/work directory
 if [ ! $LOGNAME == "" ]; then

@@ -2,15 +2,15 @@
 #PBS -l walltime=1d
 #PBS -l nodes=1:ppn=4
 #PBS -j oe
-#PBS -l mem=4gb
+#PBS -l mem=16gb
 #PBS -N HybPipe5b_FastTree_for_selected
 #PBS -m abe
 
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                   Script 05b - FastTree gene tree building                   *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -47,17 +47,23 @@ else
 	mkdir workdir05b
 	cd workdir05b
 fi
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	type="_cp"
+else
+	type=""
+fi
 
 #Add necessary scripts and files
 cp $source/catfasta2phyml.pl .
 cp $source/CompareToBootstrap.pl .
 cp $source/MOTree.pm .
-cp $path/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/71selected${type}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 # Copy and modify selected FASTA files
-echo -e "Modifying selested FASTA files...\n"
+echo -e "Modifying selected FASTA files...\n"
 for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 do
-	cp $path/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
+	cp $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
 	#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in FastTree)
 	sed -i 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
 	sed -i 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
@@ -68,8 +74,8 @@ done
 #Make a list of all fasta files
 ls *.fas | cut -d"." -f1 > FileForFastTree.txt
 #Make dir for results
-mkdir $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}
-mkdir $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}
+mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #----------------Generate gene trees using FastTree----------------
 echo -e "Generating FastTrees...\n"
@@ -83,7 +89,7 @@ do
 		echo -e "Processing file: ${file}"
 		fasttree -nt ${file}.fas > ${file}.fast.tre
 	fi
-	cp *$file.fast.tre $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp *$file.fast.tre $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 done
 
 #----------------Generate bootstrapped gene trees using FastTree----------------
@@ -111,8 +117,8 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 		#Map bootstrap support values onto the original tree
 		perl ./CompareToBootstrap.pl -tree *${file}.fast.tre -boot ${file}.boot.fast.trees > ${file}.boot.fast.tre
 		#Copy bootstrap trees and a final tree with bootstrap values to home
-		cp ${file}.boot.fast.trees $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-		cp ${file}.boot.fast.tre $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+		cp ${file}.boot.fast.trees $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+		cp ${file}.boot.fast.tre $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	done
 fi
 
@@ -130,13 +136,6 @@ cp `find ./*.tre -maxdepth 1 ! -name '*boot*'` trees/
 #Run R script for tree properties calculation and for plotting histograms of resulting values
 echo -e "\nCalculating tree properties...\n"
 R --slave -f tree_props.r
-echo -e "Plotting boxplots/histograms for tree properties...\n"
-if [ ! $LOGNAME == "" ]; then
-	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
-	xvfb-run R --slave -f treepropsPlot.r
-else
-	R --slave -f treepropsPlot.r
-fi
 #Run R script for calculation of LB score
 echo -e "Calculating and parsing LB score...\n"
 R --slave -f LBscores.R
@@ -149,15 +148,26 @@ done
 for i in $(cat LBscores.csv | sed 1d | cut -d"," -f5 | sort | uniq); do
 	grep $i LBscores.csv | awk -F',' -v val=$i '{ if ($5 == val) result=$1 } END { print val "\t" result }' >> LBscoresSDPerLocus.txt
 done
-cp LBscores.csv $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp LBscoresPerTaxon.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp LBscoresSDPerLocus.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscores.csv $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscoresPerTaxon.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscoresSDPerLocus.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 #Combine 'LBscoresSDPerLocus.txt' with 'tree_stats_table.csv'
 awk '{ print $2 }' LBscoresSDPerLocus.txt > tmp && mv tmp LBscoresSDPerLocus.txt
 paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
+#Replace 'NaN' by '0' (otherwise following plotting in R will not work)
+sed -i 's/NaN/0/g' tree_stats_table.csv
+echo -e "Plotting boxplots/histograms for tree properties...\n"
+if [ ! $LOGNAME == "" ]; then
+	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
+	#xvfb-run R --slave -f treepropsPlot.r
+	R --slave -f treepropsPlot.r
+else
+	R --slave -f treepropsPlot.r
+fi
+
 #Copy results to home
-cp tree_stats_table.csv $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp *.png $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp tree_stats_table.csv $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp *.png $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 #Remove results
 rm *.png
 rm LB*.txt LB*.csv
@@ -172,13 +182,6 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	#Run R script for tree properties calculation
 	echo -e "\nCalculating tree properties for bootstrapped trees...\n"
 	R --slave -f tree_props.r
-	echo -e "Plotting boxplots/histograms for bootstrapped tree properties...\n"
-	if [ ! $LOGNAME == "" ]; then
-		#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
-		xvfb-run R --slave -f treepropsPlot.r
-	else
-		R --slave -f treepropsPlot.r
-	fi
 	#Run R script for calculation of LB score
 	echo -e "Calculating and parsing LB score...\n"
 	R --slave -f LBscores.R
@@ -194,18 +197,28 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	mv LBscores.csv LBscores_bootstrap.csv
 	mv LBscoresPerTaxon.txt LBscoresPerTaxon_bootstrap.txt
 	mv LBscoresSDPerLocus.txt LBscoresSDPerLocus_bootstrap.txt
-	cp LBscores_bootstrap.csv $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-	cp LBscoresPerTaxon_bootstrap.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-	cp LBscoresSDPerLocus_bootstrap.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscores_bootstrap.csv $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscoresPerTaxon_bootstrap.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscoresSDPerLocus_bootstrap.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	#Combine 'LBscoresSDPerLocus_bootstrap.txt' with 'tree_stats_table.csv'
 	awk '{ print $2 }' LBscoresSDPerLocus_bootstrap.txt > tmp && mv tmp LBscoresSDPerLocus_bootstrap.txt
 	paste tree_stats_table.csv LBscoresSDPerLocus_bootstrap.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
+	#Replace 'NaN' by '0' (otherwise following plotting in R will not work)
+	sed -i 's/NaN/0/g' tree_stats_table.csv
+	echo -e "Plotting boxplots/histograms for bootstrapped tree properties...\n"
+	if [ ! $LOGNAME == "" ]; then
+		#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
+		#xvfb-run R --slave -f treepropsPlot.r
+		R --slave -f treepropsPlot.r
+	else
+		R --slave -f treepropsPlot.r
+	fi
 	#Rename results and copy results to home
 	mv tree_stats_table.csv tree_stats_table_bootstrap.csv
-	cp tree_stats_table_bootstrap.csv $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp tree_stats_table_bootstrap.csv $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	#Rename all PNG files generated by R (add 'bootstrap')and copy them to home
 	for file in *.png; do mv "$file" "${file/.png/_bootstrap.png}"; done
-	cp *.png $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp *.png $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 fi
 
 #----------------Combine tree summary table with alignment summary and print comparison plots----------------
@@ -213,7 +226,7 @@ fi
 cp $source/plotting_correlations.R .
 echo -e "Combining alignment and tree properties...\n"
 #Copy alignment summary
-cp $path/71selected${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/71selected${type}${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 #***Modify alignment summary***
 #Remove '_Assembly' (now locus names start with a number)
 sed -i 's/Assembly_//g' summarySELECTED*.txt
@@ -259,14 +272,15 @@ mv combined_noboot.txt combined.txt
 echo -e "Plotting gene properties correlations for FastTrees without true bootstrap...\n"
 if [ ! $LOGNAME == "" ]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
-	xvfb-run R --slave -f plotting_correlations.R
+	#xvfb-run R --slave -f plotting_correlations.R
+	R --slave -f plotting_correlations.R
 else
 	R --slave -f plotting_correlations.R
 fi
-cp genes_corrs.* $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp genes_corrs.* $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 rm genes_corrs.*
 mv combined.txt gene_properties.txt
-cp gene_properties.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp gene_properties.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #Run comparison plots for FastTrees with true bootstrap ('bootstrap')
 echo -e "Plotting gene properties correlations for bootstrapped FastTrees...\n"
@@ -274,16 +288,17 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	mv combined_bootstrap.txt combined.txt
 	if [ ! $LOGNAME == "" ]; then
 		#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
-		xvfb-run R --slave -f plotting_correlations.R
+		#xvfb-run R --slave -f plotting_correlations.R
+		R --slave -f plotting_correlations.R
 	else
 		R --slave -f plotting_correlations.R
 	fi
 	mv genes_corrs.png genes_corrs_bootstrap.png
 	mv genes_corrs.pdf genes_corrs_bootstrap.pdf
-	cp genes_corrs_bootstrap.* $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp genes_corrs_bootstrap.* $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	rm genes_corrs_bootstrap.*
 	mv combined.txt gene_properties_bootstrap.txt
-	cp gene_properties_bootstrap.txt $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp gene_properties_bootstrap.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 fi
 
 #Clean scratch/work directory
@@ -292,7 +307,7 @@ if [ ! $LOGNAME == "" ]; then
 	rm -rf $SCRATCHDIR/*
 else
 	cd ..
-	#rm -r workdir05b
+	rm -r workdir05b
 fi
 
 echo -e "HybPipe 5b finished..."

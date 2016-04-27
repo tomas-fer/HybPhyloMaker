@@ -10,8 +10,8 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 03 - Process pslx files                        *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************

@@ -1,17 +1,17 @@
 #!/bin/bash
 #PBS -l walltime=1d
-#PBS -l nodes=1:ppn=1
+#PBS -l nodes=1:ppn=4
 #PBS -j oe
-#PBS -l mem=4gb
-#PBS -l scratch=1gb
+#PBS -l mem=12gb
+#PBS -l scratch=4gb
 #PBS -N HybPipe4_missingdata_handling
 #PBS -m abe
 
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                      Script 04 - Missing data handling                       *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -43,6 +43,7 @@ if [ ! $LOGNAME == "" ]; then
 	module add python-3.4.1-gcc
 	module add trimal-1.4
 	module add mstatx
+	module add R-3.2.3-intel
 else
 	echo "Local..."
 	#settings for local run
@@ -57,15 +58,30 @@ else
 	cd workdir04
 fi
 
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	type="_cp"
+else
+	type=""
+fi
+
 #Copy data folder to scratch
-cp $path/70concatenated_exon_alignments/*.fasta .
+if [[ $cp =~ "yes" ]]; then
+	cp $path/60mafft_cp/*.fasta .
+	#Rename *.mafft to *.fasta
+	# for file in *.mafft; do
+		# mv "$file" "${file%.fasta.mafft}.fasta"
+	# done
+else
+	cp $path/70concatenated_exon_alignments/*.fasta .
+fi
 
 #-----------PREPARE ALIGNMENTS WITH SPECIES WITH MAXIMUM SPECIFIED MISSING DATA ONLY----------------------
 #Make a list of all fasta files
 ls *.fasta | cut -d"." -f1 > fileForDeletePercentage.txt
 #Make new dir for results
-mkdir $path/71selected${MISSINGPERCENT}
-mkdir $path/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+mkdir $path/71selected${type}${MISSINGPERCENT}
+mkdir $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 for file in $(cat fileForDeletePercentage.txt)
 do
 	#Delete empty lines (to be on the safe side...)
@@ -118,12 +134,12 @@ do
 	sed -i '/^>/{s/ /\n/}' $file.fasta
 	sed -i '/^>/{s/ /\n/}' ${file}_modif${MISSINGPERCENT}.fas
 	#Copy results home
-	cp ${file}_${MISSINGPERCENT}percN.fas $path/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
-	cp ${file}_modif${MISSINGPERCENT}.fas $path/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	cp ${file}_${MISSINGPERCENT}percN.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	cp ${file}_modif${MISSINGPERCENT}.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 	echo -e "\t$file processed\n"
 done
 echo -e "\nDeleting samples with more than ${MISSINGPERCENT}% missing data finished."
-echo -e "Modified alignments saved in $path/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
+echo -e "Modified alignments saved in $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
 
 #-----------MAKE A TABLE WITH % OF MISSING DATA IN EACH SPECIES AND ASSEMBLY----------------------
 #Prepare header file
@@ -136,7 +152,7 @@ awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); prin
 sed -i '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
 paste headers.txt missing_percentage_overview.txt > missing_percentage_overview_and_headers.txt
-cp missing_percentage_overview_and_headers.txt $path/71selected${MISSINGPERCENT}
+cp missing_percentage_overview_and_headers.txt $path/71selected${type}${MISSINGPERCENT}
 
 # Transpose data matrix (with percentages of missing data)
 awk '
@@ -185,7 +201,7 @@ sed -i '1s/ 0/ nr_assemblies_with_completely_missing_data/' transposedPlusMeanPl
 # Combine AssembliesList.txt and transposedPlusMeanPlusNumberOf100.txt
 paste AssembliesList.txt transposedPlusMeanPlusNumberOf100.txt > MissingDataOverview.txt
 # Copy table and list to home
-cp MissingDataOverview.txt $path/71selected${MISSINGPERCENT}
+cp MissingDataOverview.txt $path/71selected${type}${MISSINGPERCENT}
 echo -e "Table with % of missing data per gene and sample saved to $path/71selected${MISSINGPERCENT}\n"
 
 #-----------SELECTION OF MOST COMPLETE ASSEMBLIES----------------------
@@ -239,8 +255,8 @@ cat MissingDataOverview_${MISSINGPERCENT}.txt average_missing_${MISSINGPERCENT}.
 # Select assemblies with more than 75% of species (and delete first and last line including header and sum legend)
 awk -F' ' -v val=$SPECIESPRESENCE '( $(NF) > val/100 ) { print $1 }' MissingDataOverview_${MISSINGPERCENT}.txt | tail -n +2 | head -n -2 > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 # Copy table and list to home
-cp MissingDataOverview_${MISSINGPERCENT}.txt $path/71selected${MISSINGPERCENT}
-cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${MISSINGPERCENT}
+cp MissingDataOverview_${MISSINGPERCENT}.txt $path/71selected${type}${MISSINGPERCENT}
+cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${type}${MISSINGPERCENT}
 echo -e "Assemblies including at least ${SPECIESPRESENCE}% of  species selected"
 
 #-----------CALCULATE CHARACTERISTICS FOR ALL GENES AND FOR SELECTED GENES (USING AMAS)----------------------
@@ -263,8 +279,9 @@ rm output.txt
 sed -i -e "1iLocus\tMstatX_entropy" mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
-#Replace '?' by 'n'
+#Replace '?' by 'n' and all 'n' by 'N'
 sed -i 's/\?/n/g' *.fasta
+sed -i 's/n/N/g' *.fasta
 #Calculate alignment conservation value using trimAl
 echo -e "Calculating alignment conservation value for all genes using trimAl..."
 for file in $(ls *.fasta); do
@@ -283,13 +300,14 @@ rm summary.txt mstatx.txt sct.out
 echo -e "\nPlotting boxplots/histograms for alignment characteristics for all genes ..."
 if [ ! $LOGNAME == "" ]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
-	xvfb-run R --slave -f alignmentSummary.R
+	#xvfb-run R --slave -f alignmentSummary.R
+	R --slave -f alignmentSummary.R
 else
 	R --slave -f alignmentSummary.R
 fi
 #Copy summary table to home
-cp summaryALL.txt $path/71selected${MISSINGPERCENT}
-cp *.png $path/71selected${MISSINGPERCENT}
+cp summaryALL.txt $path/71selected${type}${MISSINGPERCENT}
+cp *.png $path/71selected${type}${MISSINGPERCENT}
 rm summaryALL.txt
 rm *.png
 # 2. For selected genes
@@ -316,6 +334,7 @@ sed -i -e "1iLocus\tMstatX_entropy" mstatx.txt
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n'
 sed -i 's/\?/n/g' AMASselected/*.fas
+sed -i 's/n/N/g' AMASselected/*.fas
 #Calculate conservation value using trimAl
 echo -e "Calculating alignment conservation value for selected genes using trimAl..."
 for file in $(ls AMASselected/*.fas); do
@@ -342,8 +361,8 @@ mv summaryALL.txt summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 #Rename all PNG files generated by R (add '_${MISSINGPERCENT}_${SPECIESPRESENCE}')
 for file in *.png; do mv "$file" "${file/.png/_${MISSINGPERCENT}_${SPECIESPRESENCE}.png}"; done
 #Copy summary table and PNG files to home
-cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${MISSINGPERCENT}
-cp *.png $path/71selected${MISSINGPERCENT}
+cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${type}${MISSINGPERCENT}
+cp *.png $path/71selected${type}${MISSINGPERCENT}
 echo -e "\nHybPipe4 finished..."
 
 #Clean scratch/work directory

@@ -9,8 +9,8 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                          Script 06 - Root gene trees                         *
-# *                                                                              *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.0.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -42,20 +42,52 @@ else
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir05
-	cd workdir05
+	mkdir workdir06
+	cd workdir06
+fi
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=80concatenated_exon_alignments_corrected
+	alnpathselected=81selected_corrected
+	treepath=82trees_corrected
+else
+	alnpath=70concatenated_exon_alignments
+	alnpathselected=71selected
+	treepath=72trees
+fi
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	type="_cp"
+else
+	type=""
 fi
 
-#Make dir for result
-mkdir $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-
-#Copy trees from home and make multitree file
-if [[ $tree =~ "RAxML" ]]; then
-	cp $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bipartitions.* .
-	cat *bipartitions.* > trees.newick
+#If working with updated tree list select specific trees (otherwise copy all trees)
+if [[ $update =~ "yes" ]]; then
+	cp $path/${alnpathselected}${type}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+	#Make dir for result
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+	#Loop over a list of selected trees
+	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
+		#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
+		if [[ $corrected =~ "yes" ]]; then
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/CorrectedAssembly_${i}_modif*.tre .
+		else
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/Assembly_${i}_modif*.tre .
+		fi
+	done
+	cat *.tre > trees.newick
 else
-	cp `find $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree -maxdepth 1 ! -name '*boot*'` .
-	cat Assembly*.tre > trees.newick
+	#Make dir for result
+	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
+	#Copy trees from home and make multitree file
+	if [[ $tree =~ "RAxML" ]]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bipartitions.* .
+		cat *bipartitions.* > trees.newick
+	else
+		cp `find $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree -maxdepth 1 ! -name '*boot*'` .
+		cat *.tre > trees.newick
+	fi
 fi
 
 #Root trees with OUTGROUP using newick utilities
@@ -65,10 +97,16 @@ nw_topology -Ib trees_rooted.newick > trees${MISSINGPERCENT}_${SPECIESPRESENCE}_
 #Modify names: remove unwanted ends of names, replace '-' by XX and '_' by YY, find every XX after a digit and e and add XXXX, replace XXXX by '-' (to preserve numbers in scientific format)
 cat trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick | sed 's/_contigs.fas//g' | sed 's/.fas//g' | sed 's/-/XX/g' | sed 's/_/YY/g' | sed -r 's/([0-9]eXX)/\1XX/g' | sed 's/XXXX/-/g' > tmp && mv tmp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 #Copy multi-tree file to home
-cp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-cp trees.newick $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-cp trees_rooted.newick $path/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-#This newick gene tree file can be used by HybPipe7a_astral.sh, HybPipe7b_astrid, HybPipe7c_mrl.sh, HybPipe7d_mpest.sh, HybPipe7e_concatenated.sh
+if [[ $update =~ "yes" ]]; then
+	cp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+	cp trees.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+	cp trees_rooted.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+else
+	cp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
+	cp trees.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
+	cp trees_rooted.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
+fi
+#This newick gene tree file can be used by HybPipe7a_astral.sh, HybPipe7b_astrid.sh, HybPipe7c_mrl.sh, HybPipe7d_mpest.sh, HybPipe7e_concatenated.sh
 
 #Clean scratch/work directory
 if [ ! $LOGNAME == "" ]; then
@@ -76,5 +114,5 @@ if [ ! $LOGNAME == "" ]; then
 	rm -rf $SCRATCHDIR/*
 else
 	cd ..
-	rm -r workdir05
+	rm -r workdir06
 fi
