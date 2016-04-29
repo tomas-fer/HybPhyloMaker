@@ -9,7 +9,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                       Script 07b - Astrid species tree                       *
-# *                                   v.1.0.0                                    *
+# *                                   v.1.0.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -73,9 +73,6 @@ if [[ $update =~ "yes" ]]; then
 else
 	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
 fi
-#Modify labels in gene tree
-sed -i 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
-sed -i 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 
 #Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
 if [[ $tree =~ "RAxML" ]]; then
@@ -115,14 +112,18 @@ else
 fi
 
 #Run ASTRID
-ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated.tre
-#ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated.tre
+ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+#ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 	#Run Astrid bootstrap
-	ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_allbootstraptrees.tre
+	ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
 	#Extract last tree (main species tree based on non-bootstrapped dataset + bootstrap values mapped on it)
-	cat Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_allbootstraptrees.tre | tail -n1 > Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_updated_withbootstrap.tre
+	cat Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | tail -n1 > Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 fi
+
+#Modify labels in Astrid trees
+sed -i 's/XX/-/g' Astrid*.tre
+sed -i 's/YY/_/g' Astrid*.tre
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
