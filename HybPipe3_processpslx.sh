@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 03 - Process pslx files                        *
-# *                                   v.1.0.3                                    *
+# *                                   v.1.0.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	othersourcepath=/storage/$server/home/$LOGNAME/$othersource
 	otherpslxpath=/storage/$server/home/$LOGNAME/$otherpslx
 	#Add necessary modules
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -115,7 +115,7 @@ if [ "$parallelmafft" = "yes" ]; then
 	if [[ $location == "1" ]]; then
 		cp *.mafft $path/60mafft
 	else
-		cp *.mafft ../$path/60mafft
+		find . -name 'mafft' - exec cp -t ../$path/60mafft/ {} +
 	fi
 else
 	for fastafile in $(cat listOfFastaFiles.txt)
@@ -132,13 +132,13 @@ echo "Finished MAFFT alignment..."
 
 #-----------------------CHANGE LEADING AND TAILING '-' TO '?'-----------------------
 #i.e. differentiate missing data from gaps
-ls *.mafft > listOfMAFFTFiles.txt
+ls | grep '.mafft' > listOfMAFFTFiles.txt
 for mafftfile in $(cat listOfMAFFTFiles.txt)
 do
 	#Removes line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' $mafftfile > tmp && mv tmp $mafftfile
 	#Replace leading and tailing '-' by '?'
-	sed -i -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
+	sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
 done
 echo "Finished changing leading/tailing '-' ..."
 
@@ -151,9 +151,9 @@ else
 fi
 #Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft to To_align_Assembly_10372_*mafft)
 #(all files starting with "To_align_Assembly_10372_" will be merged)
-ls -1 *.mafft | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft/g > fileNamesForConcat.txt
+ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft/g > fileNamesForConcat.txt
 #Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. Assembly_10372
-ls -1 *.mafft | cut -d'_' -f4 | sort -u | sed s/^/Assembly_/g > fileNamesForSaving.txt
+ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/Assembly_/g > fileNamesForSaving.txt
 #Combine both files (make single file with two columns)
 paste fileNamesForConcat.txt fileNamesForSaving.txt > fileForLoop.txt
 
