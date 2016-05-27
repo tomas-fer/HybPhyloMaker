@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                          Script 06 - Root gene trees                         *
-# *                                   v.1.0.2                                    *
+# *                                   v.1.0.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add newick-utils-1.6
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
