@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.0.1                                    *
+# *                                   v.1.0.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	cd $SCRATCHDIR
 	#Add necessary modules
 	module add blat-suite-34
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -83,7 +83,7 @@ mkdir $path/40contigs
 #-----------------------GENEIOUS CONSENSUS SEQUENCE MODIFICATION-----------------------
 echo -e "\nParsing Geneious consensus sequence output...\n"
 #Modify Windows EOLs to Unix EOLs (i.e., LF only)
-sed -i 's/\x0D$//' consensus.fasta
+sed -i.bak 's/\x0D$//' consensus.fasta
 #Remove trailing '?'s, remove unwanted part of the file name (everything after the second '-'), add '_consensus_sequence' to all headers
 #and split multiple fasta from Geneious into individual fasta sequences
 cat consensus.fasta | sed 's/^?*//' | cut -d"-" -f1,2 | sed '/>/s/.*/&_consensus_sequence/' | awk '/^>/ {OUT=substr($0,2) ".fasta"}; OUT {print >OUT}'
@@ -99,7 +99,7 @@ do
 	#sed -i 's/.$//' $file\_consensus_sequence.fasta
 	
 	#Delete first line in a fasta file, i.e. header
-	sed -i 1d $file\_consensus_sequence.fasta
+	sed -i.bak 1d $file\_consensus_sequence.fasta
 	
 	#Replace sequence of '?' by new line (\n), put bash variable ($file) to 'val' which is available to print with awk,
 	#print '>Contig'+number(NR;increased by one each step)+species name (val), then to next line print sequence
