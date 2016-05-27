@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                      Script 04 - Missing data handling                       *
-# *                                   v.1.0.4                                    *
+# *                                   v.1.0.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -307,7 +307,9 @@ for file in $(ls *.fasta); do
 done
 rm output.txt
 #Add header to the first line
-sed -i.bak -e "1iLocus\tMstatX_entropy" mstatx.txt
+#sed -i.bak -e "1iLocus\tMstatX_entropy" mstatx.txt
+echo -e "Locus\tMstatX_entropy" > mstatx.header
+cat mstatx.header mstatx.txt > tmp && mv tmp mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n' and all 'n' by 'N'
@@ -322,7 +324,9 @@ for file in $(ls *.fasta); do
 	trimal -in $file -sst | sed '1,3d' | sed 's/\t\t/\t/g' | sed 's/ //g' | awk -v val=$file '{ sum+=$1*$5; sum2+=$1} END { print val "\t" sum/sum2}' >> sct.out
 done
 #Add header to the first line
-sed -i.bak -e "1iLocus\ttrimAl_sct" sct.out
+#sed -i.bak -e "1iLocus\ttrimAl_sct" sct.out
+echo -e "Locus\ttrimAl_sct" > trimal.header
+cat trimal.header sct.out > tmp && mv tmp sct.out
 #Take only 2nd column with trimAl results (omitting alignment name)
 awk '{ print $2 }' sct.out > tmp && mv tmp sct.out
 #Combine results together
