@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                  Script 05b2 - summary of RAxML gene trees                   *
-# *                                   v.1.0.2                                    *
+# *                                   v.1.0.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -44,7 +44,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add R-3.2.3-intel
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -118,7 +118,7 @@ cp LBscoresSDPerLocus.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENC
 awk '{ print $2 }' LBscoresSDPerLocus.txt > tmp && mv tmp LBscoresSDPerLocus.txt
 paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
 #Replace 'NaN' by '0' (otherwise following plotting in R will not work)
-sed -i 's/NaN/0/g' tree_stats_table.csv
+sed -i.bak 's/NaN/0/g' tree_stats_table.csv
 echo -e "Plotting boxplots/histograms for tree properties...\n"
 if [[ $location == "1" ]]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
@@ -140,7 +140,7 @@ echo -e "Combining alignment and tree properties...\n"
 cp $path/71selected${type}${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 #***Modify alignment summary***
 #Remove '_Assembly' (now locus names start with a number)
-sed -i 's/Assembly_//g' summarySELECTED*.txt
+sed -i.bak 's/Assembly_//g' summarySELECTED*.txt
 #Take first line as a header
 head -n1 summarySELECTED*.txt > head.txt
 #Remove first line | sort
@@ -149,7 +149,7 @@ sed 1d summarySELECTED*.txt | sort > summarySELECTED_sorted.txt
 cat head.txt summarySELECTED_sorted.txt > tmp && mv tmp summarySELECTED_sorted.txt
 #***Modify tree summary***
 #Change ',' to TAB
-sed -i 's/,/\t/g' tree_stats_table.csv
+sed -i.bak 's/,/\t/g' tree_stats_table.csv
 #Take first line as a header
 head -n1 tree_stats_table.csv > head2.txt
 #Remove first line | sort
@@ -160,16 +160,16 @@ cat head2.txt tree_stats_table_sorted.csv > tmp && mv tmp tree_stats_table_sorte
 paste summarySELECTED_sorted.txt tree_stats_table_sorted.csv > combined.txt
 
 #Rename colums
-sed -i 's/Alignment_length/Aln_length/' combined.txt
-sed -i 's/Missing_percent/Missing_perc/' combined.txt
-sed -i 's/Proportion_parsimony_informative/Prop_pars_inf/' combined.txt
-sed -i 's/MstatX_entropy/Aln_entropy/' combined.txt
-sed -i 's/Average_bootstrap/Bootstrap/' combined.txt
-sed -i 's/Average_branch_length/Branch_length/' combined.txt
-sed -i 's/Avg_p_dist/P_distance/' combined.txt
-sed -i 's/Slope/Satur_slope/' combined.txt
-sed -i 's/R_squared/Satur_R_sq/' combined.txt
-sed -i 's/LBscoreSD/LBscore_SD/' combined.txt
+sed -i.bak 's/Alignment_length/Aln_length/' combined.txt
+sed -i.bak 's/Missing_percent/Missing_perc/' combined.txt
+sed -i.bak 's/Proportion_parsimony_informative/Prop_pars_inf/' combined.txt
+sed -i.bak 's/MstatX_entropy/Aln_entropy/' combined.txt
+sed -i.bak 's/Average_bootstrap/Bootstrap/' combined.txt
+sed -i.bak 's/Average_branch_length/Branch_length/' combined.txt
+sed -i.bak 's/Avg_p_dist/P_distance/' combined.txt
+sed -i.bak 's/Slope/Satur_slope/' combined.txt
+sed -i.bak 's/R_squared/Satur_R_sq/' combined.txt
+sed -i.bak 's/LBscoreSD/LBscore_SD/' combined.txt
 
 #Run comparison plots for RAxML trees
 echo -e "Plotting gene properties correlations for RAxML trees...\n"
