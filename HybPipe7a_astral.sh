@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                       Script 07a - Astral species tree                       *
-# *                                   v.1.0.1                                    *
+# *                                   v.1.0.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add jdk-1.6.0
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -99,8 +99,8 @@ else
 fi
 
 #Modify labels in gene tree
-sed -i 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
-sed -i 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+sed -i.bak 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+sed -i.bak 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 
 #Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
 if [[ $tree =~ "RAxML" ]]; then
