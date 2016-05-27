@@ -4,7 +4,7 @@
 #PBS -l nodes=1:ppn=1
 #PBS -j oe
 #PBS -l mem=1gb
-#PBS -N HybPipe0_preparereference
+#PBS -N HybPipe0b_preparereference
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -13,13 +13,13 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPipe0_preparereference
-#$ -o HybPipe0_preparereference.log
+#$ -N HybPipe0b_preparereference
+#$ -o HybPipe0b_preparereference.log
 
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                     Script 00b - Prepare pseudoreference                     *
-# *                                   v.1.0.0                                    *
+# *                                   v.1.0.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -38,7 +38,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
