@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.0.1                                    *
+# *                                   v.1.0.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -46,7 +46,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add fastx-0.0.13
 	module add jdk-7
 	module add perl-5.10.1
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
