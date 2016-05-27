@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                   Script 05b - FastTree gene tree building                   *
-# *                                   v.1.0.2                                    *
+# *                                   v.1.0.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -49,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add R-3.2.3-intel
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -93,11 +93,11 @@ for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 do
 	cp $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
 	#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in FastTree)
-	sed -i 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
-	sed -i 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
 	#Delete '_contigs' and '.fas' from labels (i.e., keep only genus-species_nr)
-	sed -i 's/_contigs//g' ${i}_modif${MISSINGPERCENT}.fas
-	sed -i 's/.fas//g' ${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/_contigs//g' ${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/.fas//g' ${i}_modif${MISSINGPERCENT}.fas
 done
 #Make a list of all fasta files
 ls *.fas | cut -d"." -f1 > FileForFastTree.txt
@@ -111,13 +111,13 @@ for file in $(cat FileForFastTree.txt)
 do
 	#FastTree
 	if [[ $location == "1" ]]; then
-		echo -e "Processing file: ${file}"
+		echo -e "\nProcessing file: ${file}"
 		fasttreemp -nt ${file}.fas > ${file}.fast.tre
 	elif [[ $location == "2" ]]; then
-		echo -e "Processing file: ${file}"
+		echo -e "\nProcessing file: ${file}"
 		FastTreeMP -nt ${file}.fas > ${file}.fast.tre
 	else
-		echo -e "Processing file: ${file}"
+		echo -e "\nProcessing file: ${file}"
 		fasttree -nt ${file}.fas > ${file}.fast.tre
 	fi
 	cp *$file.fast.tre $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
@@ -125,8 +125,8 @@ done
 
 #----------------Generate bootstrapped gene trees using FastTree----------------
 #Bootstrap using FastTree 
-echo -e "Generating bootstrapped FastTrees...\n"
 if [[ $FastTreeBoot =~ "yes" ]]; then
+	echo -e "Generating bootstrapped FastTrees...\n"
 	for file in $(cat FileForFastTree.txt)
 	do
 		#Generate 100 replicated datasets using RAxML -f j
@@ -194,7 +194,7 @@ cp LBscoresSDPerLocus.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENC
 awk '{ print $2 }' LBscoresSDPerLocus.txt > tmp && mv tmp LBscoresSDPerLocus.txt
 paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
 #Replace 'NaN' by '0' (otherwise following plotting in R will not work)
-sed -i 's/NaN/0/g' tree_stats_table.csv
+sed -i.bak 's/NaN/0/g' tree_stats_table.csv
 echo -e "Plotting boxplots/histograms for tree properties...\n"
 if [[ $location == "1" ]]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
@@ -243,7 +243,7 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	awk '{ print $2 }' LBscoresSDPerLocus_bootstrap.txt > tmp && mv tmp LBscoresSDPerLocus_bootstrap.txt
 	paste tree_stats_table.csv LBscoresSDPerLocus_bootstrap.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
 	#Replace 'NaN' by '0' (otherwise following plotting in R will not work)
-	sed -i 's/NaN/0/g' tree_stats_table.csv
+	sed -i.bak 's/NaN/0/g' tree_stats_table.csv
 	echo -e "Plotting boxplots/histograms for bootstrapped tree properties...\n"
 	if [[ $location == "1" ]]; then
 		#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
@@ -268,7 +268,7 @@ echo -e "Combining alignment and tree properties...\n"
 cp $path/71selected${type}${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 #***Modify alignment summary***
 #Remove '_Assembly' (now locus names start with a number)
-sed -i 's/Assembly_//g' summarySELECTED*.txt
+sed -i.bak 's/Assembly_//g' summarySELECTED*.txt
 #Take first line as a header
 head -n1 summarySELECTED*.txt > head.txt
 #Remove first line | sort
@@ -277,8 +277,8 @@ sed 1d summarySELECTED*.txt | sort > summarySELECTED_sorted.txt
 cat head.txt summarySELECTED_sorted.txt > tmp && mv tmp summarySELECTED_sorted.txt
 #***Modify tree summary***
 #Change ',' to TAB
-sed -i 's/,/\t/g' tree_stats_table_noboot.csv
-sed -i 's/,/\t/g' tree_stats_table_bootstrap.csv
+sed -i.bak 's/,/\t/g' tree_stats_table_noboot.csv
+sed -i.bak 's/,/\t/g' tree_stats_table_bootstrap.csv
 #Take first line as a header
 head -n1 tree_stats_table_noboot.csv > head2.txt
 #Remove first line | sort
@@ -295,16 +295,16 @@ if [[ $FastTreeBoot =~ "no" ]]; then
 	rm *bootstrap*
 fi
 #Rename colums
-sed -i 's/Alignment_length/Aln_length/' combined_*.txt
-sed -i 's/Missing_percent/Missing_perc/' combined_*.txt
-sed -i 's/Proportion_parsimony_informative/Prop_pars_inf/' combined_*.txt
-sed -i 's/MstatX_entropy/Aln_entropy/' combined_*.txt
-sed -i 's/Average_bootstrap/Bootstrap/' combined_*.txt
-sed -i 's/Average_branch_length/Branch_length/' combined_*.txt
-sed -i 's/Avg_p_dist/P_distance/' combined_*.txt
-sed -i 's/Slope/Satur_slope/' combined_*.txt
-sed -i 's/R_squared/Satur_R_sq/' combined_*.txt
-sed -i 's/LBscoreSD/LBscore_SD/' combined_*.txt
+sed -i.bak 's/Alignment_length/Aln_length/' combined_*.txt
+sed -i.bak 's/Missing_percent/Missing_perc/' combined_*.txt
+sed -i.bak 's/Proportion_parsimony_informative/Prop_pars_inf/' combined_*.txt
+sed -i.bak 's/MstatX_entropy/Aln_entropy/' combined_*.txt
+sed -i.bak 's/Average_bootstrap/Bootstrap/' combined_*.txt
+sed -i.bak 's/Average_branch_length/Branch_length/' combined_*.txt
+sed -i.bak 's/Avg_p_dist/P_distance/' combined_*.txt
+sed -i.bak 's/Slope/Satur_slope/' combined_*.txt
+sed -i.bak 's/R_squared/Satur_R_sq/' combined_*.txt
+sed -i.bak 's/LBscoreSD/LBscore_SD/' combined_*.txt
 
 #Run comparison plots for FastTrees without true bootstrap ('noboot')
 mv combined_noboot.txt combined.txt
