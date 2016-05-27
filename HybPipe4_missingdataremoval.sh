@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                      Script 04 - Missing data handling                       *
-# *                                   v.1.0.3                                    *
+# *                                   v.1.0.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -58,7 +58,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add R-3.2.3-intel
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -114,11 +114,11 @@ mkdir $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 for file in $(cat fileForDeletePercentage.txt)
 do
 	#Delete empty lines (to be on the safe side...)
-	sed -i '/^$/d' $file.fasta
+	sed -i.bak '/^$/d' $file.fasta
 	#Removes line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' $file.fasta > tmp && mv tmp $file.fasta
 	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
-	sed -i '/^>/{N; s/\n/ /;}' $file.fasta
+	sed -i.bak '/^>/{N; s/\n/ /;}' $file.fasta
 	
 	#Create file for storage headers and percentages of N
 	touch ${file}_${MISSINGPERCENT}percN.fas
@@ -160,8 +160,10 @@ do
 		fi
 	done
 	#Replace ' ' by newline character
-	sed -i '/^>/{s/ /\n/}' $file.fasta
-	sed -i '/^>/{s/ /\n/}' ${file}_modif${MISSINGPERCENT}.fas
+	#sed -i.bak '/^>/{s/ /\n/}' $file.fasta
+	cat $file.fasta | tr " " "\n" > tmp && mv tmp $file.fasta
+	#sed -i.bak '/^>/{s/ /\n/}' ${file}_modif${MISSINGPERCENT}.fas
+	cat ${file}_modif${MISSINGPERCENT}.fas | tr " " "\n" > tmp && mv tmp ${file}_modif${MISSINGPERCENT}.fas
 	#Copy results home
 	cp ${file}_${MISSINGPERCENT}percN.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 	cp ${file}_modif${MISSINGPERCENT}.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
@@ -178,7 +180,7 @@ cat $file.fasta | sed '/^>/{N; s/\n/ /;}' | cut -f1 -d" " | sed 's/>//' | sed 's
 #Make a table with percentages of N in each accession and file
 awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' *percN.fas > missing_percentage_overview.txt
 #Add word 'species' as a 1st line in file headers.txt
-sed -i '1s/^/species\n/' headers.txt
+sed -i.bak '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
 paste headers.txt missing_percentage_overview.txt > missing_percentage_overview_and_headers.txt
 cp missing_percentage_overview_and_headers.txt $path/71selected${type}${MISSINGPERCENT}
@@ -217,14 +219,14 @@ for(i=1;i<=NF;i++)
 }' transposed.txt > transposedPlusMean.txt
 
 # Replace double spaces by single space
-sed -i 's/  / /' transposedPlusMean.txt
+sed -i.bak 's/  / /' transposedPlusMean.txt
 # Delete first column of a space separated files
 awk 'BEGIN{FS=OFS=" "}{$1="";sub(" ","")}1' transposedPlusMean.txt > tmp && mv tmp transposedPlusMean.txt
 # Count number of '100' on each line, i.e. number of species with completely missing data, and add this as a last value on each line
 awk -F "100" ' { print $0, NF-1 } ' transposedPlusMean.txt > transposedPlusMeanPlusNumberOf100.txt
 # Replace two zeros at the end of the first line (result of two previous commands) by column names
 # Replace first ' 0 ' on first line with a text ' average_missing_data '
-sed -i '1s/ 0 / average_missing_data /' transposedPlusMeanPlusNumberOf100.txt
+sed -i.bak '1s/ 0 / average_missing_data /' transposedPlusMeanPlusNumberOf100.txt
 # Replace first (formely second)' 0' on first line with a text ' nr_assemblies_with_completely_missing_data'
 sed -i '1s/ 0/ nr_assemblies_with_completely_missing_data/' transposedPlusMeanPlusNumberOf100.txt
 # Combine AssembliesList.txt and transposedPlusMeanPlusNumberOf100.txt
@@ -249,7 +251,7 @@ cat MissingDataOverview.txt | awk 'NF{NF-=2}1' FS=' ' OFS=' ' > MissingDataOverv
 # Copy first line to header.txt
 cat MissingDataOverview_${MISSINGPERCENT}.txt | head -n1 > header.txt
 # Remove first line
-sed -i '1d' MissingDataOverview_${MISSINGPERCENT}.txt
+sed -i.bak '1d' MissingDataOverview_${MISSINGPERCENT}.txt
 # Count nr. of loci (=i.e., nr. of lines)
 nrgenes=$(cat MissingDataOverview_${MISSINGPERCENT}.txt | wc -l)
 echo "Number of genes: " $nrgenes
@@ -305,12 +307,12 @@ for file in $(ls *.fasta); do
 done
 rm output.txt
 #Add header to the first line
-sed -i -e "1iLocus\tMstatX_entropy" mstatx.txt
+sed -i.bak -e "1iLocus\tMstatX_entropy" mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n' and all 'n' by 'N'
-sed -i 's/\?/n/g' *.fasta
-sed -i 's/n/N/g' *.fasta
+sed -i.bak 's/\?/n/g' *.fasta
+sed -i.bak 's/n/N/g' *.fasta
 #Calculate alignment conservation value using trimAl
 echo -e "Calculating alignment conservation value for all genes using trimAl..."
 for file in $(ls *.fasta); do
@@ -320,7 +322,7 @@ for file in $(ls *.fasta); do
 	trimal -in $file -sst | sed '1,3d' | sed 's/\t\t/\t/g' | sed 's/ //g' | awk -v val=$file '{ sum+=$1*$5; sum2+=$1} END { print val "\t" sum/sum2}' >> sct.out
 done
 #Add header to the first line
-sed -i -e "1iLocus\ttrimAl_sct" sct.out
+sed -i.bak -e "1iLocus\ttrimAl_sct" sct.out
 #Take only 2nd column with trimAl results (omitting alignment name)
 awk '{ print $2 }' sct.out > tmp && mv tmp sct.out
 #Combine results together
@@ -358,12 +360,12 @@ for file in $(ls AMASselected/*.fas); do
 done
 rm output.txt
 #Add header to the first line
-sed -i -e "1iLocus\tMstatX_entropy" mstatx.txt
+sed -i.bak -e "1iLocus\tMstatX_entropy" mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n'
-sed -i 's/\?/n/g' AMASselected/*.fas
-sed -i 's/n/N/g' AMASselected/*.fas
+sed -i.bak 's/\?/n/g' AMASselected/*.fas
+sed -i.bak 's/n/N/g' AMASselected/*.fas
 #Calculate conservation value using trimAl
 echo -e "Calculating alignment conservation value for selected genes using trimAl..."
 for file in $(ls AMASselected/*.fas); do
@@ -373,7 +375,7 @@ for file in $(ls AMASselected/*.fas); do
 	trimal -in $file -sst | sed '1,3d' | sed 's/\t\t/\t/g' | sed 's/ //g' | awk -v val=$file '{ sum+=$1*$5; sum2+=$1} END { print val "\t" sum/sum2}' >> sct.out
 done
 #Add header to the first line
-sed -i -e "1iLocus\ttrimAl_sct" sct.out
+sed -i.bak -e "1iLocus\ttrimAl_sct" sct.out
 #Take only 2nd column with trimAl results (omitting alignment name)
 awk '{ print $2 }' sct.out > tmp && mv tmp sct.out
 #Combine results together
