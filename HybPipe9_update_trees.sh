@@ -27,7 +27,7 @@
 #UPDATE on tree selection
 # 
 
-if [ ! $LOGNAME == "" ]; then
+if [[ $PBS_O_HOST == *".cz" ]]; then
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -41,6 +41,18 @@ if [ ! $LOGNAME == "" ]; then
 	module add R-3.2.3-intel
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo "Hydra..."
+	#settings for Hydra
+	#set variables from settings.cfg
+	. settings.cfg
+	path=../$data
+	source=../HybSeqSource
+	#Make and enter work directory
+	mkdir workdir09
+	cd workdir09
+	#Add necessary modules
+	module load tools/R/3.2.1
 else
 	#settings for local run
 	#set variables from settings.cfg
@@ -48,8 +60,8 @@ else
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir05
-	cd workdir05
+	mkdir workdir09
+	cd workdir09
 fi
 #Settings for (un)corrected reading frame
 if [[ $corrected =~ "yes" ]]; then
@@ -85,10 +97,10 @@ mv genes_corrs.pdf genes_corrs_update.pdf
 cp genes_corrs_update.* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/
 #Plot boxplots/histograms for selected alignment properties
 cp gene_properties_update.txt summaryALL.txt
-sed -i 's/Aln_length/Alignment_length/' summaryALL.txt
-sed -i 's/Missing_perc/Missing_percent/' summaryALL.txt
-sed -i 's/Prop_pars_inf/Proportion_parsimony_informative/' summaryALL.txt
-sed -i 's/Aln_entropy/MstatX_entropy/' summaryALL.txt
+sed -i.bak 's/Aln_length/Alignment_length/' summaryALL.txt
+sed -i.bak 's/Missing_perc/Missing_percent/' summaryALL.txt
+sed -i.bak 's/Prop_pars_inf/Proportion_parsimony_informative/' summaryALL.txt
+sed -i.bak 's/Aln_entropy/MstatX_entropy/' summaryALL.txt
 
 echo -e "\nPlotting boxplots/histograms for alignment characteristics ..."
 if [ ! $LOGNAME == "" ]; then
@@ -103,11 +115,11 @@ fi
 cp gene_properties_update.txt tree_stats_table.csv
 cat tree_stats_table.csv | awk '{ print $34 "," $35 "," $36 "," $37 "," $38 "," $39 "," $40 "," $41 }' > tmp && mv tmp tree_stats_table.csv
 
-sed -i 's/Bootstrap/Average_bootstrap/' tree_stats_table.csv
-sed -i 's/Branch_length/Average_branch_length/' tree_stats_table.csv
-sed -i 's/P_distance/Avg_p_dist/' tree_stats_table.csv
-sed -i 's/Satur_slope/Slope/' tree_stats_table.csv
-sed -i 's/Satur_R_sq/R_squared/' tree_stats_table.csv
+sed -i.bak 's/Bootstrap/Average_bootstrap/' tree_stats_table.csv
+sed -i.bak 's/Branch_length/Average_branch_length/' tree_stats_table.csv
+sed -i.bak 's/P_distance/Avg_p_dist/' tree_stats_table.csv
+sed -i.bak 's/Satur_slope/Slope/' tree_stats_table.csv
+sed -i.bak 's/Satur_R_sq/R_squared/' tree_stats_table.csv
 
 echo -e "Plotting boxplots/histograms for tree properties...\n"
 if [ ! $LOGNAME == "" ]; then
@@ -126,4 +138,11 @@ cat gene_properties_update.txt | sed 1d | cut -f1 | sort | sed 's/Corrected/Corr
 mkdir $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 
-
+#Clean scratch/work directory
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	#delete scratch
+	rm -rf $SCRATCHDIR/*
+else
+	cd ..
+	rm -r workdir09
+fi
