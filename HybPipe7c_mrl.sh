@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 07c - MRL species tree                         *
-# *                                   v.1.0.1                                    *
+# *                                   v.1.0.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -49,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add jdk-1.6.0
 	module add raxml-8.2.4
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -125,8 +125,8 @@ else
 fi
 
 #Modify labels in RAxML bipartitions (XX and YY to ' ')
-sed -i 's/XX/ /g' RAxML_bipartitions.MRLresult
-sed -i 's/YY/ /g' RAxML_bipartitions.MRLresult
+sed -i.bak 's/XX/ /g' RAxML_bipartitions.MRLresult
+sed -i.bak 's/YY/ /g' RAxML_bipartitions.MRLresult
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
