@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.0.3                                    *
+# *                                   v.1.0.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -42,7 +42,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
