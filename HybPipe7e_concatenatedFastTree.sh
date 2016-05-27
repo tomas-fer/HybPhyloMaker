@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                    Script 07e - concatenated species tree                    *
-# *                                   v.1.0.2                                    *
+# *                                   v.1.0.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -48,7 +48,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add fasttree-2.1.8
 	module add python-3.4.1-intel
-elif [[ $HOSTNAME == *local* ]]; then
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo "Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
@@ -111,11 +111,11 @@ for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"
 	#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
 	cp $path/${alnpathselected}${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
 	#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML/FastTree)
-	sed -i 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-	sed -i 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 	#Delete '_contigs' and '.fas' from labels (i.e., keep only genus-species_nr)
-	sed -i 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-	sed -i 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 done
 
 #Prepare concatenated dataset and transform it to phylip format
