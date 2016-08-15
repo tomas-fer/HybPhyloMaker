@@ -114,6 +114,7 @@ do
 	echo 'MISSINGPERCENT='"$MISSINGPERCENT" >> ${group}.sh
 	echo 'SPECIESPRESENCE='"$SPECIESPRESENCE" >> ${group}.sh
 	echo 'type='"$type" >> ${group}.sh
+	echo 'location='"$location" >> ${group}.sh
 	echo 'cp '"$path"'/71selected${type}${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
 	echo 'cp '"$source"'/catfasta2phyml.pl .' >> ${group}.sh
 	echo 'for i in $(cat '"$group"')' >> ${group}.sh
