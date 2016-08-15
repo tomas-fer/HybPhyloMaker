@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.0.4                                    *
+# *                                   v.1.0.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
