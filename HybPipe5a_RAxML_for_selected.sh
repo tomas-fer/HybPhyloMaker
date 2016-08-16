@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.0.5                                    *
+# *                                   v.1.0.6                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -85,6 +85,7 @@ do
 	echo '#PBS -l walltime=1d' >> ${group}.sh
 	echo '#PBS -l nodes=1:ppn=4' >> ${group}.sh
 	echo '#PBS -j oe' >> ${group}.sh
+	echo '#PBS -o /storage/'"$storage/$LOGNAME" >> ${group}.sh
 	echo '#PBS -l mem=1gb' >> ${group}.sh
 	echo '#PBS -N RAxML_for_'"${group}" >> ${group}.sh
 	echo '#-------------------HYDRA-------------------' >> ${group}.sh
