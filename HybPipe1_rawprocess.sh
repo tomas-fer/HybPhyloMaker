@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *       HybPipe - Pipeline for Hyb-Seq data processing and tree building       *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.0.4                                    *
+# *                                   v.1.0.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -182,11 +182,11 @@ do
 	#Percentage of PhiX reads: first number on last line in bowtie2.log
 	percPhiX=`cat bowtie2.log | tail -n 1 | cut -d'%' -f1`
 	#Number of both surviving reads after Trimmomatic
-	bs=`cat Trimmomatic.log | head -n 5 | tail -n 1 | cut -d' ' -f7`
+	bs=`cat Trimmomatic.log | grep 'Input Read Pairs:' | cut -d' ' -f7`
 	#Number of forward only surviving reads after Trimmomatic
-	fos=`cat Trimmomatic.log | head -n 5 | tail -n 1 | cut -d' ' -f12`
+	fos=`cat Trimmomatic.log | grep 'Input Read Pairs:' | cut -d' ' -f12`
 	#Number of reverse only surviving reads after Trimmomatic
-	ros=`cat Trimmomatic.log | head -n 5 | tail -n 1 | cut -d' ' -f17`
+	ros=`cat Trimmomatic.log | grep 'Input Read Pairs:' | cut -d' ' -f17`
 	# Counting number of reads after quality trimming
 	let aftertrimming="(2 * $bs) + $fos + $ros"
 	#Calculate percentage of quality trimmed reads
