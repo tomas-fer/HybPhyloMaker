@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 07e - concatenated species tree                    *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.1.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -84,8 +84,10 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
 
@@ -143,7 +145,10 @@ else
 fi
 
 #(Re)root a final concatenated species tree with $OUTGROUP
-nw_reroot concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre $OUTGROUP > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
+if [ -n "$OUTGROUP" ]; then
+	nw_reroot concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre $OUTGROUP > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
+fi
+
 #Modify labels in Astrid trees
 sed -i.bak2 's/-/ /g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
 sed -i.bak2 's/_/ /g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
