@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 00a - Download & prepare data                     *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.1.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -60,6 +60,7 @@
 #####################################################################################################################
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker0a is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -72,7 +73,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add parallel
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker0a is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -84,6 +85,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load tools/gnuparallel/20160422
 else
+	echo -e "\nHybPhyloMaker0a is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -94,7 +96,6 @@ else
 	cd workdir00_dataprep
 fi
 
-echo -e "\nHybPhyloMaker0a is running...\n"
 #Make folder for your data
 mkdir -p $path/
 mkdir 10rawreads
