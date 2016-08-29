@@ -13,5 +13,6 @@ _Intermediate manual step - read mapping to 'pseudoreference' in Geneious, expor
   
 Uses many additional software that must be installed and put in the PATH prior tu run scripts (see Table located in docs folder).  
 Also utilizes many scripts developed by others (located in HybSeqSource folder). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
+
 Read manual located in docs folder before running HybPhyloMaker.  
 
