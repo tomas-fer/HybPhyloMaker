@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.1.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -28,7 +28,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker1 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add jdk-7
 	module add perl-5.10.1
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker1 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -64,7 +64,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#module load bioinformatics/trimmomatic/0.33
 	module load java/1.7
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker1 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -75,10 +75,8 @@ else
 	cd workdir01
 fi
 
-echo -e "\nHybPhyloMaker1 is running...\n"
-
 #Test data structure
-echo -e "Testing input data structure...\n"
+echo -en "Testing input data structure..."
 if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 	if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then #Test if SamplesFileNames.txt exists
 		#Copy SamplesFileNames.txt and modify it
@@ -102,7 +100,7 @@ if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 else
 	echo "Folder 10rawreads does not exist within your homedir" && exit 3
 fi
-echo -e "Data structure is OK for running HybPhyloMaker...\n"
+echo -e "OK for running HybPhyloMaker...\n"
 
 #Copy raw reads folders and sample list to scratch/workdir
 cp -r $path/10rawreads/* .
@@ -198,7 +196,7 @@ rm $path/20filtered/for_Geneious/*.fas
 
 #Summary of basic reads processing (nr. reads, PhiX filtering, quality trimming, duplicate removal)
 #Produce tab-separated table
-echo -e "Creating summary table...\n"
+echo -e "Creating summary table..."
 #Write headers (number of pairs, number of reads, number of reads after PhiX removal, percentage od PhiX reads,
 #quality trimming - both surviving, forward only surviving, reverse only surviving, reads after quality trimming,
 #percentage of trimmed reads, reads after duplicate removal, percentage of duplicated reads)
@@ -251,4 +249,4 @@ else
 	rm -r workdir01
 fi
 
-echo -e "\nScript HybPhyloMaker1 finished..."
+echo -e "\nScript HybPhyloMaker1 finished...\n"
