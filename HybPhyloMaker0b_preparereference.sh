@@ -18,8 +18,8 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                     Script 00b - Prepare pseudoreference                     *
-# *                                   v.1.1.0                                    *
+# *                     Script 0b - Prepare pseudoreference                      *
+# *                                   v.1.1.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -30,6 +30,7 @@
 # Pseudo-reference (*_with${nrns}Ns_beginend.fas) is saved to HybSeqSource directory
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker0b is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -40,7 +41,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker0b is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -50,6 +51,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir workdir00_ref
 	cd workdir00_ref
 else
+	echo -e "\nHybPhyloMaker0b is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -59,8 +61,6 @@ else
 	mkdir workdir00_ref
 	cd workdir00_ref
 fi
-
-echo -e "\nScript HybPhyloMaker0b is running..."
 
 #Copy probe sequence file
 cp $source/$probes .
@@ -83,7 +83,7 @@ cat $probes | awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = ""
 #Copy pseudoreference to home
 cp ${name}_with${nrns}Ns_beginend.fas $source
 
-echo -e "\nPseudoreference named ${name}_with${nrns}Ns_beginend.fas was prepared and saved to $source..."
+echo -e "Pseudoreference named ${name}_with${nrns}Ns_beginend.fas was prepared and saved to $source..."
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -94,4 +94,4 @@ else
 	rm -r workdir00_ref
 fi
 
-echo -e "\nScript HybPhyloMaker0b finished..."
+echo -e "\nScript HybPhyloMaker0b finished...\n"

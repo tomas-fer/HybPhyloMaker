@@ -10,7 +10,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                              Setup R packages                                *
-# *                                   v.1.1.0                                    *
+# *                                   v.1.1.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -21,7 +21,7 @@
 #phytools 0.5-20
 #seqinr 3.1-3
 
-echo -e "\nScript HybPhyloMaker0c is running..."
+echo -e "\nScript HybPhyloMaker0c is running on Metacentrum..."
 
 #Move to scratch
 cd $SCRATCHDIR
@@ -52,4 +52,4 @@ export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 #Delete scratch
 rm -rf $SCRATCHDIR/*
 
-echo -e "\nScript HybPhyloMaker0c finished..."
+echo -e "\nScript HybPhyloMaker0c finished...\n"
