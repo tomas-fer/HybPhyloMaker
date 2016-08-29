@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 07e - concatenated species tree                    *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.1.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -35,6 +35,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker7e is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -48,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add fasttree-2.1.8
 	module add python-3.4.1-intel
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker7e is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -61,6 +62,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/fasttree/2.1.8
 	module load bioinformatics/anaconda3/2.3.0
 else
+	echo -e "\nHybPhyloMaker7e is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -86,8 +88,6 @@ if [[ $cp =~ "yes" ]]; then
 else
 	type=""
 fi
-
-echo -e "\nHybPhyloMaker7e is running...\n"
 
 #Add necessary scripts and files
 cp $source/AMAS.py .
