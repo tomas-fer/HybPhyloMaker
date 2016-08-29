@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 07b - Astrid species tree                       *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.1.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -86,8 +86,10 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
 
@@ -96,9 +98,19 @@ cp $source/$astridbin .
 
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 else
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 fi
 
 #Modify labels in gene tree
@@ -137,6 +149,13 @@ if [[ $mlbs =~ "yes" ]]; then
 		ls boot/*.boot.fast.trees > bs-files
 	fi
 fi
+
+if [[ $cp =~ "yes" ]]; then
+	#Removing '_cpDNA' from gene trees in trees.newick
+	if [ -d "boot" ]; then
+		sed -i.bak 's/_cpDNA//g' boot/*
+	fi
+fi
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
 	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
@@ -145,7 +164,7 @@ else
 fi
 
 #Run ASTRID
-echo -e "Computing Astrid tree..."
+echo -e "Computing ASTRID tree..."
 #ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 	if [[ $mlbs =~ "yes" ]]; then
@@ -170,11 +189,14 @@ else
 fi
 
 #(Re)root a final Astrid species tree with $OUTGROUP
-nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-if [[ $mlbs =~ "yes" ]]; then
-	nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-	nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+if [ -n "$OUTGROUP" ]; then
+	nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	if [[ $mlbs =~ "yes" ]]; then
+		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+	fi
 fi
+
 #Modify labels in Astrid trees
 sed -i.bak2 's/-/ /g' Astrid*.tre
 sed -i.bak2 's/_/ /g' Astrid*.tre

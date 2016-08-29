@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 07a - Astral species tree                       *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.1.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -84,8 +84,10 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
 
@@ -95,9 +97,19 @@ cp -r $source/lib .
 
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 else
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 fi
 
 #Modify labels in gene tree
@@ -136,6 +148,14 @@ if [[ $mlbs =~ "yes" ]]; then
 		ls boot/*.boot.fast.trees > bs-files
 	fi
 fi
+
+if [[ $cp =~ "yes" ]]; then
+	#Removing '_cpDNA' from gene trees in trees.newick
+	if [ -d "boot" ]; then
+		sed -i.bak 's/_cpDNA//g' boot/*
+	fi
+fi
+
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
 	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral
@@ -144,7 +164,7 @@ else
 fi
 
 #Run ASTRAL
-echo -e "Computing Astral tree..."
+echo -e "Computing ASTRAL tree..."
 if [[ $location == "1" ]]; then
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
 elif [[ $location == "2" ]]; then
@@ -154,8 +174,10 @@ else
 fi
 
 #(Re)root a final Astral species tree with $OUTGROUP
-nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-#Modify labels in Astral trees
+if [ -n "$OUTGROUP" ]; then
+	nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+fi
+	#Modify labels in Astral trees
 sed -i.bak2 's/-/ /g' Astral*.tre
 sed -i.bak2 's/_/ /g' Astral*.tre
 
@@ -171,7 +193,7 @@ fi
 if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 	if [[ $mlbs =~ "yes" ]]; then
 		#Run Astral bootstrap
-		echo -e "\nComputing Astral multilocus bootrap..."
+		echo -e "\nComputing ASTRAL multilocus bootrap..."
 		if [[ $location == "1" ]]; then
 			java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
 		elif [[ $location == "2" ]]; then
@@ -182,7 +204,9 @@ if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]
 		#Extract last tree (main species tree based on non-bootstrapped dataset + bootstrap values mapped on it)
 		cat Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | tail -n1 > Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 		#(Re)root a final Astral species tree with $OUTGROUP
-		nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+		if [ -n "$OUTGROUP" ]; then
+			nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+		fi
 		#Modify labels in Astral trees
 		sed -i.bak3 's/-/ /g' Astral*.tre
 		sed -i.bak3 's/_/ /g' Astral*.tre
