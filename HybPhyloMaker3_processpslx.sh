@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 03 - Process pslx files                        *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.1.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -32,7 +32,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker3 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,7 +52,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add parallel
 	module add perl-5.10.1
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker3 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -68,7 +68,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/mafft/7.221
 	module load tools/gnuparallel/20160422
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker3 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -84,14 +84,15 @@ fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
 
-echo -e "\nScript HybPhyloMaker3 is running..."
-
 #-----------------------COMBINATION OF SEQUENCES OF THE EXONS OF EACH ACCESSION-----------------------
+echo -ne "Combining sequences..."
 #Copy script and reference
 cp -r $source/assembled_exons_to_fastas.py .
 if [[ $cp =~ "yes" ]]; then
@@ -122,7 +123,7 @@ if [[ $cp =~ "yes" ]]; then
 else
 	python assembled_exons_to_fastas.py -l listOfPslxFiles.txt -f $probes -d contigsMatchLoci
 fi
-echo -e "\nFinished combination of sequences..."
+echo -e "finished"
 
 #-----------------------ALIGNING FASTA FILES (ALL EXONS FOR ALL SPECIES) USING MAFFT-----------------------
 #Enter directory with fasta files
@@ -172,7 +173,7 @@ if [[ $cp =~ "yes" ]]; then
 			# fi
 		done
 	fi
-	echo "\nFinished MAFFT alignment..."
+	echo -e "\nFinished MAFFT alignment..."
 	#Remove all fasta files (to be able to work only with aligned fasta files (renamed mafft files - see next step)
 	rm *.fasta
 	#Rename mafft files (to Assembly_NAME.fasta) and if the NAME already exists add 'x2' (to get Assembly_NAMEx2.fasta)
@@ -217,6 +218,7 @@ else
 fi
 #-----------------------CHANGE LEADING AND TAILING '-' TO '?'-----------------------
 #i.e. differentiate missing data from gaps
+echo -ne "\nChanging leading/tailing '-' in alignments..."
 if [[ $cp =~ "yes" ]]; then
 	ls *.fasta > listOfMAFFTFiles.txt
 else
@@ -229,13 +231,14 @@ do
 	#Replace leading and tailing '-' by '?'
 	sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
 	if [[ $cp =~ "yes" ]]; then
-		cp $mafftfile $path/60mafft_cp
+		cp $mafftfile ../$path/60mafft_cp
 	fi
 done
-echo -e "\nFinished changing leading/tailing '-' in alignments..."
+echo -e "finished"
 
 #-----------------------CONCATENATE THE EXON ALIGNMENTS-----------------------
 if [[ $cp =~ "no" ]]; then
+	echo -ne "\nConcatenating exons to loci..."
 	#Copy script
 	if [[ $location == "1" ]]; then
 		cp -r $source/catfasta2phyml.pl .
@@ -270,10 +273,11 @@ if [[ $cp =~ "no" ]]; then
 			cp $b.* ../$path/70concatenated_exon_alignments
 		fi
 	done
-	echo -e "\nFinished concatenation of exons to loci..."
-	#Move back to workdir
-	cd ..
+	echo -e "finished"
 fi
+
+#Move back to workdir
+cd ..
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -284,4 +288,4 @@ else
 	rm -r workdir03
 fi
 
-echo -e "\nScript HybPhyloMaker3 finished..."
+echo -e "\nScript HybPhyloMaker3 finished...\n"

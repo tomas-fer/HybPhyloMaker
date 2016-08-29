@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.1.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -34,7 +34,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker2 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
@@ -49,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add blat-suite-34
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -63,7 +63,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load bioinformatics/blat/36x1
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -78,12 +78,12 @@ fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
-
-echo -e "\nHybPhyloMaker2 is running...\n"
 
 #Copy fasta from home folder to scratch/workdir
 cp -r $path/30consensus/* .
@@ -91,7 +91,7 @@ cp -r $path/30consensus/* .
 mkdir $path/40contigs${type}
 
 #-----------------------GENEIOUS CONSENSUS SEQUENCE MODIFICATION-----------------------
-echo -e "Parsing Geneious consensus sequence output...\n"
+echo -en "Parsing Geneious consensus sequence output..."
 #Modify Windows EOLs to Unix EOLs (i.e., LF only)
 if [[ $cp =~ "yes" ]]; then
 	sed -i.bak 's/\x0D$//' consensus_cpDNA.fasta
@@ -146,10 +146,10 @@ else
 		cp $file\_contigs.fas $path/40contigs
 	done
 fi
-echo -e "Finished Geneious consensus sequence modifications...\n"
+echo -e "finished\n"
 
 #-----------------------BLAT ASSEMBLIES TO REFERENCE-----------------------
-echo -e "Generating pslx files using BLAT..."
+echo -e "Generating pslx files using BLAT...\n"
 #Copy other transcriptome/genome data from home to scratch/workdir (must be named with suffix *.fas)
 if [ "$othersource" != "" ] && [ "$othersource" != "NO" ]; then 
 	cp -r $othersourcepath/* .
@@ -179,7 +179,6 @@ do
 	fi
 	cp $contigfile.pslx $path/50pslx${type}
 done
-echo -e "\nFinished BLAT...\n"
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -190,4 +189,4 @@ else
 	rm -r workdir02
 fi
 
-echo -e "Script HybPhyloMaker2 finished..."
+echo -e "Script HybPhyloMaker2 finished...\n"
