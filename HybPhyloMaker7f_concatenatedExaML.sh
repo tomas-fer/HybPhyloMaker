@@ -10,7 +10,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 07f - ExaML concatenated tree                     *
-# *                                   v.1.1.0                                    *
+# *                                   v.1.1.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -30,6 +30,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker7f is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -46,6 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add raxml-8.2.8
 	module add perl-5.20.1-gcc
 else
+	echo -e "\nHybPhyloMaker7f is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -71,8 +73,6 @@ if [[ $cp =~ "yes" ]]; then
 else
 	type=""
 fi
-
-echo -e "\nHybPhyloMaker7f is running...\n"
 
 #Check if there is already partition file (PartitionFinder was already run)
 if [ -f $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt ]; then
