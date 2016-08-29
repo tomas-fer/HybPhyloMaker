@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 07c - MRL species tree                         *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.1.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -37,6 +37,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker7c is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -51,7 +52,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add raxml-8.2.4
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker7c is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -65,6 +66,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/raxml/8.2.7
 	module load bioinformatics/newickutilities/0.0
 else
+	echo -e "\nHybPhyloMaker7c is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -86,21 +88,31 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
-
-echo -e "\nHybPhyloMaker7c is running...\n"
 
 #Add necessary programs and files
 cp $source/mrp.jar .
 
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 else
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	if [ -z "$OUTGROUP" ]; then
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+	else
+		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+	fi
 fi
 
 #Make dir for results
@@ -136,8 +148,12 @@ fi
 sed -i.bak 's/XX/-/g' RAxML_bipartitions.MRLresult
 sed -i.bak 's/YY/_/g' RAxML_bipartitions.MRLresult
 
-#(Re)root a final MRL species tree with $OUTGROUP
-nw_reroot RAxML_bipartitions.MRLresult $OUTGROUP > MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+#(Re)root/rename a final MRL species tree with $OUTGROUP
+if [ -n "$OUTGROUP" ]; then
+	nw_reroot RAxML_bipartitions.MRLresult $OUTGROUP > MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+else
+	cp RAxML_bipartitions.MRLresult MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+fi
 
 #Modify labels in RAxML bipartitions (XX and YY to ' ')
 sed -i.bak 's/-/ /g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
@@ -145,6 +161,13 @@ sed -i.bak 's/_/ /g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 
 #Delete all *.bak files
 rm *.bak
+
+#Rename/delete files
+mv RAxML_info.MRLresult RAxML_MRL_info.log
+mv RAxML_bootstrap.MRLresult MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
+rm RAxML_bipartitionsBranchLabels.MRLresult
+rm RAxML_bipartitions.MRLresult
+rm RAxML_bestTree.MRLresult
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then

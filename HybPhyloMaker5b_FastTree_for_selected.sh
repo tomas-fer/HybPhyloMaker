@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                   Script 05b - FastTree gene tree building                   *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.1.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -33,7 +33,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker5b is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -51,7 +51,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker5b is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -66,7 +66,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load tools/R/3.2.1
 	
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker5b is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -78,12 +78,12 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
-
-echo -e "\nScript HybPhyloMaker5b is running..."
 
 #Add necessary scripts and files
 cp $source/catfasta2phyml.pl .
@@ -91,7 +91,7 @@ cp $source/CompareToBootstrap.pl .
 cp $source/MOTree.pm .
 cp $path/71selected${type}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 # Copy and modify selected FASTA files
-echo -e "\nModifying selected FASTA files...\n"
+echo -en "\nModifying selected FASTA files..."
 for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 do
 	cp $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
@@ -108,6 +108,7 @@ ls *.fas | cut -d"." -f1 > FileForFastTree.txt
 mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}
 mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
+echo -e "done\n"
 #----------------Generate gene trees using FastTree----------------
 echo -e "Generating FastTrees..."
 for file in $(cat FileForFastTree.txt); do
@@ -144,7 +145,7 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 		fi
 		#Loop over replicates and calculate FastTree for each of them
 		for i in {0..99}; do
-			echo -e "Replicate $i"
+			echo -en "Replicate $i"\\r
 			echo -e "\nFile: $file, replicate $i" >>FastTreeBoot.log
 			if [[ $location == "1" ]]; then
 				fasttreemp -nt ${file}.fas.BS${i} > ${file}.BS${i}.fast.tre 2>>FastTreeBoot.log
@@ -376,4 +377,4 @@ else
 	rm -r workdir05b
 fi
 
-echo -e "HybPhyloMaker 5b finished..."
+echo -e "HybPhyloMaker 5b finished...\n"
