@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  Script 05b2 - summary of RAxML gene trees                   *
-# *                                   v.1.1.0                                    *
+# *                                   v.1.1.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -30,7 +30,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker5b2 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker5b2 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -57,7 +57,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load tools/R/3.2.1
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker5b2 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -69,12 +69,12 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
-
-echo -e "\nScript HybPhyloMaker5a2 is running..."
 
 #----------------Make a summary table with statistical properties for trees using R----------------
 #Copy script
@@ -97,12 +97,17 @@ for i in *; do
 done
 cd ..
 
+#Set a log file for R outputs/error messages
+touch R.log
+
 #Run R script for tree properties calculation and for plotting histograms of resulting values
 echo -e "\nCalculating tree properties...\n"
-R --slave -f tree_props.r
+echo -e "Calculating tree properties using tree_props.r\n" >> R.log
+R --slave -f tree_props.r >> R.log 2>&1
 #Run R script for calculation of LB score
 echo -e "Calculating and parsing LB score...\n"
-R --slave -f LBscores.R
+echo -e "\nCalculating and parsing LB score using LBscores.R\n" >> R.log
+R --slave -f LBscores.R >> R.log 2>&1
 #Parse script output (LBscores.csv)
 echo -e "Taxon\tSum\tNrTrees\tMean" > LBscoresPerTaxon.txt
 echo -e "Locus\tLBscoreSD" > LBscoresSDPerLocus.txt
@@ -121,12 +126,13 @@ paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp 
 #Replace 'NaN' by '0' (otherwise following plotting in R will not work)
 sed -i.bak 's/NaN/0/g' tree_stats_table.csv
 echo -e "Plotting boxplots/histograms for tree properties...\n"
+echo -e "\nPlotting boxplots/histograms for tree properties using treepropsPlot.r\n" >> R.log
 if [[ $location == "1" ]]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
 	#xvfb-run R --slave -f treepropsPlot.r
-	R --slave -f treepropsPlot.r
+	R --slave -f treepropsPlot.r >> R.log 2>&1
 else
-	R --slave -f treepropsPlot.r
+	R --slave -f treepropsPlot.r >> R.log 2>&1
 fi
 
 #Copy results to home
@@ -174,17 +180,21 @@ sed -i.bak 's/LBscoreSD/LBscore_SD/' combined.txt
 
 #Run comparison plots for RAxML trees
 echo -e "Plotting gene properties correlations for RAxML trees...\n"
+echo -e "\nPlotting gene properties correlations for RAxML trees using plotting_correlations.R\n" >> R.log
 if [[ $location == "1" ]]; then
 	#Run R script for boxplot/histogram visualization (run via xvfb-run to enable generating PNG files without X11 server)
 	#xvfb-run R --slave -f plotting_correlations.R
-	R --slave -f plotting_correlations.R
+	R --slave -f plotting_correlations.R >> R.log 2>&1
 else
-	R --slave -f plotting_correlations.R
+	R --slave -f plotting_correlations.R >> R.log 2>&1
 fi
 cp genes_corrs.* $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 rm genes_corrs.*
 mv combined.txt gene_properties.txt
 cp gene_properties.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+
+#Copy R.log to home
+cp R.log $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Clean scratch/work directory
 if [ ! $LOGNAME == "" ]; then
@@ -195,4 +205,4 @@ else
 	rm -r workdir05a2
 fi
 
-echo -e "HybPhyloMaker 5a2 finished..."
+echo -e "HybPhyloMaker 5a2 finished...\n"
