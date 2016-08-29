@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                          Script 06 - Root gene trees                         *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.1.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -34,6 +34,7 @@
 
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "\nHybPhyloMaker6 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -46,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker6 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -58,6 +59,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load bioinformatics/newickutilities/0.0
 else
+	echo -e "\nHybPhyloMaker6 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -79,12 +81,12 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
-
-echo -e "\nScript HybPhyloMaker6 is running..."
 
 #If working with updated tree list select specific trees (otherwise copy all trees)
 if [[ $update =~ "yes" ]]; then
@@ -109,7 +111,7 @@ if [[ $update =~ "yes" ]]; then
 			fi
 		fi
 	done
-	echo -e "\nCombining trees..."
+	echo -e "Combining trees..."
 	cat *_modif* > trees.newick
 else
 	#Make dir for result
@@ -117,37 +119,52 @@ else
 	#Copy trees from home and make multitree file
 	if [[ $tree =~ "RAxML" ]]; then
 		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bipartitions.* .
+		echo -e "Combining trees..."
 		cat *bipartitions.* > trees.newick
 	else
 		cp `find $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree -maxdepth 1 ! -name '*boot*'` . 2>/dev/null
+		echo -e "Combining trees..."
 		cat *.tre > trees.newick
 	fi
 fi
 
+if [[ $cp =~ "yes" ]]; then
+	#Removing '_cpDNA' from gene trees in trees.newick
+	sed -i.bak 's/_cpDNA//g' trees.newick
+fi
+
 #Root trees with OUTGROUP using newick utilities
-echo -e "\nRerooting trees..."
-nw_reroot trees.newick $OUTGROUP > trees_rooted.newick 2>root_log.txt
-nrrooted=$(cat root_log.txt | wc -l)
-if [ $nrrooted -eq 0 ]; then
-	echo -e "All trees were rooted"
+if [ -z "$OUTGROUP" ]; then
+	echo -e "\nTrees will not be rooted, no outgroup was specified..."
 else
-	echo -e "$nrrooted trees were not rooted (Outgroup: ${OUTGROUP} was not found.)\nHowever, the file trees_rooted.newick is still suitable for ASTRAL, ASTRID and MRL analysis.\nIt will not work for any analysis requiring rooted trees, i.e., MP-EST."
+	echo -e "\nRerooting trees..."
+	nw_reroot trees.newick $OUTGROUP > trees_rooted.newick 2>root_log.txt
+	nrrooted=$(cat root_log.txt | wc -l)
+	if [ $nrrooted -eq 0 ]; then
+		echo -e "All trees were rooted"
+	else
+		echo -e "$nrrooted trees were not rooted (Outgroup: ${OUTGROUP} was not found.)\nHowever, the file trees_rooted.newick is still suitable for ASTRAL, ASTRID and MRL analysis.\nIt will not work for any analysis requiring rooted trees, i.e., MP-EST."
+	fi
 fi
 
 #Remove BS values (necessary for MP-EST via STRAW server?)
 echo -e "\nRemoving BS values from trees..."
-nw_topology -Ib trees_rooted.newick > trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+if [ -z "$OUTGROUP" ]; then
+	nw_topology -Ib trees.newick > trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick
+else
+	nw_topology -Ib trees_rooted.newick > trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+fi
 #Modify names: remove unwanted ends of names, replace '-' by XX and '_' by YY, find every XX after a digit and e and add XXXX, replace XXXX by '-' (to preserve numbers in scientific format)
-cat trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick | sed 's/_contigs.fas//g' | sed 's/.fas//g' | sed 's/-/XX/g' | sed 's/_/YY/g' | sed -r 's/([0-9]eXX)/\1XX/g' | sed 's/XXXX/-/g' > tmp && mv tmp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+if [ -z "$OUTGROUP" ]; then
+	cat trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick | sed 's/_contigs.fas//g' | sed 's/.fas//g' | sed 's/-/XX/g' | sed 's/_/YY/g' | sed -r 's/([0-9]eXX)/\1XX/g' | sed 's/XXXX/-/g' > tmp && mv tmp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick
+else
+	cat trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick | sed 's/_contigs.fas//g' | sed 's/.fas//g' | sed 's/-/XX/g' | sed 's/_/YY/g' | sed -r 's/([0-9]eXX)/\1XX/g' | sed 's/XXXX/-/g' > tmp && mv tmp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+fi
 #Copy multi-tree file to home
 if [[ $update =~ "yes" ]]; then
-	cp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
-	cp trees.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
-	cp trees_rooted.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+	cp trees*.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
 else
-	cp trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-	cp trees.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
-	cp trees_rooted.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
+	cp trees*.newick $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
 fi
 #This newick gene tree file can be used by HybPhyloMaker7a_astral.sh, HybPhyloMaker7b_astrid.sh, and HybPhyloMaker7c_mrl.sh
 
@@ -160,4 +177,4 @@ else
 	rm -r workdir06
 fi
 
-echo -e "\nScript HybPhyloMaker6 finished..."
+echo -e "\nScript HybPhyloMaker6 finished...\n"

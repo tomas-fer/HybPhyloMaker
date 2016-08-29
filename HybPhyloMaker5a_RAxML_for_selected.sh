@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.1.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -36,7 +36,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo "Metacentrum..."
+	echo -e "\nHybPhyloMaker5a is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo "Hydra..."
+	echo -e "\nHybPhyloMaker5a is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -57,7 +57,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir workdir05a
 	cd workdir05a
 else
-	echo "Local..."
+	echo -e "\nHybPhyloMaker5a is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -70,16 +70,16 @@ fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
 	type="_cp"
 else
+	echo -e "Working with exons\n"
 	type=""
 fi
 
-echo -e "\nScript HybPhyloMaker5a is running..."
-
 #Add necessary scripts and files
 cp $path/71selected${type}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
-mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}
+mkdir -p $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}
 mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 if [[ $location == "1" || $location == "2" ]]; then
@@ -173,7 +173,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 	done
 else
 	#Run locally, trees are generated serially one by one
-	echo -e "Generating RAxML trees with 100 rapid bootstrap replicates...\n"
+	echo -e "\nGenerating RAxML trees with 100 rapid bootstrap replicates...\n"
 	# Copy and modify selected FASTA files
 	echo -e "Modifying selected FASTA files...\n"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
@@ -188,13 +188,17 @@ else
 	done
 	#Make a list of all fasta files
 	ls *.fas | cut -d"." -f1 > FileForRAxMLTrees.txt
-	echo -e "Generating RAxML trees...\n"
+	echo -e "Generating RAxML trees..."
+	
 	for file in $(cat FileForRAxMLTrees.txt)
 	do
-		echo -e "\nProcessing file: ${file}"
-		$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100
+		echo -e "\nProcessing file: ${file}" >> raxml.log
+		echo -e "Processing file: ${file}"
+		$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
 		cp *$file.result $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
+#Copy raxml.log to home
+cp raxml.log $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
 
 #Clean scratch/work directory
