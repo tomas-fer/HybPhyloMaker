@@ -8,7 +8,7 @@ _Intermediate manual step - read mapping to 'pseudoreference' in Geneious, expor
 4. Treat missing data, select best genes  
 5. Generate FastTree or RAxML gene trees + trees-alignment properties  
 6. Root gene trees with outgroup, combine gene trees into a single file  
-7. Estimate species tree (ASTRAL, ASTRID, MRL, concatenation) 
+7. Estimate species tree (ASTRAL, ASTRID, MRL, concatenation)  
 8. Subselect suitable genes and repeat steps 6+7 
   
 Uses many additional software that must be installed and put in the PATH prior tu run scripts (see Table located in docs folder).  
