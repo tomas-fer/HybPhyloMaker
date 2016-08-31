@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.1.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -189,4 +189,4 @@ else
 	rm -r workdir02
 fi
 
-echo -e "Script HybPhyloMaker2 finished...\n"
+echo -e "\nScript HybPhyloMaker2 finished...\n"
