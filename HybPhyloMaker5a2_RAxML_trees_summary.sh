@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  Script 05b2 - summary of RAxML gene trees                   *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.1.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -197,9 +197,11 @@ cp gene_properties.txt $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/
 cp R.log $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Clean scratch/work directory
-if [ ! $LOGNAME == "" ]; then
+if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir05a2
