@@ -418,15 +418,17 @@ if [ -n "$OUTGROUP" ]; then
 	if [[ $mlbs =~ "yes" ]]; then
 		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
-		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+		if [[ $combine =~ "yes" ]]; then
+			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+			#Remove possible excessive zeros from combined tree
+			sed -i.bak11 's/.0000//g' Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+		fi
 	fi
 fi
 
 #Modify labels in Astrid trees
 sed -i.bak9 's/-/ /g' Astrid*.tre
 sed -i.bak10 's/_/ /g' Astrid*.tre
-#Remove possible excessive zeros from combined tree
-sed -i.bak11 's/.0000//g' Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
 
 #Copy results and logs to home
 if [[ $update =~ "yes" ]]; then
