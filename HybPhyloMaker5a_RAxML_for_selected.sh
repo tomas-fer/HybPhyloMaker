@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -31,12 +31,12 @@
 # Run first HybPipe4_missingdataremoval.sh with the same combination of $MISSINGPERCENT and $SPECIESPRESENCE values
 # If running locally, gene trees are produced serially (can be very SLOW with large alignment and lot of loci)
 # If running on cluster, separate jobs are produced, number of jobs and number of loci per job is controlled by $raxmlperjob
-# MetaCentrum runs all jobs manually, on Hydra go to homedir and run submitRAxMLjobs.sh
+# MetaCentrum runs all jobs automatically, on Hydra go to homedir and run submitRAxMLjobs.sh
 # After all gene trees are generated run HybPhyloMaker5a2_RAxML_trees_summary.sh to calculate tree properties and plot graphs
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker5a is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker5a is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -47,40 +47,75 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker5a is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker5a is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir05a
+	mkdir -p workdir05a
 	cd workdir05a
 else
-	echo -e "\nHybPhyloMaker5a is running locally...\n"
+	echo -e "\nHybPhyloMaker5a is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir05a
+	mkdir -p workdir05a
 	cd workdir05a
 fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
-	type="_cp"
+	type="cp"
 else
 	echo -e "Working with exons\n"
-	type=""
+	type="exons"
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [ -d "$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
+	if [ "$(ls -A $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
+		if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
+			rm -d ../workdir05a/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
+		rm -d ../workdir05a/ 2>/dev/null
+		exit 3
+	fi
+else
+	echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
+	rm -d ../workdir05a/ 2>/dev/null
+	exit 3
+fi
+
+#Test if folder for results exits
+if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
+	echo -e "Directory '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir05a/ 2>/dev/null
+	exit 3
+else
+	if [ "$(ls -A ../workdir05a)" ]; then
+		echo -e "Directory 'workdir05a' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir05a/ 2>/dev/null
+		exit 3
+	fi
 fi
 
 #Add necessary scripts and files
-cp $path/71selected${type}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
-mkdir -p $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}
-mkdir $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp $path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+mkdir -p $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}
+mkdir $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 if [[ $location == "1" || $location == "2" ]]; then
 	echo -e "\nGenerating multiple jobs with $raxmlperjob alignments per job..."
@@ -88,7 +123,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 	#Divide selected_genes$CUT.txt into files by $raxmlperjob
 	split --lines=$raxmlperjob selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.
 	rm selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
-	cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.* $path/71selected${type}${MISSINGPERCENT}
+	cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.* $path/$type/71selected${MISSINGPERCENT}
 	for group in $(ls selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.*)
 	do
 		echo '#!/bin/bash' >> ${group}.sh
@@ -127,11 +162,11 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'SPECIESPRESENCE='"$SPECIESPRESENCE" >> ${group}.sh
 		echo 'type='"$type" >> ${group}.sh
 		echo 'location='"$location" >> ${group}.sh
-		echo 'cp '"$path"'/71selected${type}${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
+		echo 'cp '"$path"'/$type/71selected${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
 		echo 'cp '"$source"'/catfasta2phyml.pl .' >> ${group}.sh
 		echo 'for i in $(cat '"$group"')' >> ${group}.sh
 		echo 'do' >> ${group}.sh
-		echo '  cp '"$path"'/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
+		echo '  cp '"$path"'/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
 		echo '  #Substitute '"'('"' by '"'_'"' and '"')'"' by nothing ('"'('"' and '"')'"' not allowed in RAxML)' >> ${group}.sh
 		echo '  sed -i '"'s/(/_/g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
 		echo '  sed -i '"'s/)//g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
@@ -150,7 +185,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  elif [[ $location == "2" ]]; then' >> ${group}.sh
 		echo '    $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
-		echo '  cp *$file.result '"$path"'/72trees'"${type}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '  cp *$file.result '"$path"'/$type/72trees'"${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
@@ -163,10 +198,10 @@ if [[ $location == "1" || $location == "2" ]]; then
 		
 		chmod +x ${group}.sh
 		if [[ $location == "1" ]]; then
-			cp ${group}.sh $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+			cp ${group}.sh $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 			qsub ${group}.sh
 		else
-			cp ${group}.sh $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+			cp ${group}.sh $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 			cp ${group}.sh ..
 			echo 'qsub '"${group}"'.sh' >> ../submitRAxMLjobs.sh
 		fi
@@ -178,7 +213,7 @@ else
 	echo -e "Modifying selected FASTA files...\n"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 	do
-		cp $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
+		cp $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
 		#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML)
 		sed -i.bak 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
 		sed -i.bak 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
@@ -189,22 +224,25 @@ else
 	#Make a list of all fasta files
 	ls *.fas | cut -d"." -f1 > FileForRAxMLTrees.txt
 	echo -e "Generating RAxML trees..."
-	
-	for file in $(cat FileForRAxMLTrees.txt)
-	do
+	numbertrees=$(cat FileForRAxMLTrees.txt | wc -l)
+	calculating=0
+	for file in $(cat FileForRAxMLTrees.txt); do
+		calculating=$((calculating + 1))
 		echo -e "\nProcessing file: ${file}" >> raxml.log
-		echo -e "Processing file: ${file}"
+		echo -e "Processing file: ${file} ($calculating out of $numbertrees)"
 		$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
-		cp *$file.result $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+		cp *$file.result $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
 #Copy raxml.log to home
-cp raxml.log $path/72trees${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp raxml.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir05a

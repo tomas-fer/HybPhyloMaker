@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 07c - MRL species tree                         *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -37,7 +37,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker7c is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker7c is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,48 +52,117 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add raxml-8.2.4
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker7c is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker7c is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir07c
+	mkdir -p workdir07c
 	cd workdir07c
 	#Add necessary modules
 	module load java/1.7
 	module load bioinformatics/raxml/8.2.7
 	module load bioinformatics/newickutilities/0.0
 else
-	echo -e "\nHybPhyloMaker7c is running locally...\n"
+	echo -e "\nHybPhyloMaker7c is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir07c
+	mkdir -p workdir07c
 	cd workdir07c
 fi
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=80concatenated_exon_alignments_corrected
-	alnpathselected=81selected_corrected
-	treepath=82trees_corrected
-else
-	alnpath=70concatenated_exon_alignments
-	alnpathselected=71selected
-	treepath=72trees
-fi
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
-	echo -e "Working with cpDNA\n"
-	type="_cp"
+	echo -en "Working with cpDNA"
+	type="cp"
 else
-	echo -e "Working with exons\n"
-	type=""
+	echo -en "Working with exons"
+	type="exons"
 fi
+
+if [[ $update =~ "yes" ]]; then
+	echo -e "...and with updated gene selection\n"
+else
+	echo -e "\n"
+fi
+
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [[ $update =~ "yes" ]]; then
+	if [ -z "$OUTGROUP" ]; then
+		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+			rm -d ../workdir07c 2>/dev/null
+			exit 3
+		fi
+	else
+		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+			rm -d ../workdir07c 2>/dev/null
+			exit 3
+		fi
+	fi
+else
+	if [ -z "$OUTGROUP" ]; then
+		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+			rm -d ../workdir07c 2>/dev/null
+			exit 3
+		fi
+	else
+		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+			rm -d ../workdir07c 2>/dev/null
+			exit 3
+		fi
+	fi
+fi
+
+#Test if folder for results exits
+if [[ $update =~ "yes" ]]; then
+	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07c 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07c 2>/dev/null
+		exit 3
+	fi
+fi
+if [ "$(ls -A ../workdir07c)" ]; then
+	echo -e "Directory 'workdir07c' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir07a 2>/dev/null
+	exit 3
+fi
+
 
 #Add necessary programs and files
 cp $source/mrp.jar .
@@ -101,25 +170,25 @@ cp $source/mrp.jar .
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
 		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
 	fi
 else
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
 		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
 	fi
 fi
 
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
-	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
 else
-	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
 fi
 
 #Make MRP matrix
@@ -171,15 +240,17 @@ rm RAxML_bestTree.MRLresult
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
-	cp *MR* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+	cp *MR* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
 else
-	cp *MR* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+	cp *MR* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
 fi
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir07c

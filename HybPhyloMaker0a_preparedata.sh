@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 00a - Download & prepare data                     *
-# *                                   v.1.1.4                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -80,7 +80,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir00_dataprep
+	mkdir -p workdir00_dataprep
 	cd workdir00_dataprep
 	#Add necessary modules
 	module load tools/gnuparallel/20160422
@@ -92,8 +92,46 @@ else
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir00_dataprep
+	mkdir -p workdir00_dataprep
 	cd workdir00_dataprep
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [ -d "$path/10rawreads" ]; then
+	echo -e "Directory '$path/10rawreads' already exists. Exiting...\n"
+	rm -d ../workdir00_dataprep/ 2>/dev/null
+	exit 3
+else
+	if [ -f "../renamelist.txt" ]; then
+		if [[ $download =~ "yes" ]]; then
+			if [ -f "../token_header.txt" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'token_header.txt' is missing in 'homedir'. Exiting...\n"
+				rm -d ../workdir00_dataprep/ 2>/dev/null
+				exit 3
+			fi
+		else
+			if [ 0 -lt $(ls ../*fastq.gz 2>/dev/null | wc -w) ]; then
+				echo -e "OK\n"
+			else
+				echo -e "No *.fastq.gz files in 'homedir'. Exiting...\n"
+				rm -d ../workdir00_dataprep/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	else
+		echo -e "'renamelist.txt' is missing in 'homedir'. Exiting...\n"
+		rm -d ../workdir00_dataprep/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+if [ "$(ls -A ../workdir00_dataprep)" ]; then
+	echo -e "Directory 'workdir00_dataprep' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir00_dataprep/ 2>/dev/null
+	exit 3
 fi
 
 #Make folder for your data
@@ -163,7 +201,9 @@ cp -r 10rawreads $path
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir00_dataprep

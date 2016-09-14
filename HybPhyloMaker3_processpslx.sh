@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 03 - Process pslx files                        *
-# *                                   v.1.1.2                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -32,7 +32,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker3 is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker3 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,7 +52,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add parallel
 	module add perl-5.10.1
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker3 is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker3 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -62,13 +62,13 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	otherpslxpath=../$otherpslx
 	otherpslxcppath=../$otherpslxcp
 	#Make and enter work directory
-	mkdir workdir03
+	mkdir -p workdir03
 	cd workdir03
 	#Add necessary modules
 	module load bioinformatics/mafft/7.221
 	module load tools/gnuparallel/20160422
 else
-	echo -e "\nHybPhyloMaker3 is running locally...\n"
+	echo -e "\nHybPhyloMaker3 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -78,17 +78,80 @@ else
 	otherpslxpath=../$otherpslx
 	otherpslxcppath=../$otherpslxcp
 	#Make and enter work directory
-	mkdir workdir03
+	mkdir -p workdir03
 	cd workdir03
 fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
-	type="_cp"
+	type="cp"
 else
 	echo -e "Working with exons\n"
-	type=""
+	type="exons"
+fi
+
+#Check necessary files
+echo -ne "Testing if input data are available..."
+if [[ $cp =~ "yes" ]]; then
+	if [ -f "$source/$cpDNACDS" ]; then
+		if [ -d "$otherpslxcppath" ]; then
+			if [ "$(ls -A $otherpslxcppath)" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$otherpslxcppath' is empty. Move desired *.pslx files into it.\nExiting...\n"
+				rm -d ../workdir03/ 2>/dev/null
+				exit 3
+			fi
+		else
+			echo -e "'$otherpslxcppath' does not exists. Create this directory and move desired *.pslx files into it.\nExiting...\n"
+			rm -d ../workdir03/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
+		rm -d ../workdir03/ 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -f "$source/$probes" ]; then
+		if [ -d "$otherpslxpath" ]; then
+			if [ "$(ls -A $otherpslxpath)" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$otherpslxpath' is empty. Move desired *.pslx files into it.\nExiting...\n"
+				rm -d ../workdir03/ 2>/dev/null
+				exit 3
+			fi
+		else
+			echo -e "'$otherpslxpath' does not exists. Create this directory and move desired *.pslx files into it.\nExiting...\n"
+			rm -d ../workdir03/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
+		rm -d ../workdir03/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folder for results exits
+if [ -d "$path/$type/60mafft" ]; then
+	echo -e "Directory '$path/$type/60mafft' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir03/ 2>/dev/null
+	exit 3
+else
+	if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
+		echo -e "Directory '$path/$type/70concatenated_exon_alignments' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir03/ 2>/dev/null
+		exit 3
+	else
+		if [ "$(ls -A ../workdir03)" ]; then
+			echo -e "Directory 'workdir03' already exists. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir03/ 2>/dev/null
+			exit 3
+		fi
+	fi
 fi
 
 #-----------------------COMBINATION OF SEQUENCES OF THE EXONS OF EACH ACCESSION-----------------------
@@ -140,9 +203,11 @@ cd contigsMatchLoci
 ls *.fasta > listOfFastaFiles.txt
 #Make a new folder for results
 if [[ $location == "1" ]]; then
-	mkdir $path/60mafft${type}
+	mkdir -p $path/$type
+	mkdir $path/$type/60mafft
 else
-	mkdir ../$path/60mafft${type}
+	mkdir -p ../$path/$type
+	mkdir ../$path/$type/60mafft
 fi
 #A loop/parallelization to process all samples in folders named as specified in listOfFastaFiles.txt
 if [[ $cp =~ "yes" ]]; then
@@ -157,19 +222,22 @@ if [[ $cp =~ "yes" ]]; then
 			cat listOfFastaFiles.txt | parallel --eta -j $numbcores 'mafft --auto {} > {}.mafft 2>/dev/null'
 		fi
 		# if [ ! $LOGNAME == "" ]; then
-			# cp *.mafft $path/60mafft_cp
+			# cp *.mafft $path/$type/60mafft
 		# else
-			# cp *.mafft ../$path/60mafft_cp
+			# cp *.mafft ../$path/$type/60mafft
 		# fi
 	else
 		echo -e "\nAligning exons using MAFFT one by one..."
+		numberfiles=$(cat listOfFastaFiles.txt | wc -l)
+		calculating=0
 		for fastafile in $(cat listOfFastaFiles.txt); do
-			echo $fastafile
+			calculating=$((calculating + 1))
+			echo -e "$fastafile ($calculating out of $numberfiles)"
 			mafft --auto $fastafile > $fastafile.mafft 2>/dev/null
 			# if [ ! $LOGNAME == "" ]; then
-				# cp $fastafile.mafft $path/60mafft_cp
+				# cp $fastafile.mafft $path/$type/60mafft
 			# else
-				# cp $fastafile.mafft ../$path/60mafft_cp
+				# cp $fastafile.mafft ../$path/$type/60mafft
 			# fi
 		done
 	fi
@@ -198,19 +266,22 @@ else
 			cat listOfFastaFiles.txt | parallel --eta -j $numbcores 'mafft --auto {} > {}.mafft 2>/dev/null'
 		fi
 		if [[ $location == "1" ]]; then
-			cp *.mafft $path/60mafft
+			cp *.mafft $path/$type/60mafft
 		else
-			find . -name "*.mafft" -exec cp -t ../$path/60mafft/ {} +
+			find . -name "*.mafft" -exec cp -t ../$path/$type/60mafft/ {} +
 		fi
 	else
 		echo -e "\nAligning exons using MAFFT one by one..."
+		numberfiles=$(cat listOfFastaFiles.txt | wc -l)
+		calculating=0
 		for fastafile in $(cat listOfFastaFiles.txt); do
-			echo $fastafile
+			calculating=$((calculating + 1))
+			echo -e "$fastafile ($calculating out of $numberfiles)"
 			mafft --auto $fastafile > $fastafile.mafft 2>/dev/null
 			if [[ $location == "1" ]]; then
-				cp $fastafile.mafft $path/60mafft
+				cp $fastafile.mafft $path/$type/60mafft
 			else
-				cp $fastafile.mafft ../$path/60mafft
+				cp $fastafile.mafft ../$path/$type/60mafft
 			fi
 		done
 	fi
@@ -229,9 +300,10 @@ do
 	#Removes line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' $mafftfile > tmp && mv tmp $mafftfile
 	#Replace leading and tailing '-' by '?'
-	sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
+	#sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
+	perl -pe 's/\G-|-(?=-*$)/?/g' $mafftfile > tmp && mv tmp $mafftfile
 	if [[ $cp =~ "yes" ]]; then
-		cp $mafftfile ../$path/60mafft_cp
+		cp $mafftfile ../$path/$type/60mafft
 	fi
 done
 echo -e "finished"
@@ -257,9 +329,9 @@ if [[ $cp =~ "no" ]]; then
 		#Add necessary module
 		#module add perl-5.10.1
 		#Make a new folder for results
-		mkdir $path/70concatenated_exon_alignments
+		mkdir $path/$type/70concatenated_exon_alignments
 	else
-		mkdir ../$path/70concatenated_exon_alignments
+		mkdir ../$path/$type/70concatenated_exon_alignments
 	fi
 	#Concatenate the exon alignments (values from first and second column of fileForLoop.txt are assigned to variable 'a' and 'b', respectively),
 	#transform fasta to phylip format, copy results from scratch to home
@@ -268,9 +340,9 @@ if [[ $cp =~ "no" ]]; then
 		perl catfasta2phyml.pl -f $a > $b.fasta
 		perl catfasta2phyml.pl $b.fasta > $b.phylip
 		if [[ $location == "1" ]]; then
-			cp $b.* $path/70concatenated_exon_alignments
+			cp $b.* $path/$type/70concatenated_exon_alignments
 		else
-			cp $b.* ../$path/70concatenated_exon_alignments
+			cp $b.* ../$path/$type/70concatenated_exon_alignments
 		fi
 	done
 	echo -e "finished"
@@ -282,7 +354,9 @@ cd ..
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir03

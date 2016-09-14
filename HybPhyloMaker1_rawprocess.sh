@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.1.4                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -54,7 +54,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir01
+	mkdir -p workdir01
 	cd workdir01
 	#Add necessary modules
 	module load bioinformatics/bam2fastq/1.1.0
@@ -71,8 +71,20 @@ else
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir01
+	mkdir -p workdir01
 	cd workdir01
+fi
+
+if [ "$(ls -A ../workdir01)" ]; then
+	echo -e "Directory 'workdir01' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir01/ 2>/dev/null
+	exit 3
+else
+	if [ -d "$path/20filtered" ]; then
+		echo -e "Directory '$path/20filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir01/ 2>/dev/null
+		exit 3
+	fi
 fi
 
 #Test data structure
@@ -87,18 +99,26 @@ if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 		sed -i.bak2 '/^$/d' SamplesFileNames.txt
 		for sample in $(cat SamplesFileNames.txt); do
 			if [ ! -d "$path/10rawreads/$sample" ]; then #Test if each samples-specific folder exists
-				echo "Directory $sample does not exist." && exit 3
+				echo "Directory $sample does not exist.\n"
+				rm -d ../workdir01/ 2>/dev/null
+				exit 3
 			else
 				if [ ! -f "$path/10rawreads/$sample/${sample}_"*"R1"*".fastq.gz" ] || [ ! -f "$path/10rawreads/$sample/${sample}_"*"R2"*".fastq.gz" ]; then #Test if FASTQ.gz files exist
-					echo "Proper fastq.gz files missing in $sample folder..." && exit 3
+					echo "Proper fastq.gz files missing in $sample folder...\n"
+					rm -d ../workdir01/ 2>/dev/null
+					exit 3
 				fi
 			fi
 		done
 	else
-		echo "List of samples (SamplesFileNames.txt) is missing. Should be in 10rawreads..." && exit 3
+		echo "List of samples (SamplesFileNames.txt) is missing. Should be in 10rawreads...\n"
+		rm -d ../workdir01/ 2>/dev/null
+		exit 3
 	fi
 else
-	echo "Folder 10rawreads does not exist within your homedir" && exit 3
+	echo "Folder 10rawreads does not exist within your homedir.\n"
+	rm -d ../workdir01/ 2>/dev/null
+	exit 3
 fi
 echo -e "OK for running HybPhyloMaker...\n"
 
@@ -112,7 +132,7 @@ cp $source/trimmomatic-0.33.jar .
 #Make a new folder for results
 mkdir $path/20filtered
 #Create a reference PhiX index
-echo -e "Creating PhiX reference...\n"
+echo -en "Creating PhiX reference..."
 bowtie2-build PhiX.fsa phiX.index 1>buildPhiX.log
 
 #Add LF at the end of last line in SamplesFileNames.txt if missing
@@ -121,9 +141,12 @@ sed -i.bak '$a\' SamplesFileNames.txt
 sed -i.bak2 '/^$/d' SamplesFileNames.txt
 
 #A loop to process all samples in folders named as specified in SaplesFileNames.txt
+numberfiles=$(cat SamplesFileNames.txt | wc -l)
+calculating=0
 for file in $(cat SamplesFileNames.txt)
 do
-	echo -e "\nProcessing sample $file"
+	calculating=$((calculating + 1))
+	echo -e "\nProcessing sample $file ($calculating out of $numberfiles)"
 	#Make a new folder for results
 	mkdir $path/20filtered/$file
 	#Go to sample folder
@@ -243,7 +266,9 @@ cp reads_summary.txt $path/20filtered/
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir01

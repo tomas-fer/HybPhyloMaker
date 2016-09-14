@@ -10,7 +10,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 07f - ExaML concatenated tree                     *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -30,7 +30,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker7f is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker7f is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -47,62 +47,129 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add raxml-8.2.8
 	module add perl-5.20.1-gcc
 else
-	echo -e "\nHybPhyloMaker7f is running locally...\n"
+	echo -e "\nHybPhyloMaker7f is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir07f
+	mkdir -p workdir07f
 	cd workdir07f
 fi
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=80concatenated_exon_alignments_corrected
-	alnpathselected=81selected_corrected
-	treepath=82trees_corrected
-else
-	alnpath=70concatenated_exon_alignments
-	alnpathselected=71selected
-	treepath=72trees
-fi
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
-	type="_cp"
+	echo -en "Working with cpDNA"
+	type="cp"
 else
-	type=""
+	echo -en "Working with exons"
+	type="exons"
 fi
 
+if [[ $update =~ "yes" ]]; then
+	echo -e "...and with updated gene selection\n"
+else
+	echo -e "\n"
+fi
+
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [[ $update =~ "yes" ]]; then
+	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
+		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
+			rm -d ../workdir07f 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
+		rm -d ../workdir07f 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
+		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
+			rm -d ../workdir07f 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
+		rm -d ../workdir07f 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folder for results exits
+if [[ $update =~ "yes" ]]; then
+	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07f 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07f 2>/dev/null
+		exit 3
+	fi
+fi
+if [ "$(ls -A ../workdir07f)" ]; then
+	echo -e "Directory 'workdir07f' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir07f 2>/dev/null
+	exit 3
+fi
+
+
 #Check if there is already partition file (PartitionFinder was already run)
-if [ -f $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt ]; then
+if [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt ]; then
 	echo "Partition file found, skipping PartitionFinder run..."
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt .
-	cp $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt .
+	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+elif [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/RAxMLpartitions.txt ]; then
+	echo "Partition file found, skipping PartitionFinder run..."
+	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/RAxMLpartitions.txt .
+	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
 else
 	echo "Running concatenation and PartitionFinder first..."
 	#Add necessary scripts and files
 	cp $source/AMAS.py .
 	#Copy list of genes
 	if [[ $update =~ "yes" ]]; then
-		cp $path/${alnpathselected}${type}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+		cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
 		mv selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 	else
-		cp $path/${alnpathselected}${type}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+		cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 	fi
 	
 	# Make new dir for results
 	if [[ $update =~ "yes" ]]; then
-		mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
-		mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
+		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 	else
-		mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 	fi
 	
 	# Copy and modify selected FASTA files
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
 		#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
-		cp $path/${alnpathselected}${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
+		cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
 		#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML/FastTree)
 		sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 		sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
@@ -119,11 +186,11 @@ else
 	#Copy concatenated file to home
 	#Make new dir for results
 	if [[ $update =~ "yes" ]]; then
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 	else
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 	fi
 	
 	# Prepare partition_finder.cfg
@@ -160,12 +227,12 @@ else
 	echo -e "\nPartitionFinder finished...\n"
 	#Copy results to home
 	if [[ $update =~ "yes" ]]; then
-		cp -r PartitionFinder $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-		cp RAxMLpartitions.txt $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp -r PartitionFinder $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp RAxMLpartitions.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 	else
-		mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-		cp -r PartitionFinder $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-		cp RAxMLpartitions.txt $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp -r PartitionFinder $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp RAxMLpartitions.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 	fi
 fi
 
@@ -177,11 +244,11 @@ raxmlHPC -y -m GTRCAT -p 12345 -s concatenated${MISSINGPERCENT}_${SPECIESPRESENC
 if [ -f RAxMLpartitions.txt.reduced ]; then
 	echo "Reduced alignment found...using it"
 	if [[ $update =~ "yes" ]]; then
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.reduced $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-		cp RAxMLpartitions.txt.reduced $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.reduced $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		cp RAxMLpartitions.txt.reduced $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 	else
-		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.reduced $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-		cp RAxMLpartitions.txt.reduced $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.reduced $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		cp RAxMLpartitions.txt.reduced $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 	fi
 	rm RAxMLpartitions.txt
 	mv RAxMLpartitions.txt.reduced RAxMLpartitions.txt
@@ -208,11 +275,11 @@ timespan=`echo "scale=2;($timenow-$time)/60" | bc`
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
-	cp ExaML* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-	echo -e "BestML done...in $timespan mins" >> $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaML_bootstrap_progress.txt
+	cp ExaML* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+	echo -e "BestML done...in $timespan mins" >> $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaML_bootstrap_progress.txt
 else
-	cp ExaML* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-	echo -e "BestML done...in $timespan mins" >> $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaML_bootstrap_progress.txt
+	cp ExaML* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+	echo -e "BestML done...in $timespan mins" >> $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaML_bootstrap_progress.txt
 fi
 
 #Bootstrap ExaML
@@ -235,11 +302,11 @@ do
 	timenow=`date +%s`
 	timespan=`echo "scale=2;($timenow-$time)/60" | bc`
 	if [[ $update =~ "yes" ]]; then
-		echo -e "Bootstrap $i done...in $timespan mins" >> $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaML_bootstrap_progress.txt
-		cp ExaML_result.BINF_${i} $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+		echo -e "Bootstrap $i done...in $timespan mins" >> $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaML_bootstrap_progress.txt
+		cp ExaML_result.BINF_${i} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 	else
-		echo -e "Bootstrap $i done...in $timespan mins" >> $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaML_bootstrap_progress.txt
-		cp ExaML_result.BINF_${i} $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+		echo -e "Bootstrap $i done...in $timespan mins" >> $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaML_bootstrap_progress.txt
+		cp ExaML_result.BINF_${i} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 	fi
 done
 
@@ -260,23 +327,25 @@ mv RAxML_bipartitions.ExaML_Bootstrap ExaML_bootstrap_${MISSINGPERCENT}_${SPECIE
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
-	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaMLfiles
-	cp *ExaML* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaMLfiles
-	cp ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-	cp ExaML_bootstrap.trees $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
-	cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaMLfiles
+	cp *ExaML* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaMLfiles
+	cp ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+	cp ExaML_bootstrap.trees $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
+	cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML
 else
-	mkdir $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaMLfiles
-	cp *ExaML* $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaMLfiles
-	cp ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-	cp ExaML_bootstrap.trees $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
-	cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${type}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaMLfiles
+	cp *ExaML* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML/ExaMLfiles
+	cp ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+	cp ExaML_bootstrap.trees $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
+	cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/concatenatedExaML
 fi
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir07f

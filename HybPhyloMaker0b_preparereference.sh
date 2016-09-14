@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.1.1                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -48,7 +48,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir00_ref
+	mkdir -p workdir00_ref
 	cd workdir00_ref
 else
 	echo -e "\nHybPhyloMaker0b is running locally...\n"
@@ -58,8 +58,37 @@ else
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir00_ref
+	mkdir -p workdir00_ref
 	cd workdir00_ref
+fi
+
+# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
+name=`ls $source/$probes | cut -d'.' -f 1`
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [ ! -f "$source/$probes" ]; then
+	echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
+	rm -d ../workdir00_ref/ 2>/dev/null
+	exit 3
+else
+	cp $source/$probes .
+	# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
+	name=`ls $probes | cut -d'.' -f 1`
+	rm $probes
+	if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
+		echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir00_ref/ 2>/dev/null
+		exit
+	else
+		echo -e "OK\n"
+	fi
+fi
+
+if [ "$(ls -A ../workdir00_ref)" ]; then
+	echo -e "Directory 'workdir00_ref' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir00_ref/ 2>/dev/null
+	exit 3
 fi
 
 #Copy probe sequence file
@@ -83,12 +112,14 @@ cat $probes | awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = ""
 #Copy pseudoreference to home
 cp ${name}_with${nrns}Ns_beginend.fas $source
 
-echo -e "Pseudoreference named ${name}_with${nrns}Ns_beginend.fas was prepared and saved to $source..."
+echo -e "Pseudoreference named '${name}_with${nrns}Ns_beginend.fas' was prepared and saved to '$source'..."
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir00_ref

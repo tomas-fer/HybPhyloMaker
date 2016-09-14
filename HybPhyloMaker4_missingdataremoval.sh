@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 04 - Missing data handling                       *
-# *                                   v.1.1.4                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -41,7 +41,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker4 is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker4 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -59,14 +59,14 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker4 is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker4 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir04
+	mkdir -p workdir04
 	cd workdir04
 	#Add necessary modules
 	module load bioinformatics/anaconda3/2.3.0
@@ -74,7 +74,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/mstatx
 	module load tools/R/3.2.1
 else
-	echo -e "\nHybPhyloMaker4 is running locally...\n"
+	echo -e "\nHybPhyloMaker4 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -83,36 +83,83 @@ else
 	source=../HybSeqSource
 	#echo -e "Source is: $source\n"
 	#Make and enter work directory
-	mkdir workdir04
+	mkdir -p workdir04
 	cd workdir04
 fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
-	type="_cp"
+	type="cp"
 else
 	echo -e "Working with exons\n"
-	type=""
+	type="exons"
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [[ $cp =~ "yes" ]]; then
+	if [ -d "$path/$type/60mafft" ]; then
+		if [ "$(ls -A $path/$type/60mafft)" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/$type/60mafft' is empty. Exiting...\n"
+			rm -d ../workdir04/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/$type/60mafft' is missing. Exiting...\n"
+		rm -d ../workdir04/ 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
+		if [ "$(ls -A $path/$type/70concatenated_exon_alignments)" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$path/$type/70concatenated_exon_alignments' is empty. Exiting...\n"
+			rm -d ../workdir04/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/$type/70concatenated_exon_alignments' is missing. Exiting...\n"
+		rm -d ../workdir04/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folder for results exits
+if [ -d "$path/$type/71selected${MISSINGPERCENT}" ]; then
+	echo -e "Directory '$path/$type/71selected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir04/ 2>/dev/null
+	exit 3
+else
+	if [ "$(ls -A ../workdir04)" ]; then
+		echo -e "Directory 'workdir04' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir04/ 2>/dev/null
+		exit 3
+	fi
 fi
 
 #Copy data folder to scratch
 if [[ $cp =~ "yes" ]]; then
-	cp $path/60mafft_cp/*.fasta .
+	cp $path/$type/60mafft/*.fasta .
 	#Rename *.mafft to *.fasta
 	# for file in *.mafft; do
 		# mv "$file" "${file%.fasta.mafft}.fasta"
 	# done
 else
-	cp $path/70concatenated_exon_alignments/*.fasta .
+	cp $path/$type/70concatenated_exon_alignments/*.fasta .
 fi
 
 #-----------PREPARE ALIGNMENTS WITH SPECIES WITH MAXIMUM SPECIFIED MISSING DATA ONLY----------------------
 #Make a list of all fasta files
 ls *.fasta | cut -d"." -f1 > fileForDeletePercentage.txt
 #Make new dir for results
-mkdir $path/71selected${type}${MISSINGPERCENT}
-mkdir $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+mkdir $path/$type/71selected${MISSINGPERCENT}
+mkdir $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+numberfiles=$(cat fileForDeletePercentage.txt | wc -l)
+calculating=0
 for file in $(cat fileForDeletePercentage.txt)
 do
 	#Delete empty lines (to be on the safe side...)
@@ -167,12 +214,13 @@ do
 	#sed -i.bak '/^>/{s/ /\n/}' ${file}_modif${MISSINGPERCENT}.fas
 	cat ${file}_modif${MISSINGPERCENT}.fas | tr " " "\n" > tmp && mv tmp ${file}_modif${MISSINGPERCENT}.fas
 	#Copy results home
-	cp ${file}_${MISSINGPERCENT}percN.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
-	cp ${file}_modif${MISSINGPERCENT}.fas $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
-	echo -e "\t$file processed\n"
+	cp ${file}_${MISSINGPERCENT}percN.fas $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	cp ${file}_modif${MISSINGPERCENT}.fas $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	calculating=$((calculating + 1))
+	echo -e "\t$file processed ($calculating out of $numberfiles)\n"
 done
 echo -e "\nDeleting samples with more than ${MISSINGPERCENT}% missing data finished."
-echo -e "Modified alignments saved in $path/71selected${type}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
+echo -e "Modified alignments saved in $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
 
 #-----------MAKE A TABLE WITH % OF MISSING DATA IN EACH SPECIES AND ASSEMBLY----------------------
 #Prepare header file
@@ -186,7 +234,7 @@ awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); prin
 sed -i.bak '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
 paste headers.txt missing_percentage_overview.txt > missing_percentage_overview_and_headers.txt
-cp missing_percentage_overview_and_headers.txt $path/71selected${type}${MISSINGPERCENT}
+cp missing_percentage_overview_and_headers.txt $path/$type/71selected${MISSINGPERCENT}
 
 # Transpose data matrix (with percentages of missing data)
 awk '
@@ -235,8 +283,8 @@ sed -i '1s/ 0/ nr_assemblies_with_completely_missing_data/' transposedPlusMeanPl
 # Combine AssembliesList.txt and transposedPlusMeanPlusNumberOf100.txt
 paste AssembliesList.txt transposedPlusMeanPlusNumberOf100.txt > MissingDataOverview.txt
 # Copy table and list to home
-cp MissingDataOverview.txt $path/71selected${type}${MISSINGPERCENT}
-echo -e "Table with % of missing data per gene and sample saved to $path/71selected${MISSINGPERCENT}\n"
+cp MissingDataOverview.txt $path/$type/71selected${MISSINGPERCENT}
+echo -e "Table with % of missing data per gene and sample saved to $path/$type/71selected${MISSINGPERCENT}\n"
 
 #-----------SELECTION OF MOST COMPLETE ASSEMBLIES----------------------
 # (i.e., only containing species with at least $MISSINGPERCENT data and are present at least in $SPECIESPRESENCE of samples)
@@ -289,8 +337,8 @@ cat MissingDataOverview_${MISSINGPERCENT}.txt average_missing_${MISSINGPERCENT}.
 # Select assemblies with more than 75% of species (and delete first and last line including header and sum legend)
 awk -F' ' -v val=$SPECIESPRESENCE '( $(NF) > val/100 ) { print $1 }' MissingDataOverview_${MISSINGPERCENT}.txt | tail -n +2 | head -n -2 > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 # Copy table and list to home
-cp MissingDataOverview_${MISSINGPERCENT}.txt $path/71selected${type}${MISSINGPERCENT}
-cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${type}${MISSINGPERCENT}
+cp MissingDataOverview_${MISSINGPERCENT}.txt $path/$type/71selected${MISSINGPERCENT}
+cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/$type/71selected${MISSINGPERCENT}
 echo -e "Assemblies including at least ${SPECIESPRESENCE}% of species selected"
 
 #-----------CALCULATE CHARACTERISTICS FOR ALL GENES AND FOR SELECTED GENES (USING AMAS)----------------------
@@ -345,8 +393,8 @@ else
 	R --slave -f alignmentSummary.R
 fi
 #Copy summary table to home
-cp summaryALL.txt $path/71selected${type}${MISSINGPERCENT}
-cp *.png $path/71selected${type}${MISSINGPERCENT}
+cp summaryALL.txt $path/$type/71selected${MISSINGPERCENT}
+cp *.png $path/$type/71selected${MISSINGPERCENT}
 rm summaryALL.txt
 rm *.png
 # 2. For selected genes
@@ -401,13 +449,15 @@ mv summaryALL.txt summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 #Rename all PNG files generated by R (add '_${MISSINGPERCENT}_${SPECIESPRESENCE}')
 for file in *.png; do mv "$file" "${file/.png/_${MISSINGPERCENT}_${SPECIESPRESENCE}.png}"; done
 #Copy summary table and PNG files to home
-cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/71selected${type}${MISSINGPERCENT}
-cp *.png $path/71selected${type}${MISSINGPERCENT}
+cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/$type/71selected${MISSINGPERCENT}
+cp *.png $path/$type/71selected${MISSINGPERCENT}
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir04

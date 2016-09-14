@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.1.3                                    *
+# *                                   v.1.2.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -34,7 +34,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker2 is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker2 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
@@ -49,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add blat-suite-34
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker2 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -58,12 +58,12 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	othersourcepath=../$othersource
 	otherpslxpath=../$otherpslx
 	#Make and enter work directory
-	mkdir workdir02
+	mkdir -p workdir02
 	cd workdir02
 	#Add necessary modules
 	module load bioinformatics/blat/36x1
 else
-	echo -e "\nHybPhyloMaker2 is running locally...\n"
+	echo -e "\nHybPhyloMaker2 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -72,23 +72,75 @@ else
 	othersourcepath=../$othersource
 	otherpslxpath=../$otherpslx
 	#Make and enter work directory
-	mkdir workdir02
+	mkdir -p workdir02
 	cd workdir02
 fi
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
-	type="_cp"
+	type="cp"
 else
 	echo -e "Working with exons\n"
-	type=""
+	type="exons"
+fi
+
+#Check necessary file
+echo -ne "Testing if input data are available..."
+if [[ $cp =~ "yes" ]]; then
+	if [ -f "$path/30consensus/consensus_cpDNA.fasta" ]; then
+		if [ -f "$source/$cpDNACDS" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
+			rm -d ../workdir02/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/30consensus/consensus_cpDNA.fasta' is missing. Exiting...\n"
+		rm -d ../workdir02/ 2>/dev/null
+		exit 3
+	fi
+else
+	if [ -f "$path/30consensus/consensus.fasta" ]; then
+		if [ -f "$source/$probes" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
+			rm -d ../workdir02/ 2>/dev/null
+			exit 3
+		fi
+	else
+		echo -e "'$path/30consensus/consensus.fasta' is missing. Exiting...\n"
+		rm -d ../workdir02/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folder for results exits
+if [ -d "$path/$type/40contigs" ]; then
+	echo -e "Directory '$path/$type/40contigs' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir02/ 2>/dev/null
+	exit 3
+else
+	if [ -d "$path/$type/50pslx" ]; then
+		echo -e "Directory '$path/$type/50pslx' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir02/ 2>/dev/null
+		exit 3
+	else
+		if [ "$(ls -A ../workdir02)" ]; then
+			echo -e "Directory 'workdir02' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir02/ 2>/dev/null
+			exit 3
+		fi
+	fi
 fi
 
 #Copy fasta from home folder to scratch/workdir
 cp -r $path/30consensus/* .
 #Make a new folder for results
-mkdir $path/40contigs${type}
+mkdir -p $path/$type
+mkdir $path/$type/40contigs
 
 #-----------------------GENEIOUS CONSENSUS SEQUENCE MODIFICATION-----------------------
 echo -en "Parsing Geneious consensus sequence output..."
@@ -128,7 +180,7 @@ if [[ $cp =~ "yes" ]]; then
 		#print '>Contig'+number(NR;increased by one each step)+species name (val), then to next line print sequence
 		cat $file\_consensus_cpDNAsequence.fasta | tr -s '?' '\n' | awk -v val=$file '{ print ">Contig" NR "_" val "\n" $1 m}' > $file\_contigs_cpDNA.fas
 		#Copy data from scratch to home folder
-		cp $file\_contigs_cpDNA.fas $path/40contigs_cp
+		cp $file\_contigs_cpDNA.fas $path/$type/40contigs
 	done
 else
 	for file in $(cat listOfConsensusFiles.txt)
@@ -143,7 +195,7 @@ else
 		#print '>Contig'+number(NR;increased by one each step)+species name (val), then to next line print sequence
 		cat $file\_consensus_sequence.fasta | tr -s '?' '\n' | awk -v val=$file '{ print ">Contig" NR "_" val "\n" $1 m}' > $file\_contigs.fas
 		#Copy data from scratch to home folder
-		cp $file\_contigs.fas $path/40contigs
+		cp $file\_contigs.fas $path/$type/40contigs
 	done
 fi
 echo -e "finished\n"
@@ -163,7 +215,7 @@ else
 	cp -r $source/$probes .
 fi
 #Make a new folder for results
-mkdir $path/50pslx${type}
+mkdir $path/$type/50pslx
 
 #Make a list of all files with contigs
 ls *.fas > contig_names.txt
@@ -177,13 +229,15 @@ do
 	else
 		blat -t=DNA -q=DNA -out=pslx -minIdentity=$minident $probes $contigfile ${contigfile}.pslx
 	fi
-	cp $contigfile.pslx $path/50pslx${type}
+	cp $contigfile.pslx $path/$type/50pslx
 done
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
-	rm -rf $SCRATCHDIR/*
+	if [[ ! $SCRATCHDIR == "" ]]; then
+		rm -rf $SCRATCHDIR/*
+	fi
 else
 	cd ..
 	rm -r workdir02
