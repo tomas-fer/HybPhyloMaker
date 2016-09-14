@@ -1,6 +1,7 @@
 # HybPhyloMaker
    
 Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:   
+  
 0. Download FASTQ files from Illumina BaseSpace storage  
 1. Processing raw reads (PhiX removal, adaptor removal, quality filtering, summary statistics)  
 _Intermediate manual step - read mapping to 'pseudoreference' in Geneious, export consensus file_  
@@ -12,7 +13,7 @@ _Intermediate manual step - read mapping to 'pseudoreference' in Geneious, expor
 7. Estimate species tree (ASTRAL, ASTRID, MRL, concatenation)  
 8. Subselect suitable genes and repeat steps 6+7 
   
-Uses many additional software that must be installed and put in the PATH prior tu run scripts (see Table located in docs folder).  
+Uses many additional software that must be installed and put in the PATH prior to run scripts (see Table located in docs folder and consider to run install_software.sh).  
 Also utilizes many scripts developed by others (located in HybSeqSource folder). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
 
 Read manual located in docs folder before running HybPhyloMaker.  
