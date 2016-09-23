@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -128,10 +128,12 @@ else
 		rm -d ../workdir02/ 2>/dev/null
 		exit 3
 	else
-		if [ "$(ls -A ../workdir02)" ]; then
-			echo -e "Directory 'workdir02' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir02/ 2>/dev/null
-			exit 3
+		if [[ ! $location == "1" ]]; then
+			if [ "$(ls -A ../workdir02)" ]; then
+				echo -e "Directory 'workdir02' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir02/ 2>/dev/null
+				exit 3
+			fi
 		fi
 	fi
 fi

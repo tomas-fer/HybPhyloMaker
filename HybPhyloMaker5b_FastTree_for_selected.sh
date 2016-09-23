@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                   Script 05b - FastTree gene tree building                   *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -114,10 +114,12 @@ if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree" ]; th
 	rm -d ../workdir05b/ 2>/dev/null
 	exit 3
 else
-	if [ "$(ls -A ../workdir05b)" ]; then
-		echo -e "Directory 'workdir05b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir05b/ 2>/dev/null
-		exit 3
+	if [[ ! $location == "1" ]]; then
+		if [ "$(ls -A ../workdir05b)" ]; then
+			echo -e "Directory 'workdir05b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir05b/ 2>/dev/null
+			exit 3
+		fi
 	fi
 fi
 

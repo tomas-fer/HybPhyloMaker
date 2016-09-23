@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -85,12 +85,13 @@ else
 	fi
 fi
 
-if [ "$(ls -A ../workdir00_ref)" ]; then
-	echo -e "Directory 'workdir00_ref' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir00_ref/ 2>/dev/null
-	exit 3
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir00_ref)" ]; then
+		echo -e "Directory 'workdir00_ref' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir00_ref/ 2>/dev/null
+		exit 3
+	fi
 fi
-
 #Copy probe sequence file
 cp $source/$probes .
 

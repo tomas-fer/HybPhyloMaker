@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                          Script 06 - Root gene trees                         *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -152,12 +152,13 @@ else
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees' already includes some *.newick trees. You are probably going to owerwrite previous results. Delete or remove all *.newick files before running this script again. Exiting...\n" && rm -d ../workdir06 2>/dev/null && exit 3
 	fi
 fi
-if [ "$(ls -A ../workdir06)" ]; then
-	echo -e "Directory 'workdir06' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir06 2>/dev/null
-	exit 3
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir06)" ]; then
+		echo -e "Directory 'workdir06' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir06 2>/dev/null
+		exit 3
+	fi
 fi
-
 #If working with updated tree list select specific trees (otherwise copy all trees)
 if [[ $update =~ "yes" ]]; then
 	cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .

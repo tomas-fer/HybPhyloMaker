@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -75,10 +75,18 @@ else
 	cd workdir01
 fi
 
-if [ "$(ls -A ../workdir01)" ]; then
-	echo -e "Directory 'workdir01' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir01/ 2>/dev/null
-	exit 3
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir01)" ]; then
+		echo -e "Directory 'workdir01' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir01/ 2>/dev/null
+		exit 3
+	else
+		if [ -d "$path/20filtered" ]; then
+			echo -e "Directory '$path/20filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir01/ 2>/dev/null
+			exit 3
+		fi
+	fi
 else
 	if [ -d "$path/20filtered" ]; then
 		echo -e "Directory '$path/20filtered' already exists. Delete it or rename before running this script again. Exiting...\n"

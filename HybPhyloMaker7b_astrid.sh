@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 07b - Astrid species tree                       *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -52,6 +52,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-2.7.6-gcc
 	module add python27-modules-gcc
 	module add python-3.4.1-intel
+	module add newick-utils-1.6
 elif [[ $HOSTNAME == *local* ]]; then
 	echo -e "\nHybPhyloMaker7b is running on Hydra..."
 	#settings for Hydra
@@ -64,6 +65,7 @@ elif [[ $HOSTNAME == *local* ]]; then
 	cd workdir07b
 	#Add necessary modules
 	module load bioinformatics/anaconda3/2.3.0
+	module load bioinformatics/newickutilities/0.0
 else
 	echo -e "\nHybPhyloMaker7b is running locally..."
 	#settings for local run
@@ -260,12 +262,13 @@ else
 		exit 3
 	fi
 fi
-if [ "$(ls -A ../workdir07b)" ]; then
-	echo -e "Directory 'workdir07b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir07b/ 2>/dev/null
-	exit 3
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir07b)" ]; then
+		echo -e "Directory 'workdir07b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07b/ 2>/dev/null
+		exit 3
+	fi
 fi
-
 
 #Add necessary programs and files
 cp $source/$astridbin .

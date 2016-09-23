@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  Script 05b2 - summary of RAxML gene trees                   *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -116,10 +116,12 @@ if [ -f "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_prop
 	rm -d ../workdir05a2/ 2>/dev/null
 	exit 3
 else
-	if [ "$(ls -A ../workdir05a2)" ]; then
-		echo -e "Directory 'workdir05a2' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir05a2/ 2>/dev/null
-		exit 3
+	if [[ ! $location == "1" ]]; then
+		if [ "$(ls -A ../workdir05a2)" ]; then
+			echo -e "Directory 'workdir05a2' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir05a2/ 2>/dev/null
+			exit 3
+		fi
 	fi
 fi
 

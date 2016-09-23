@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 04 - Missing data handling                       *
-# *                                   v.1.2.0                                    *
+# *                                   v.1.2.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -134,10 +134,12 @@ if [ -d "$path/$type/71selected${MISSINGPERCENT}" ]; then
 	rm -d ../workdir04/ 2>/dev/null
 	exit 3
 else
-	if [ "$(ls -A ../workdir04)" ]; then
-		echo -e "Directory 'workdir04' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir04/ 2>/dev/null
-		exit 3
+	if [[ ! $location == "1" ]]; then
+		if [ "$(ls -A ../workdir04)" ]; then
+			echo -e "Directory 'workdir04' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir04/ 2>/dev/null
+			exit 3
+		fi
 	fi
 fi
 
