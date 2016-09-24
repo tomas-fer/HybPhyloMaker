@@ -3,7 +3,7 @@
 #This should work on major Linux distribution (tested on Debian), but carefully set appropriate installer and names of some libraries!!!
 #Be sure that you have installed gcc, gcc-c++, make before running this script
 
-#Change name of your default package management tool (apt-get on Debian/Ubuntu, yast on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
+#Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
 installer=apt-get
 
 #Install software using
@@ -14,7 +14,7 @@ $installer install -y perl
 #$installer install -y bowtie2 #better to install from source, see below
 #$installer install -y samtools #better to install from source, see below
 #$installer install -y fastx-toolkit #better to install from source, see below
-$installer install -y openjdk-7-jre #java-1.7.0-openjdk.x86_64 in Fedora
+$installer install -y openjdk-7-jre #java-1.7.0-openjdk.x86_64 in Fedora; java-1_7_0-openjdk in OpenSUSE
 #$installer install -y mafft #better to install from source, see below
 #$installer install -y fasttree #better to install from source, see below
 $installer install -y r-base #R in Fedora
@@ -181,7 +181,7 @@ cd ..
 
 #Check if everything is installed correctly
 echo -e "\nSoftware installed...checking for binaries in PATH"
-for i in parallel bowtie2 samtools bam2fastq java fastx_collapser perl blat mafft python python3 trimal mstatx fasttree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
+for i in parallel bowtie2 samtools bam2fastq java fastx_collapser perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
 	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 done
 echo "Necessary software installed, possible errors indicated above."
