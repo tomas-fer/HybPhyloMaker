@@ -6,23 +6,26 @@
 #Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
 installer=apt-get
 
-#Install software using
+#Install software using default package manager specified above
 $installer install -y python
 $installer install -y python3 #Does not work on CentOS???
+#$installer install -y epel-release #Only for CentOS
+#$installer install -y python34 #Only for CentOS
 $installer install -y perl
 #$installer install -y parallel #better to install from source, see below
 #$installer install -y bowtie2 #better to install from source, see below
 #$installer install -y samtools #better to install from source, see below
 #$installer install -y fastx-toolkit #better to install from source, see below
-$installer install -y openjdk-7-jre #java-1.7.0-openjdk.x86_64 in Fedora; java-1_7_0-openjdk in OpenSUSE
+$installer install -y openjdk-7-jre #java-1.7.0-openjdk.x86_64 in Fedora/CentOS; java-1_7_0-openjdk in OpenSUSE
 #$installer install -y mafft #better to install from source, see below
 #$installer install -y fasttree #better to install from source, see below
-$installer install -y r-base #R in Fedora
+$installer install -y r-base #R in Fedora/CentOS
 $installer install -y git
 $installer install -y libpng-dev #libpng-devel on Fedora/CentOS/OpenSUSE
 $installer install -y zlib1g-dev #zlib-devel on Fedora/CentOS/OpenSUSE
 $installer install -y wget
 $installer install -y tar
+$installer install -y bzip2
 
 #Install R packages
 R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
@@ -145,6 +148,11 @@ cd libgtextutils-0.7
 make
 make install
 cd ..
+#export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH #This is only necessary for Fedora/CentOS
+#if installing from GitHub fail (eg., in Fedora) you might try
+#$installer install -y libgtextutils
+#export PKG_CONFIG_PATH=/libgtextutils-0.7:$PKG_CONFIG_PATH
+
 wget https://github.com/agordon/fastx_toolkit/releases/download/0.0.14/fastx_toolkit-0.0.14.tar.bz2
 tar xjvf fastx_toolkit-0.0.14.tar.bz2
 rm fastx_toolkit-0.0.14.tar.bz2
@@ -163,12 +171,13 @@ make
 cp bowtie2* /usr/local/bin
 cd ..
 
-#p4
+#p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
-$installer install -y python-numpy
-$installer install -y python-scipy
+#compilation fails on Fedora/CentOS/OpenSUSE - unable to find gsl!!!
+$installer install -y python-numpy #numpy on CentOS
+$installer install -y python-scipy #scipy on CentOS
 $installer install -y libgsl0-dev #gsl-devel in Fedora and OpenSUSE
-$installer install -y python-dev #python-devel in OpenSUSE
+$installer install -y python-dev #python-devel in Fedora and OpenSUSE
 git clone https://github.com/pgfoster/p4-phylogenetics
 cd p4-phylogenetics
 python setup.py build
