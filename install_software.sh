@@ -1,14 +1,15 @@
 #INSTALL SOFTWARE NECESSARY FOR HybPhyloMaker
 #and clone HybPhyloMaker GitHub repository (incl. test dataset)
 #This should work on major Linux distribution (tested on Debian, OpenSUSE, Fedora, and CentOS), but carefully set appropriate installer and names of some libraries!!!
-#Be sure that you have installed gcc, gcc-c++, make before running this script
+#Be sure that you have installed compilation utilities (gcc gcc-c++ make) before running this script
 
 #Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
 installer=apt-get
 
 #Install software using default package manager specified above
+#CHANGE package names according to your Linux distribution (comment/uncomment specific lines)
 $installer install -y python
-$installer install -y python3 #Does not work on CentOS???
+$installer install -y python3 #Does not work on CentOS, uncomment two lines below
 #$installer install -y epel-release #Only for CentOS
 #$installer install -y python34 #Only for CentOS
 $installer install -y perl
@@ -16,13 +17,19 @@ $installer install -y perl
 #$installer install -y bowtie2 #better to install from source, see below
 #$installer install -y samtools #better to install from source, see below
 #$installer install -y fastx-toolkit #better to install from source, see below
-$installer install -y openjdk-7-jre #java-1.7.0-openjdk.x86_64 in Fedora/CentOS; java-1_7_0-openjdk in OpenSUSE
+$installer install -y openjdk-7-jre #Debian
+#$installer install -y java-1.7.0-openjdk.x86_64 #Fedora/CentOS
+#$installer install -y java-1_7_0-openjdk #OpenSUSE
 #$installer install -y mafft #better to install from source, see below
 #$installer install -y fasttree #better to install from source, see below
-$installer install -y r-base #R in Fedora/CentOS
+$installer install -y r-base
+#$installer install -y R #Fedora/CentOS
+$installer install -y gcc-fortran #necessary in OpenSUSE; (gcc-gfortran in Fedora/CentOS and gfortran in Debian if necessary)
 $installer install -y git
-$installer install -y libpng-dev #libpng-devel on Fedora/CentOS/OpenSUSE
-$installer install -y zlib1g-dev #zlib-devel on Fedora/CentOS/OpenSUSE
+$installer install -y libpng-dev #Debian
+#$installer install -y libpng-devel #Fedora/CentOS/OpenSUSE
+$installer install -y zlib1g-dev #Debian
+$installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
 $installer install -y wget
 $installer install -y tar
 $installer install -y bzip2
@@ -182,7 +189,7 @@ if ! [ -x "$(command -v fastx_collapser)" ]; then
 	cd ..
 	#Uncomment next line for Fedora/CentOS
 	#export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-	#if installing from GitHub fail (e.g., in Fedora) you might try to install it from repository
+	#if installing from GitHub fails (e.g., in Fedora) you might try to install it from repository
 	#$installer install -y libgtextutils-devel
 	#export PKG_CONFIG_PATH=/libgtextutils-0.7:$PKG_CONFIG_PATH
 	
@@ -211,10 +218,14 @@ fi
 #see http://p4.nhm.ac.uk/installation.html
 #compilation probably fails on Fedora/CentOS/OpenSUSE - unable to find gsl!!! Solution???
 if ! [ -x "$(command -v p4)" ]; then
-	$installer install -y python-numpy #numpy on CentOS
-	$installer install -y python-scipy #scipy on CentOS
-	$installer install -y libgsl0-dev #gsl-devel in Fedora and OpenSUSE
-	$installer install -y python-dev #python-devel in Fedora and OpenSUSE
+	$installer install -y python-numpy #Debian
+	#$installer install -y numpy #CentOS
+	$installer install -y python-scipy #Debian
+	#$installer install -y scipy #CentOS
+	$installer install -y libgsl0-dev #Debian
+	#$installer install -y gsl-devel #Fedora and OpenSUSE
+	$installer install -y python-dev #Debian
+	#$installer install -y python-devel #Fedora and OpenSUSE
 	git clone https://github.com/pgfoster/p4-phylogenetics
 	cd p4-phylogenetics
 	python setup.py build
