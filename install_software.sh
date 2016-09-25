@@ -27,6 +27,7 @@ $installer install -y wget
 $installer install -y tar
 $installer install -y bzip2
 $installer install -y pkg-config
+$installer install -y bc
 
 #Install R packages
 R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
