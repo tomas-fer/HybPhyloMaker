@@ -26,6 +26,7 @@ $installer install -y zlib1g-dev #zlib-devel on Fedora/CentOS/OpenSUSE
 $installer install -y wget
 $installer install -y tar
 $installer install -y bzip2
+$installer install -y pkg-config
 
 #Install R packages
 R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
@@ -108,7 +109,7 @@ if ! [ -x "$(command -v raxmlHPC-PTHREADS-SSE3)" ]; then
 	make -f Makefile.SSE3.PTHREADS.gcc
 	rm *.o
 fi
-if ! [ -x "$(command -v raxmlHPC­PTHREADS­AVX)" ]; then
+if ! [ -x "$(command -v raxmlHPC­PTHREADS-AVX)" ]; then
 	make -f Makefile.AVX.PTHREADS.gcc
 	rm *.o
 fi
@@ -180,8 +181,8 @@ if ! [ -x "$(command -v fastx_collapser)" ]; then
 	cd ..
 	#Uncomment next line for Fedora/CentOS
 	#export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-	#if installing from GitHub fail (eg., in Fedora) you might try
-	#$installer install -y libgtextutils
+	#if installing from GitHub fail (e.g., in Fedora) you might try to install it from repository
+	#$installer install -y libgtextutils-devel
 	#export PKG_CONFIG_PATH=/libgtextutils-0.7:$PKG_CONFIG_PATH
 	
 	wget https://github.com/agordon/fastx_toolkit/releases/download/0.0.14/fastx_toolkit-0.0.14.tar.bz2
