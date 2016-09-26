@@ -23,19 +23,19 @@ $installer install -y openjdk-7-jre #Debian
 #$installer install -y mafft #better to install from source, see below
 #$installer install -y fasttree #better to install from source, see below
 $installer install -y r-base-dev #Debian
-$installer install -y R-base-devel #OpenSUSE
+#$installer install -y R-base-devel #OpenSUSE
 #$installer install -y R #Fedora/CentOS
 $installer install -y gcc-fortran #necessary in OpenSUSE; (gcc-gfortran in Fedora/CentOS and gfortran in Debian if necessary)
 $installer install -y git
 $installer install -y libpng-dev #Debian
 #$installer install -y libpng-devel #Fedora/CentOS/OpenSUSE
 $installer install -y zlib1g-dev #Debian
-$installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
+#$installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
 $installer install -y wget
 $installer install -y tar
 $installer install -y bzip2
 $installer install -y pkg-config #Debian, OpenSUSE
-$installer install -y pkgconfig #Fedora, CentOS
+#$installer install -y pkgconfig #Fedora, CentOS
 $installer install -y bc
 
 #Install R packages
