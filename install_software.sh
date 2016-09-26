@@ -22,7 +22,8 @@ $installer install -y openjdk-7-jre #Debian
 #$installer install -y java-1_7_0-openjdk #OpenSUSE
 #$installer install -y mafft #better to install from source, see below
 #$installer install -y fasttree #better to install from source, see below
-$installer install -y r-base
+$installer install -y r-base-dev #Debian
+$installer install -y R-base-devel #OpenSUSE
 #$installer install -y R #Fedora/CentOS
 $installer install -y gcc-fortran #necessary in OpenSUSE; (gcc-gfortran in Fedora/CentOS and gfortran in Debian if necessary)
 $installer install -y git
@@ -33,7 +34,8 @@ $installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
 $installer install -y wget
 $installer install -y tar
 $installer install -y bzip2
-$installer install -y pkg-config
+$installer install -y pkg-config #Debian, OpenSUSE
+$installer install -y pkgconfig #Fedora, CentOS
 $installer install -y bc
 
 #Install R packages
@@ -227,14 +229,14 @@ fi
 #see http://p4.nhm.ac.uk/installation.html
 #compilation probably fails on Fedora/CentOS/OpenSUSE - unable to find gsl!!! Solution???
 if ! [ -x "$(command -v p4)" ]; then
-	$installer install -y python-numpy #Debian
-	#$installer install -y numpy #CentOS
-	$installer install -y python-scipy #Debian
-	#$installer install -y scipy #CentOS
+	$installer install -y python-numpy #Debian, OpenSUSE
+	#$installer install -y numpy #CentOS, Fedora
+	$installer install -y python-scipy #Debian, OpenSUSE
+	#$installer install -y scipy #CentOS, Fedora
 	$installer install -y libgsl0-dev #Debian
-	#$installer install -y gsl-devel #Fedora and OpenSUSE
+	#$installer install -y gsl-devel #CentOS, Fedora and OpenSUSE
 	$installer install -y python-dev #Debian
-	#$installer install -y python-devel #Fedora and OpenSUSE
+	#$installer install -y python-devel #CentOS, Fedora and OpenSUSE
 	git clone https://github.com/pgfoster/p4-phylogenetics
 	cd p4-phylogenetics
 	python setup.py build
