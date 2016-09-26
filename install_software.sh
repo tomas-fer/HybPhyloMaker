@@ -37,9 +37,18 @@ $installer install -y pkg-config
 $installer install -y bc
 
 #Install R packages
-R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
-R -q -e "install.packages('seqinr', repos='http://cran.rstudio.com/')"
-R -q -e "install.packages('data.table', repos='http://cran.rstudio.com/')"
+for Rpackage in ape seqinr data.table; do
+	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
+	if grep -Fxq "[1] FALSE" testpackage; then
+		R -q -e "install.packages('$Rpackage', repos='http://cran.rstudio.com/')"
+	else
+		echo -e "R package $Rpackage already installed"
+	fi
+done
+rm testpackage
+#R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
+#R -q -e "install.packages('seqinr', repos='http://cran.rstudio.com/')"
+#R -q -e "install.packages('data.table', repos='http://cran.rstudio.com/')"
 
 #Install other software
 mkdir install
@@ -242,6 +251,16 @@ echo -e "\nSoftware installed...checking for binaries in PATH"
 for i in parallel bowtie2 samtools bam2fastq java fastx_collapser perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
 	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 done
+#Check R packages
+for Rpackage in ape seqinr data.table; do
+	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
+	if grep -Fq "no package called" Rtest; then
+		echo -e "R package $Rpackage...not found"
+	elif grep -Fq "Error" Rtest; then
+		echo -e "R package $Rpackage...unable to load"
+	fi
+done
+rm Rtest
 echo "Necessary software installed, possible errors indicated above."
 echo -e "If you don't see any *not found* your system is now ready to run HybPhyloMaker!\n"
 
