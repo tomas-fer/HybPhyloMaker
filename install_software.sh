@@ -1,7 +1,7 @@
 #INSTALL SOFTWARE NECESSARY FOR HybPhyloMaker
 #and clone HybPhyloMaker GitHub repository (incl. test dataset)
 #This should work on major Linux distribution (tested on Debian, OpenSUSE, Fedora, and CentOS), but carefully set appropriate installer and names of some libraries!!!
-#Be sure that you have installed compilation utilities (gcc gcc-c++ make) before running this script
+#Be sure that you have installed compilation utilities as gcc, g++ (gcc-c++ in OpenSUSE/Fedora/CentOS) and make before running this script
 
 #Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
 installer=apt-get
