@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                          Script 06 - Root gene trees                         *
-# *                                   v.1.2.1                                    *
+# *                                   v.1.2.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -169,16 +169,16 @@ if [[ $update =~ "yes" ]]; then
 		if [[ $tree =~ "RAxML" ]]; then
 			#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
 			if [[ $corrected =~ "yes" ]]; then
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/RAxML_bipartitions.CorrectedAssembly_${i}_modif*.result .
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/RAxML_bipartitions.CorrectedAssembly_${i}_modif${MISSINGPERCENT}.result .
 			else
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/RAxML_bipartitions.Assembly_${i}_modif*.result .
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/RAxML_bipartitions.Assembly_${i}_modif${MISSINGPERCENT}.result .
 			fi
 		else
 			#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
 			if [[ $corrected =~ "yes" ]]; then
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/CorrectedAssembly_${i}_modif*.tre .
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/CorrectedAssembly_${i}_modif${MISSINGPERCENT}.tre .
 			else
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/Assembly_${i}_modif*.tre .
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/Assembly_${i}_modif${MISSINGPERCENT}.tre .
 			fi
 			#Delete all bootstrap/ no bootstrap trees
 			if [[ $FastTreeBoot =~ "yes" ]]; then
