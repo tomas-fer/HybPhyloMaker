@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 03 - Process pslx files                        *
-# *                                   v.1.2.1                                    *
+# *                                   v.1.2.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -305,7 +305,11 @@ do
 	#sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
 	perl -pe 's/\G-|-(?=-*$)/?/g' $mafftfile > tmp && mv tmp $mafftfile
 	if [[ $cp =~ "yes" ]]; then
-		cp $mafftfile ../$path/$type/60mafft
+		if [[ $location == "1" ]]; then
+			cp $mafftfile $path/$type/60mafft
+		else
+			cp $mafftfile ../$path/$type/60mafft
+		fi
 	fi
 done
 echo -e "finished"
