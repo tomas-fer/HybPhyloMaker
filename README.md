@@ -4,7 +4,7 @@ Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:
   
 0. Download FASTQ files from Illumina BaseSpace storage  
 1. Processing raw reads (PhiX removal, adaptor removal, quality filtering, summary statistics)  
-_Intermediate manual step - read mapping to 'pseudoreference' in Geneious, export consensus file_  
+2. Mapping reads to reference (using Bowtie), create consensus sequence  
 2. Recognize sequences matching probes (generate PSLX files using BLAT)  
 3. Create alignments for all genes  
 4. Treat missing data, select best genes  
