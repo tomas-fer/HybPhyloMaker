@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.2.1                                    *
+# *                                   v.1.3.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -188,42 +188,81 @@ do
 	else
 		java -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	fi	
+	#Copy trimmed reads to home
+	if [[ $location == "1" ]]; then
+		cp $file-1P ${path}/20filtered/${file}
+		cp $file-1U ${path}/20filtered/${file}
+		cp $file-2P ${path}/20filtered/${file}
+		cp $file-2U ${path}/20filtered/${file}
+	else
+		cp $file-1P ../${path}/20filtered/${file}
+		cp $file-1U ../${path}/20filtered/${file}
+		cp $file-2P ../${path}/20filtered/${file}
+		cp $file-2U ../${path}/20filtered/${file}
+	fi
 	#Convert .fastq files to .fasta
-	perl ../fastq2fasta.pl -a $file-1P
-	perl ../fastq2fasta.pl -a $file-1U
-	perl ../fastq2fasta.pl -a $file-2P
-	perl ../fastq2fasta.pl -a $file-2U
+	# perl ../fastq2fasta.pl -a $file-1P
+	# perl ../fastq2fasta.pl -a $file-1U
+	# perl ../fastq2fasta.pl -a $file-2P
+	# perl ../fastq2fasta.pl -a $file-2U
 	rm $file-noPhiX_1.fq.gz
 	rm $file-noPhiX_2.fq.gz
 	#Combine the four Trimmomatic output files in one file
-	cat $file-1P.fa $file-1U.fa $file-2P.fa $file-2U.fa > $file-all.fa
-	rm $file-1P* $file-1U* $file-2P* $file-2U*
+	# cat $file-1P.fa $file-1U.fa $file-2P.fa $file-2U.fa > $file-all.fa
+	# rm $file-1P* $file-1U* $file-2P* $file-2U*
 	#Remove duplicate reads
 	echo "Removing duplicates..."
-	fastx_collapser -v -i $file-all.fa -o $file-all-no-dups.fas >duplicate-removal.log 2>&1
+	# fastx_collapser -v -i $file-all.fa -o $file-all-no-dups.fas >duplicate-removal.log 2>&1
+	ls $file-?P > fastqlist.txt
+	fastuniq -i fastqlist.txt -t q -o ${file}-1P_no-dups.fastq -p ${file}-2P_no-dups.fastq
+	#Count number of duplicates
+	#number of unpaired reads - UNFINISHED!!!
+	u1=`expr $(cat ${file}-1U | wc -l) / 4`
+	u2=`expr $(cat ${file}-2U | wc -l) / 4`
+	#paired-read number before duplicate removal
+	a=`expr $(cat ${file}-1P | wc -l) / 4`
+	echo "Nr. of reads before duplicate removal:" >> duplicate-removal-fastuniq.log
+	before=`expr $a + $a + $u1 + $u2`
+	echo $before >> duplicate-removal-fastuniq.log
+	#paired-read number after duplicate removal
+	echo "Nr. of reads after duplicate removal:" >> duplicate-removal-fastuniq.log
+	b=`expr $(cat ${file}-1P_no-dups.fastq | wc -l) / 4`
+	after=`expr $b + $b + $u1 + $u2`
+	echo $after >> duplicate-removal-fastuniq.log >> duplicate-removal-fastuniq.log
 	#Copy results from scratch to storage
 	if [[ $location == "1" ]]; then
-		cp $file-all-no-dups.fas ${path}/20filtered/${file}
-		cp $file-all.fa ${path}/20filtered/${file}
-		cp *.log $path/20filtered/$file
+		cp ${file}-1P_no-dups.fastq ${path}/20filtered/${file}
+		cp ${file}-2P_no-dups.fastq ${path}/20filtered/${file}
+		cp duplicate-removal-fastuniq.log ${path}/20filtered/${file}
+		# cp $file-1U ${path}/20filtered/${file}
+		# cp $file-2U ${path}/20filtered/${file}
+		# cp $file-all-no-dups.fas ${path}/20filtered/${file}
+		# cp $file-all.fa ${path}/20filtered/${file}
+		# cp *.log $path/20filtered/$file
 	else
-		cp $file-all-no-dups.fas ../${path}/20filtered/${file}
-		cp $file-all.fa ../$path/20filtered/$file
-		cp *.log ../$path/20filtered/$file
+		cp ${file}-1P_no-dups.fastq ../${path}/20filtered/${file}
+		cp ${file}-2P_no-dups.fastq ../${path}/20filtered/${file}
+		cp duplicate-removal-fastuniq.log ../${path}/20filtered/${file}
+		# cp $file-1U ../${path}/20filtered/${file}
+		# cp $file-2U ../${path}/20filtered/${file}
+		# cp $file-all-no-dups.fas ../${path}/20filtered/${file}
+		# cp $file-all.fa ../$path/20filtered/$file
+		# cp *.log ../$path/20filtered/$file
 	fi
-	rm $file-all-no-dups.fas $file-all.fa
+	# rm $file-all-no-dups.fas $file-all.fa
+	mv ${file}-1U ${file}-1U_no-dups.fastq
+	mv ${file}-2U ${file}-2U_no-dups.fastq
 	cd ..
 done
 
 echo -e "\nGenerating file for download and for import to Geneious...\n"
 #Copy all -all-no-dups.fas from all subfolders to folder 'for_Geneious' (for easy import to Geneious)
 mkdir $path/20filtered/for_Geneious
-find $path/20filtered/ -name '*all-no-dups*' -exec cp -t $path/20filtered/for_Geneious/ {} +
+find $path/20filtered/ -name '*no-dups.fastq' -exec cp -t $path/20filtered/for_Geneious/ {} +
 #Pack and combine all *all-no-dups.fas files to one archive for easy download
-
-tar cfz $path/20filtered/for_Geneious/$data-all-no-dups.tar.gz -C $path/20filtered/for_Geneious/ . 2>/dev/null
-#Delete copies of fasta files in 'for Geneious' folder
-rm $path/20filtered/for_Geneious/*.fas
+tar cfz $path/20filtered/for_Geneious/$data-no-dups.tar.gz -C $path/20filtered/for_Geneious/ . 2>/dev/null
+#Delete copies of fastq files in 'for Geneious' folder
+rm $path/20filtered/for_Geneious/*.fastq
 
 #Summary of basic reads processing (nr. reads, PhiX filtering, quality trimming, duplicate removal)
 #Produce tab-separated table
@@ -259,7 +298,8 @@ do
 	#Calculate percentage of quality trimmed reads
 	perctrimm=$(echo -e "scale=4;100 - 100 * ($aftertrimming / $withoutPhiX)" | bc)
 	#Number of reads after duplicate removal
-	withoutdups=`cat duplicate-removal.log | head -n 2 | tail -n 1 | cut -d' ' -f2`
+	withoutdups=`cat duplicate-removal-fastuniq.log | tail -n 1`
+	#withoutdups=`cat duplicate-removal.log | head -n 2 | tail -n 1 | cut -d' ' -f2`
 	#Calculate percentage of duplicate reads removed
 	percdups=$(echo -e "scale=4;100 - 100 * ($withoutdups / $aftertrimming)" | bc)
 	

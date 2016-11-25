@@ -1,44 +1,90 @@
 #INSTALL SOFTWARE NECESSARY FOR HybPhyloMaker
 #and clone HybPhyloMaker GitHub repository (incl. test dataset)
-#This should work on major Linux distribution (tested on Debian, OpenSUSE, Fedora, and CentOS), but carefully set appropriate installer and names of some libraries!!!
-#Be sure that you have installed compilation utilities as gcc, g++ (gcc-c++ in OpenSUSE/Fedora/CentOS) and make before running this script
+#This should work on major Linux distribution (tested on Debian, Ubuntu, OpenSUSE, Fedora, and CentOS)
+#Without changes works only on 64-bit platforms (x86_64)
 
+#Carefully set your distribution
+distribution=Debian #one of: Debian (also for Ubuntu), OpenSUSE, Fedora, CentOS)
 #Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
-installer=apt-get
+installer=apt-get #one of apt-get, zypper, yum
 
+#------INSTALL SOFTWARE FROM REPOSITORIES------
 #Install software using default package manager specified above
-#CHANGE package names according to your Linux distribution (comment/uncomment specific lines)
-$installer install -y python
-$installer install -y python3 #Does not work on CentOS, uncomment two lines below
-#$installer install -y epel-release #Only for CentOS
-#$installer install -y python34 #Only for CentOS
-$installer install -y perl
-#$installer install -y parallel #better to install from source, see below
-#$installer install -y bowtie2 #better to install from source, see below
-#$installer install -y samtools #better to install from source, see below
-#$installer install -y fastx-toolkit #better to install from source, see below
-$installer install -y openjdk-7-jre #Debian
-#$installer install -y java-1.7.0-openjdk.x86_64 #Fedora/CentOS
-#$installer install -y java-1_7_0-openjdk #OpenSUSE
-#$installer install -y mafft #better to install from source, see below
-#$installer install -y fasttree #better to install from source, see below
-$installer install -y r-base-dev #Debian
-#$installer install -y R-base-devel #OpenSUSE
-#$installer install -y R #Fedora/CentOS
-$installer install -y gcc-fortran #necessary in OpenSUSE; (gcc-gfortran in Fedora/CentOS and gfortran in Debian if necessary)
-$installer install -y git
-$installer install -y libpng-dev #Debian
-#$installer install -y libpng-devel #Fedora/CentOS/OpenSUSE
-$installer install -y zlib1g-dev #Debian
-#$installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
-$installer install -y wget
-$installer install -y tar
-$installer install -y bzip2
-$installer install -y pkg-config #Debian, OpenSUSE
-#$installer install -y pkgconfig #Fedora, CentOS
-$installer install -y bc
 
-#Install R packages
+#Compilation utilities, i.e., gcc, g++, make
+if [[ $distribution =~ "Debian" ]]; then
+	for i in gcc g++ make; do
+		if ! [ -x "$(command -v $i)" ]; then
+			$installer install -y $i
+		fi
+	done
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+	for i in gcc-c++ g++ make; do
+		if ! [ -x "$(command -v $i)" ]; then
+			$installer install -y $i
+		fi
+	done
+fi
+
+#Perl
+if ! [ -x "$(command -v perl)" ]; then
+	$installer install -y perl
+fi
+
+#Python
+if ! [ -x "$(command -v python)" ]; then
+	$installer install -y python
+fi
+
+#Python3
+if ! [ -x "$(command -v python3)" ]; then
+	if [[ $distribution =~ "CentOS" ]]; then
+		$installer install -y epel-release #Only for CentOS
+		$installer install -y python34 #Only for CentOS
+	else
+		$installer install -y python3 #Does not work on CentOS
+	fi
+fi
+
+#Java
+if [[ $distribution =~ "Debian" ]]; then
+	$installer install -y openjdk-7-jre #Debian/Ubuntu
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	$installer install -y java-1.7.0-openjdk.x86_64 #Fedora/CentOS
+elif [[ $distribution =~ "OpenSUSE" ]]; then
+	$installer install -y java-1_7_0-openjdk #OpenSUSE
+fi
+
+
+#zlib library
+if [[ $distribution =~ "Debian" ]]; then
+	$installer install -y libpng-dev #Debian/Ubuntu
+	$installer install -y zlib1g-dev #Debian/Ubuntu
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+	$installer install -y libpng-devel #Fedora/CentOS/OpenSUSE
+	$installer install -y zlib-devel #Fedora/CentOS/OpenSUSE
+fi
+
+#pkg-config
+if [[ $distribution =~ "Debian" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+	$installer install -y pkg-config #Debian/Ubuntu/OpenSUSE
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	$installer install -y pkgconfig #Fedora/CentOS
+fi
+
+#R
+if [[ $distribution =~ "Debian" ]]; then
+	$installer install -y r-base-dev #Debian/Ubuntu
+	$installer install -y gfortran #Debian/Ubuntu
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	$installer install -y R #Fedora/CentOS
+	$installer install -y gcc-gfortran #Fedora/CentOS
+elif [[ $distribution =~ "OpenSUSE" ]]; then
+	$installer install -y R-base-devel #OpenSUSE
+	$installer install -y gcc-fortran #necessary in OpenSUSE for compilation of some R packages
+fi
+
+#R packages
 for Rpackage in ape seqinr data.table; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
 	if grep -Fxq "[1] FALSE" testpackage; then
@@ -48,11 +94,34 @@ for Rpackage in ape seqinr data.table; do
 	fi
 done
 rm testpackage
-#R -q -e "install.packages('ape', repos='http://cran.rstudio.com/')"
-#R -q -e "install.packages('seqinr', repos='http://cran.rstudio.com/')"
-#R -q -e "install.packages('data.table', repos='http://cran.rstudio.com/')"
 
-#Install other software
+#wget, tar, bzip2, bc, git
+for i in wget tar bzip2 bc git; do
+	if ! [ -x "$(command -v $i)" ]; then
+		$installer install -y $i
+	fi
+done
+
+##------UNCOMMENT NEXT LINES (the whole block) IF YOU WISH TO INSTALL THIS SOFTWARE FROM REPOSITORIES------
+#If commented then newest versions will be installed later from source, see below
+# if [[ $distribution =~ "Debian" ]]; then
+	# $installer install -y parallel #Debian/Ubuntu/Fedora
+	# $installer install -y bowtie2 #Debian/Ubuntu
+	# $installer install -y samtools #Debian/Ubuntu/CentOS/Fedora
+	# $installer install -y fastx-toolkit #Debian/Ubuntu
+	# $installer install -y mafft #Debian/Ubuntu
+	# $installer install -y fasttree #Debian/Ubuntu
+# elif [[ $distribution =~ "OpenSUSE" ]]; then
+	# $installer install -y gnu_parallel #OpenSUSE
+# elif [[ $distribution =~ "Fedora" ]]; then
+	# $installer install -y parallel #Debian/Ubuntu/Fedora
+	# $installer install -y samtools #Debian/Ubuntu/CentOS/Fedora
+	# $installer install -y fastx_toolkit #Fedora; if commented newest version will be installed later from source, see below
+# elif [[ $distribution =~ "CentOS" ]]; then
+	# $installer install -y samtools #Debian/Ubuntu/CentOS/Fedora
+# fi
+
+#------INSTALL OTHER SOFTWARE------
 mkdir install
 cd install
 
@@ -171,6 +240,7 @@ if ! [ -x "$(command -v bam2fastq)" ]; then
 	cp bam2fastq /usr/local/bin
 	cd ..
 fi
+
 #BLAT
 #see, e.g., http://nix-bio.blogspot.cz/2013/10/installing-blat-and-blast.html for installing tips
 if ! [ -x "$(command -v blat)" ]; then
@@ -188,30 +258,15 @@ if ! [ -x "$(command -v blat)" ]; then
 	cd ..
 fi
 
-#Fastx-toolkit
-if ! [ -x "$(command -v fastx_collapser)" ]; then
-	wget https://github.com/agordon/libgtextutils/releases/download/0.7/libgtextutils-0.7.tar.gz
-	tar -xvf libgtextutils-0.7.tar.gz
-	rm libgtextutils-0.7.tar.gz
-	cd libgtextutils-0.7
-	./configure
+#FastUniq
+if ! [ -x "$(command -v fastuniq)" ]; then
+	wget https://sourceforge.net/projects/fastuniq/files/FastUniq-1.1.tar.gz
+	tar xfz FastUniq-1.1.tar.gz
+	rm FastUniq-1.1.tar.gz
+	cd FastUniq/source
 	make
-	make install
-	cd ..
-	#Uncomment next line for Fedora/CentOS
-	#export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-	#if installing from GitHub fails (e.g., in Fedora) you might try to install it from repository
-	#$installer install -y libgtextutils-devel
-	#export PKG_CONFIG_PATH=/libgtextutils-0.7:$PKG_CONFIG_PATH
-	
-	wget https://github.com/agordon/fastx_toolkit/releases/download/0.0.14/fastx_toolkit-0.0.14.tar.bz2
-	tar xjvf fastx_toolkit-0.0.14.tar.bz2
-	rm fastx_toolkit-0.0.14.tar.bz2
-	cd fastx_toolkit-0.0.14
-	./configure
-	make
-	make install
-	cd ..
+	cp fastuniq /usr/local/bin
+	cd ../..
 fi
 
 #Bowtie2
@@ -225,11 +280,20 @@ if ! [ -x "$(command -v bowtie2)" ]; then
 	cd ..
 fi
 
+#ococo
+if ! [ -x "$(command -v ococo)" ]; then
+	git clone --recursive https://github.com/karel-brinda/ococo
+	cd ococo
+	make -j
+	cp ococo /usr/local/bin
+	cd ..
+fi
+
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
 #compilation probably fails on Fedora/CentOS/OpenSUSE - unable to find gsl!!! Solution???
 if ! [ -x "$(command -v p4)" ]; then
-	$installer install -y python-numpy #Debian, OpenSUSE
+	$installer install -y python-numpy #Debian/Ubuntu/OpenSUSE
 	#$installer install -y numpy #CentOS, Fedora
 	$installer install -y python-scipy #Debian, OpenSUSE
 	#$installer install -y scipy #CentOS, Fedora
@@ -245,12 +309,22 @@ if ! [ -x "$(command -v p4)" ]; then
 	cd ..
 fi
 
+#ococo (necessary for majority rule consensus building from mapped reads in BAM file)
+#see https://github.com/karel-brinda/ococo
+if ! [ -x "$(command -v ococo)" ]; then
+	git clone --recursive https://github.com/karel-brinda/ococo
+	cd ococo
+	make -j
+	cp ococo /usr/local/bin
+	cd ..
+fi
+
 #Leave 'install' directory
 cd ..
 
 #Check if everything is installed correctly
 echo -e "\nSoftware installed...checking for binaries in PATH"
-for i in parallel bowtie2 samtools bam2fastq java fastx_collapser perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
+for i in parallel bowtie2 ococo samtools bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
 	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 done
 #Check R packages
