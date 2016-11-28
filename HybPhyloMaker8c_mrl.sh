@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=8gb
-#PBS -N HybPhyloMaker7c_MRL
+#PBS -N HybPhyloMaker8c_MRL
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -15,13 +15,13 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker7c_MRL
-#$ -o HybPhyloMaker7c_MRL.log
+#$ -N HybPhyloMaker8c_MRL
+#$ -o HybPhyloMaker8c_MRL.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                        Script 07c - MRL species tree                         *
-# *                                   v.1.3.0                                    *
+# *                        Script 08c - MRL species tree                         *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -30,14 +30,14 @@
 #Compute species tree using MRL methods using RAxML from trees saved in single gene tree file (with *.newick suffix)
 #Take trees from /concatenated_exon_alignments/selected${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 #Run first
-#(1) HybPhyloMaker4_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(2) HybPhyloMaker5a_RAxML_for_selected.sh or HybPhyloMaker5b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(3) HybPhyloMaker6_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #or specify another input trees below
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker7c is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker8c is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,29 +52,29 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add raxml-8.2.4
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker7c is running on Hydra..."
+	echo -e "\nHybPhyloMaker8c is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07c
-	cd workdir07c
+	mkdir -p workdir08c
+	cd workdir08c
 	#Add necessary modules
 	module load java/1.7
 	module load bioinformatics/raxml/8.2.7
 	module load bioinformatics/newickutilities/0.0
 else
-	echo -e "\nHybPhyloMaker7c is running locally..."
+	echo -e "\nHybPhyloMaker8c is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07c
-	cd workdir07c
+	mkdir -p workdir08c
+	cd workdir08c
 fi
 
 #Setting for the case when working with cpDNA
@@ -111,7 +111,7 @@ if [[ $update =~ "yes" ]]; then
 			echo -e "OK\n"
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07c 2>/dev/null
+			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	else
@@ -119,7 +119,7 @@ if [[ $update =~ "yes" ]]; then
 			echo -e "OK\n"
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07c 2>/dev/null
+			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -129,7 +129,7 @@ else
 			echo -e "OK\n"
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07c 2>/dev/null
+			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	else
@@ -137,7 +137,7 @@ else
 			echo -e "OK\n"
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07c 2>/dev/null
+			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -147,20 +147,20 @@ fi
 if [[ $update =~ "yes" ]]; then
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07c 2>/dev/null
+		rm -d ../workdir08c 2>/dev/null
 		exit 3
 	fi
 else
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07c 2>/dev/null
+		rm -d ../workdir08c 2>/dev/null
 		exit 3
 	fi
 fi
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir07c)" ]; then
-		echo -e "Directory 'workdir07c' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07a 2>/dev/null
+	if [ "$(ls -A ../workdir08c)" ]; then
+		echo -e "Directory 'workdir08c' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir08c 2>/dev/null
 		exit 3
 	fi
 fi
@@ -254,7 +254,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir07c
+	rm -r workdir08c
 fi
 
-echo -e "HybPhyloMaker7c finished...\n"
+echo -e "HybPhyloMaker8c finished...\n"

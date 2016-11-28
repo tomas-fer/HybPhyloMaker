@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=1gb
 #PBS -l scratch=1gb
-#PBS -N HybPhyloMaker5a_RAxML_for_selected_parallel
+#PBS -N HybPhyloMaker6a_RAxML_for_selected_parallel
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -14,13 +14,13 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker5a_RAxML_for_selected_parallel
-#$ -o HybPhyloMaker5a_RAxML_for_selected_parallel.log
+#$ -N HybPhyloMaker6a_RAxML_for_selected_parallel
+#$ -o HybPhyloMaker6a_RAxML_for_selected_parallel.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                    Script 05a - RAxML gene tree building                     *
-# *                                   v.1.3.0                                    *
+# *                    Script 06a - RAxML gene tree building                     *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -32,11 +32,11 @@
 # If running locally, gene trees are produced serially (can be very SLOW with large alignment and lot of loci)
 # If running on cluster, separate jobs are produced, number of jobs and number of loci per job is controlled by $raxmlperjob
 # MetaCentrum runs all jobs automatically, on Hydra go to homedir and run submitRAxMLjobs.sh
-# After all gene trees are generated run HybPhyloMaker5a2_RAxML_trees_summary.sh to calculate tree properties and plot graphs
+# After all gene trees are generated run HybPhyloMaker6a2_RAxML_trees_summary.sh to calculate tree properties and plot graphs
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker5a is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker6a is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -47,25 +47,25 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker5a is running on Hydra..."
+	echo -e "\nHybPhyloMaker6a is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05a
-	cd workdir05a
+	mkdir -p workdir06a
+	cd workdir06a
 else
-	echo -e "\nHybPhyloMaker5a is running locally..."
+	echo -e "\nHybPhyloMaker6a is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05a
-	cd workdir05a
+	mkdir -p workdir06a
+	cd workdir06a
 fi
 
 #Setting for the case when working with cpDNA
@@ -85,30 +85,30 @@ if [ -d "$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
 			echo -e "OK\n"
 		else
 			echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
-			rm -d ../workdir05a/ 2>/dev/null
+			rm -d ../workdir06a/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
-		rm -d ../workdir05a/ 2>/dev/null
+		rm -d ../workdir06a/ 2>/dev/null
 		exit 3
 	fi
 else
 	echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
-	rm -d ../workdir05a/ 2>/dev/null
+	rm -d ../workdir06a/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
 if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
 	echo -e "Directory '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir05a/ 2>/dev/null
+	rm -d ../workdir06a/ 2>/dev/null
 	exit 3
 else
 	if [[ ! $location == "1" ]]; then
-		if [ "$(ls -A ../workdir05a)" ]; then
-			echo -e "Directory 'workdir05a' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir05a/ 2>/dev/null
+		if [ "$(ls -A ../workdir06a)" ]; then
+			echo -e "Directory 'workdir06a' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir06a/ 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -155,8 +155,8 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'else' >> ${group}.sh
 		echo '  #Add necessary modules' >> ${group}.sh
 		echo '  module load bioinformatics/raxml/8.2.7' >> ${group}.sh
-		echo '  mkdir workdir05_'"${group}" >> ${group}.sh
-		echo '  cd workdir05_'"${group}" >> ${group}.sh
+		echo '  mkdir workdir06_'"${group}" >> ${group}.sh
+		echo '  cd workdir06_'"${group}" >> ${group}.sh
 		echo 'fi' >> ${group}.sh
 		echo 'path='"$path" >> ${group}.sh
 		echo 'source='"$source" >> ${group}.sh
@@ -195,7 +195,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  rm -rf $SCRATCHDIR/*' >> ${group}.sh
 		echo 'else' >> ${group}.sh
 		echo '  cd ..' >> ${group}.sh
-		echo '  rm -r workdir05_'"${group}" >> ${group}.sh
+		echo '  rm -r workdir06_'"${group}" >> ${group}.sh
 		echo 'fi' >> ${group}.sh
 		
 		chmod +x ${group}.sh
@@ -247,13 +247,13 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir05a
+	rm -r workdir06a
 fi
 
-echo -e "\nHybPhyloMaker 5a finished..."
+echo -e "\nHybPhyloMaker 6a finished..."
 if [[ $location == "2" ]]; then
 	echo -e "\nGo to homedir and run submitRAxMLjobs.sh..."
 elif [[ $location == "1" ]]; then
-	echo -e "\nAfter all jobs finish run script HybPhyloMaker5a2 in order to calculate tree properties..."
+	echo -e "\nAfter all jobs finish run script HybPhyloMaker6a2 in order to calculate tree properties..."
 fi
-echo -e "\nRun script HybPhyloMaker5a2 in order to calculate tree properties..."
+echo -e "\nRun script HybPhyloMaker6a2 in order to calculate tree properties..."

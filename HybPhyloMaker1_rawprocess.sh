@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -107,12 +107,12 @@ if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 		sed -i.bak2 '/^$/d' SamplesFileNames.txt
 		for sample in $(cat SamplesFileNames.txt); do
 			if [ ! -d "$path/10rawreads/$sample" ]; then #Test if each samples-specific folder exists
-				echo "Directory $sample does not exist.\n"
+				echo -e "Directory $sample does not exist.\n"
 				rm -d ../workdir01/ 2>/dev/null
 				exit 3
 			else
 				if [ ! -f "$path/10rawreads/$sample/${sample}_"*"R1"*".fastq.gz" ] || [ ! -f "$path/10rawreads/$sample/${sample}_"*"R2"*".fastq.gz" ]; then #Test if FASTQ.gz files exist
-					echo "Proper fastq.gz files missing in $sample folder...\n"
+					echo -e "Proper fastq.gz files missing in $sample folder...\n"
 					rm -d ../workdir01/ 2>/dev/null
 					exit 3
 				fi
@@ -124,7 +124,7 @@ if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 		exit 3
 	fi
 else
-	echo "Folder 10rawreads does not exist within your homedir.\n"
+	echo -e "Folder 10rawreads does not exist within your homedir.\n"
 	rm -d ../workdir01/ 2>/dev/null
 	exit 3
 fi
@@ -228,7 +228,7 @@ do
 	echo "Nr. of reads after duplicate removal:" >> duplicate-removal-fastuniq.log
 	b=`expr $(cat ${file}-1P_no-dups.fastq | wc -l) / 4`
 	after=`expr $b + $b + $u1 + $u2`
-	echo $after >> duplicate-removal-fastuniq.log >> duplicate-removal-fastuniq.log
+	echo $after >> duplicate-removal-fastuniq.log
 	#Copy results from scratch to storage
 	if [[ $location == "1" ]]; then
 		cp ${file}-1P_no-dups.fastq ${path}/20filtered/${file}

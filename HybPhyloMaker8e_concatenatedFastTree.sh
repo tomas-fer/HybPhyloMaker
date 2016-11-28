@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=24gb
 #PBS -l scratch=8gb
-#PBS -N HybPhyloMaker7e_concatenated_tree
+#PBS -N HybPhyloMaker8e_concatenated_tree
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -15,13 +15,13 @@
 #$ -l mres=3G,h_data=3G,h_vmem=3G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker7e_concatenated_tree
-#$ -o HybPhyloMaker7e_concatenated_tree.log
+#$ -N HybPhyloMaker8e_concatenated_tree
+#$ -o HybPhyloMaker8e_concatenated_tree.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                    Script 07e - concatenated species tree                    *
-# *                                   v.1.3.0                                    *
+# *                    Script 08e - concatenated species tree                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -31,11 +31,11 @@
 #Take genes specified in /71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 #from /71selected/deleted_above${MISSINGPERCENT}
 #Run first
-#(1) HybPhyloMaker4_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker7e is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker8e is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -50,29 +50,29 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-3.4.1-intel
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker7e is running on Hydra..."
+	echo -e "\nHybPhyloMaker8e is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07e
-	cd workdir07e
+	mkdir -p workdir08e
+	cd workdir08e
 	#Add necessary modules
 	module load bioinformatics/fasttree/2.1.8
 	module load bioinformatics/anaconda3/2.3.0
 	module load bioinformatics/newickutilities/0.0
 else
-	echo -e "\nHybPhyloMaker7e is running locally..."
+	echo -e "\nHybPhyloMaker8e is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07e
-	cd workdir07e
+	mkdir -p workdir08e
+	cd workdir08e
 fi
 
 #Setting for the case when working with cpDNA
@@ -109,12 +109,12 @@ if [[ $update =~ "yes" ]]; then
 			echo -e "OK\n"
 		else
 			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
-			rm -d ../workdir07e 2>/dev/null
+			rm -d ../workdir08e 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-		rm -d ../workdir07e 2>/dev/null
+		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
 else
@@ -123,12 +123,12 @@ else
 			echo -e "OK\n"
 		else
 			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
-			rm -d ../workdir07e 2>/dev/null
+			rm -d ../workdir08e 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
-		rm -d ../workdir07e 2>/dev/null
+		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
 fi
@@ -137,20 +137,20 @@ fi
 if [[ $update =~ "yes" ]]; then
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07e 2>/dev/null
+		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
 else
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07e 2>/dev/null
+		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
 fi
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir07e)" ]; then
-		echo -e "Directory 'workdir07e' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07e 2>/dev/null
+	if [ "$(ls -A ../workdir08e)" ]; then
+		echo -e "Directory 'workdir08e' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
 fi
@@ -234,7 +234,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir07e
+	rm -r workdir08e
 fi
 
-echo -e "\nHybPhyloMaker7e finished...\n"
+echo -e "\nHybPhyloMaker8e finished...\n"

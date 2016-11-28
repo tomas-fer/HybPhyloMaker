@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=16gb
 #PBS -l scratch=4gb
-#PBS -N HybPhyloMaker5b_FastTree_for_selected
+#PBS -N HybPhyloMaker6b_FastTree_for_selected
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -15,13 +15,13 @@
 #$ -l mres=4G,h_data=4G,h_vmem=4G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker5b_FastTree_for_selected
-#$ -o HybPhyloMaker5b_FastTree_for_selected.log
+#$ -N HybPhyloMaker6b_FastTree_for_selected
+#$ -o HybPhyloMaker6b_FastTree_for_selected.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                   Script 05b - FastTree gene tree building                   *
-# *                                   v.1.3.0                                    *
+# *                   Script 06b - FastTree gene tree building                   *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -29,11 +29,11 @@
 # Compute gene trees using FastTree for selected genes
 # Selection is based on maximum missing data per sample allowed ($MISSINGPERCENT) and minimum species percentage presence per assembly ($SPECIESPRESENCE)
 # Edit these values in settings.cfg
-# Run first HybPhyloMaker4_missingdataremoval.sh with the same settings
+# Run first HybPhyloMaker5_missingdataremoval.sh with the same settings
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker5b is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker6b is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,30 +52,30 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker5b is running on Hydra..."
+	echo -e "\nHybPhyloMaker6b is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05b
-	cd workdir05b
+	mkdir -p workdir06b
+	cd workdir06b
 	#Add necessary modules
 	module load bioinformatics/fasttree/2.1.8
 	module load bioinformatics/raxml/8.2.7
 	module load tools/R/3.2.1
 	module load bioinformatics/anaconda3/2.3.0
 else
-	echo -e "\nHybPhyloMaker5b is running locally..."
+	echo -e "\nHybPhyloMaker6b is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05b
-	cd workdir05b
+	mkdir -p workdir06b
+	cd workdir06b
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
@@ -94,30 +94,30 @@ if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT
 			echo -e "OK\n"
 		else
 			echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
-			rm -d ../workdir05b/ 2>/dev/null
+			rm -d ../workdir06b/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
-		rm -d ../workdir05b/ 2>/dev/null
+		rm -d ../workdir06b/ 2>/dev/null
 		exit 3
 	fi
 else
 	echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
-	rm -d ../workdir05b/ 2>/dev/null
+	rm -d ../workdir06b/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
 if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree" ]; then
 	echo -e "Directory '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir05b/ 2>/dev/null
+	rm -d ../workdir06b/ 2>/dev/null
 	exit 3
 else
 	if [[ ! $location == "1" ]]; then
-		if [ "$(ls -A ../workdir05b)" ]; then
-			echo -e "Directory 'workdir05b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir05b/ 2>/dev/null
+		if [ "$(ls -A ../workdir06b)" ]; then
+			echo -e "Directory 'workdir06b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir06b/ 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -441,7 +441,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir05b
+	rm -r workdir06b
 fi
 
-echo -e "HybPhyloMaker 5b finished...\n"
+echo -e "HybPhyloMaker 6b finished...\n"

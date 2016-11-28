@@ -280,7 +280,8 @@ if ! [ -x "$(command -v bowtie2)" ]; then
 	cd ..
 fi
 
-#ococo
+#ococo (necessary for majority rule consensus building from mapped reads in BAM file)
+#see https://github.com/karel-brinda/ococo
 if ! [ -x "$(command -v ococo)" ]; then
 	git clone --recursive https://github.com/karel-brinda/ococo
 	cd ococo
@@ -306,16 +307,6 @@ if ! [ -x "$(command -v p4)" ]; then
 	python setup.py build
 	python setup.py install
 	python setup.py build_ext -i
-	cd ..
-fi
-
-#ococo (necessary for majority rule consensus building from mapped reads in BAM file)
-#see https://github.com/karel-brinda/ococo
-if ! [ -x "$(command -v ococo)" ]; then
-	git clone --recursive https://github.com/karel-brinda/ococo
-	cd ococo
-	make -j
-	cp ococo /usr/local/bin
 	cd ..
 fi
 

@@ -4,7 +4,7 @@
 #PBS -l nodes=1:ppn=4
 #PBS -j oe
 #PBS -l mem=8gb
-#PBS -N HybPhyloMaker7b_Astrid
+#PBS -N HybPhyloMaker8b_Astridb_Astrid
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -14,13 +14,13 @@
 #$ -l mres=2G,h_data=2G,h_vmem=2G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker7b_Astrid
-#$ -o HybPhyloMaker7b_Astrid.log
+#$ -N HybPhyloMaker8b_Astrid
+#$ -o HybPhyloMaker8b_Astrid.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                       Script 07b - Astrid species tree                       *
-# *                                   v.1.3.0                                    *
+# *                       Script 08b - Astrid species tree                       *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -36,7 +36,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker7b is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker8b is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
@@ -54,28 +54,28 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-3.4.1-intel
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == *local* ]]; then
-	echo -e "\nHybPhyloMaker7b is running on Hydra..."
+	echo -e "\nHybPhyloMaker8b is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07b
-	cd workdir07b
+	mkdir -p workdir08b
+	cd workdir08b
 	#Add necessary modules
 	module load bioinformatics/anaconda3/2.3.0
 	module load bioinformatics/newickutilities/0.0
 else
-	echo -e "\nHybPhyloMaker7b is running locally..."
+	echo -e "\nHybPhyloMaker8b is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir07b
-	cd workdir07b
+	mkdir -p workdir08b
+	cd workdir08b
 fi
 
 #Setting for the case when working with cpDNA
@@ -116,12 +116,12 @@ if [[ $update =~ "yes" ]]; then
 							echo -e "OK\n"
 						else
 							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-							rm -d ../workdir07b/ 2>/dev/null
+							rm -d ../workdir08b/ 2>/dev/null
 							exit 3
 						fi
 					else
 						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
@@ -130,12 +130,12 @@ if [[ $update =~ "yes" ]]; then
 							echo -e "OK\n"
 						else
 							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-							rm -d ../workdir07b/ 2>/dev/null
+							rm -d ../workdir08b/ 2>/dev/null
 							exit 3
 						fi
 					else
 						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				fi
@@ -144,7 +144,7 @@ if [[ $update =~ "yes" ]]; then
 			fi
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07b/ 2>/dev/null
+			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	else
@@ -156,12 +156,12 @@ if [[ $update =~ "yes" ]]; then
 							echo -e "OK\n"
 						else
 							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-							rm -d ../workdir07b/ 2>/dev/null
+							rm -d ../workdir08b/ 2>/dev/null
 							exit 3
 						fi
 					else
 						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
@@ -170,12 +170,12 @@ if [[ $update =~ "yes" ]]; then
 							echo -e "OK\n"
 						else
 							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-							rm -d ../workdir07b/ 2>/dev/null
+							rm -d ../workdir08b/ 2>/dev/null
 							exit 3
 						fi
 					else
 						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				fi
@@ -184,7 +184,7 @@ if [[ $update =~ "yes" ]]; then
 			fi
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07b/ 2>/dev/null
+			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -197,7 +197,7 @@ else
 						echo -e "OK\n"
 					else
 						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
@@ -205,7 +205,7 @@ else
 						echo -e "OK\n"
 					else
 						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				fi
@@ -214,7 +214,7 @@ else
 			fi
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07b/ 2>/dev/null
+			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	else
@@ -225,7 +225,7 @@ else
 						echo -e "OK\n"
 					else
 						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
@@ -233,7 +233,7 @@ else
 						echo -e "OK\n"
 					else
 						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-						rm -d ../workdir07b/ 2>/dev/null
+						rm -d ../workdir08b/ 2>/dev/null
 						exit 3
 					fi
 				fi
@@ -242,7 +242,7 @@ else
 			fi
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir07b/ 2>/dev/null
+			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -252,20 +252,20 @@ fi
 if [[ $update =~ "yes" ]]; then
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07b/ 2>/dev/null
+		rm -d ../workdir08b/ 2>/dev/null
 		exit 3
 	fi
 else
 	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid" ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07b/ 2>/dev/null
+		rm -d ../workdir08b/ 2>/dev/null
 		exit 3
 	fi
 fi
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir07b)" ]; then
-		echo -e "Directory 'workdir07b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir07b/ 2>/dev/null
+	if [ "$(ls -A ../workdir08b)" ]; then
+		echo -e "Directory 'workdir08b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir08b/ 2>/dev/null
 		exit 3
 	fi
 fi
@@ -452,7 +452,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir07b
+	rm -r workdir08b
 fi
 
-echo -e "\nScript HybPhyloMaker7b finished...\n"
+echo -e "\nScript HybPhyloMaker8b finished...\n"

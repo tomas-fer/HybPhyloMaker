@@ -13,13 +13,13 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker8_update_trees
-#$ -o HybPhyloMaker8_update_trees.log
+#$ -N HybPhyloMaker9_update_trees
+#$ -o HybPhyloMaker9_update_trees.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                           Script 08 - Update trees                           *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -28,7 +28,7 @@
 # 
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker8 is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker9 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -43,27 +43,27 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker8 is running on Hydra..."
+	echo -e "\nHybPhyloMaker9 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir08
-	cd workdir08
+	mkdir workdir09
+	cd workdir09
 	#Add necessary modules
 	module load tools/R/3.2.1
 else
-	echo -e "\nHybPhyloMaker8 is running locally..."
+	echo -e "\nHybPhyloMaker9 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir workdir08
-	cd workdir08
+	mkdir workdir09
+	cd workdir09
 fi
 
 #Setting for the case when working with cpDNA
@@ -105,7 +105,7 @@ cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/gene_pro
 if [[ $(cat gene_properties_update.txt | wc -l) -lt 11 ]]; then
 	echo -e "Less than 10 genes selected. Exiting...\n"
 	cd ..
-	rm -r workdir08
+	rm -r workdir09
 	exit 3
 fi
 
@@ -180,7 +180,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir08
+	rm -r workdir09
 fi
 
-echo -e "\nScript HybPhyloMaker8 finished...\n"
+echo -e "\nScript HybPhyloMaker9 finished...\n"

@@ -4,7 +4,7 @@
 #PBS -l nodes=1:ppn=4
 #PBS -j oe
 #PBS -l mem=4gb
-#PBS -N HybPhyloMaker5a2_RAxML_trees_summary
+#PBS -N HybPhyloMaker6a2_RAxML_trees_summary
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -14,23 +14,23 @@
 #$ -l mres=4G,h_data=4G,h_vmem=4G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker5a2_RAxML_trees_summary
-#$ -o HybPhyloMaker5a2_RAxML_trees_summary.log
+#$ -N HybPhyloMaker6a2_RAxML_trees_summary
+#$ -o HybPhyloMaker6a2_RAxML_trees_summary.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                  Script 05b2 - summary of RAxML gene trees                   *
-# *                                   v.1.3.0                                    *
+# *                  Script 06a2 - summary of RAxML gene trees                   *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 # Compute summary for already generated gene trees with RAxML
-# Run first HybPhyloMaker4_missingdataremoval.sh and HybPhyloMaker5a_RAxML_for_selected.sh with the same settings
+# Run first HybPhyloMaker5_missingdataremoval.sh and HybPhyloMaker6a_RAxML_for_selected.sh with the same settings
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker5b2 is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker6a2 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -45,27 +45,27 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker5b2 is running on Hydra..."
+	echo -e "\nHybPhyloMaker6a2 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05a2
-	cd workdir05a2
+	mkdir -p workdir06a2
+	cd workdir06a2
 	#Add necessary modules
 	module load tools/R/3.2.1
 else
-	echo -e "\nHybPhyloMaker5b2 is running locally..."
+	echo -e "\nHybPhyloMaker6a2 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir05a2
-	cd workdir05a2
+	mkdir -p workdir06a2
+	cd workdir06a2
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
@@ -86,40 +86,40 @@ if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT
 					echo -e "OK\n"
 				else
 					echo -e "'$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is empty. Exiting...\n"
-					rm -d ../workdir05a2/ 2>/dev/null
+					rm -d ../workdir06a2/ 2>/dev/null
 					exit 3
 				fi
 			else
 				echo -e "'$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is missing. Exiting...\n"
-				rm -d ../workdir05a2/ 2>/dev/null
+				rm -d ../workdir06a2/ 2>/dev/null
 				exit 3
 			fi
 		else
 			echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
-			rm -d ../workdir05a2/ 2>/dev/null
+			rm -d ../workdir06a2/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
-		rm -d ../workdir05a2/ 2>/dev/null
+		rm -d ../workdir06a2/ 2>/dev/null
 		exit 3
 	fi
 else
 	echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
-	rm -d ../workdir05a2/ 2>/dev/null
+	rm -d ../workdir06a2/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
 if [ -f "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt" ]; then
 	echo -e "File '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt' already exists. You are probably going to owerwrite previous results. Delete this file or rename before running this script again. Exiting...\n"
-	rm -d ../workdir05a2/ 2>/dev/null
+	rm -d ../workdir06a2/ 2>/dev/null
 	exit 3
 else
 	if [[ ! $location == "1" ]]; then
-		if [ "$(ls -A ../workdir05a2)" ]; then
-			echo -e "Directory 'workdir05a2' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir05a2/ 2>/dev/null
+		if [ "$(ls -A ../workdir06a2)" ]; then
+			echo -e "Directory 'workdir06a2' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir06a2/ 2>/dev/null
 			exit 3
 		fi
 	fi
@@ -253,7 +253,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir05a2
+	rm -r workdir06a2
 fi
 
-echo -e "HybPhyloMaker 5a2 finished...\n"
+echo -e "HybPhyloMaker 6a2 finished...\n"

@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=80gb
-#PBS -N HybPhyloMaker1b_readmapping
+#PBS -N HybPhyloMaker2_readmapping
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -14,20 +14,20 @@
 #$ -q sThC.q
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker1b_readmapping
-#$ -o HybPhyloMaker1b_readmapping.log
+#$ -N HybPhyloMaker2_readmapping
+#$ -o HybPhyloMaker2_readmapping.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker1b is running on MetaCentrum...\n"
+	echo -e "\nHybPhyloMaker2 is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add gcc-4.8.4
 	module add ococo-2016-11
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker1b is running on Hydra...\n"
+	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -58,7 +58,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/bowtie2/2.2.6
 	module load bioinformatics/samtools/1.3
 else
-	echo -e "\nHybPhyloMaker1b is running locally...\n"
+	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -69,46 +69,105 @@ else
 	cd workdir02
 fi
 
+#Test if 'workdir' exist
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir02)" ]; then
 		echo -e "Directory 'workdir02' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir01/ 2>/dev/null
+		rm -d ../workdir02/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folders for results exist
+if [ -d "$path/21mapped" ] && [[ $mapping =~ "yes" ]]; then
+	echo -e "Directory '$path/21mapped' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir02/ 2>/dev/null
+	exit 3
+elif [ -d "$path/30consensus" ]; then
+	echo -e "Directory '$path/30consensus' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir02/ 2>/dev/null
+	exit 3
+fi
+#Test data structure
+echo -en "Testing input data structure..."
+if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
+	#Copy SamplesFileNames.txt and modify it
+	cp $path/10rawreads/SamplesFileNames.txt .
+	#Add LF at the end of last line in SamplesFileNames.txt if missing
+	sed -i.bak '$a\' SamplesFileNames.txt
+	#Delete empty lines from SamplesFileNames.txt (if any)
+	sed -i.bak2 '/^$/d' SamplesFileNames.txt
+	rm *bak*
+	for sample in $(cat SamplesFileNames.txt); do
+		if [ $mapping == "yes" ]; then
+			if [ ! -d "$path/20filtered/$sample" ]; then #Test if each samples-specific folder exists
+				echo -e "Directory $sample does not exist within '20filtered'.\n"
+				rm SamplesFileNames.txt
+				rm -d ../workdir02/ 2>/dev/null
+				exit 3
+			else
+				if [ ! -f "$path/20filtered/$sample/${sample}-1P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-2P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-1U" ] || [ ! -f "$path/20filtered/$sample/${sample}-2U" ]; then #Test if filtered FASTQ files exist
+					echo -e "Proper filtered fastq files missing in $sample folder...\n"
+					rm SamplesFileNames.txt
+					rm -d ../workdir02/ 2>/dev/null
+					exit 3
+				fi
+			fi
+		else
+			if [ ! -f "$path/21mapped/${sample}.bam" ]; then
+				echo -e "$sample.bam does not exist within '21mapped'.\n"
+				rm SamplesFileNames.txt
+				rm -d ../workdir02/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	done
+	if [ ! -f "$source/$probes" ]; then
+		echo -e "$probes does not exist within 'HybSeqSource'.\n"
+		rm SamplesFileNames.txt
+		rm -d ../workdir02/ 2>/dev/null
 		exit 3
 	else
-		if [ -d "$path/20filtered" ]; then
-			echo -e "Directory '$path/21filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir01/ 2>/dev/null
+		probes=$(echo $probes | cut -d"." -f1)
+		if [ ! -f "$source/${probes}_with${nrns}Ns_beginend.fas" ]; then
+			echo -e "${probes}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+			rm SamplesFileNames.txt
+			rm -d ../workdir02/ 2>/dev/null
 			exit 3
 		fi
 	fi
 else
-	if [ -d "$path/20filtered" ]; then
-		echo -e "Directory '$path/21filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir01/ 2>/dev/null
-		exit 3
-	fi
+	echo -e "List of samples (SamplesFileNames.txt) is missing. Should be in 10rawreads...\n"
+	rm -d ../workdir02/ 2>/dev/null
+	exit 3
 fi
+echo -e "OK for running HybPhyloMaker2\n"
 
 #Copy pseudoreference
-probes=$(echo $probes | cut -d"." -f1)
+#probes=$(echo $probes | cut -d"." -f1)
 cp $source/${probes}_with${nrns}Ns_beginend.fas .
+
+#Make a new folder for results
+if [ ! -d "$path/21mapped" ]; then
+	mkdir $path/21mapped
+fi
 
 #Make index from pseudoreference
 if [[ $mapping =~ "yes" ]]; then
-	bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index
+	echo -en "Indexing pseudoreference..."
+	bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
+	cp indexing_pseudoreference.log $path/21mapped/
 fi
-#Make a new folder for results
-mkdir $path/21mapped
 
 #Copy list of samples
 cp $path/10rawreads/SamplesFileNames.txt .
 
-#A loop to process all samples in folders named as specified in SaplesFileNames.txt
+#A loop to process all samples in folders named as specified in SamplesFileNames.txt
 numberfiles=$(cat SamplesFileNames.txt | wc -l)
 calculating=0
 for file in $(cat SamplesFileNames.txt); do
 	calculating=$((calculating + 1))
-	echo -e "Processing sample $file ($calculating out of $numberfiles)"
+	echo -e "\nProcessing sample $file ($calculating out of $numberfiles)"
 	#set parameters for mapping
 	score=G,20,8
 	#sensitive mapping
@@ -118,22 +177,22 @@ for file in $(cat SamplesFileNames.txt); do
 		cp $path/20filtered/${file}/${file}-2P_no-dups.fastq .
 		cp $path/20filtered/${file}/${file}-1U .
 		cp $path/20filtered/${file}/${file}-2U .
-		echo "mapping"
+		echo "Mapping..."
 		#Bowtie2 parameters are derived from --very-sensitive-local
 		bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq  -2 ${file}-2P_no-dups.fastq  -U ${file}-1U,${file}-2U -S ${file}.sam 2>${file}_bowtie2_out.txt
 		#create SAM from BAM
-		echo "converting to BAM"
+		echo "Converting to BAM..."
 		samtools view -bS -o ${file}.bam ${file}.sam
 		#copy results to home
 		cp ${file}.bam $path/21mapped
 		cp ${file}_bowtie2_out.txt $path/21mapped
 	else
-		echo "copying BAM"
+		echo "Copying BAM..."
 		cp $path/21mapped/${file}.bam .
 	fi
 	#CONSENSUS USING OCOCO
-	echo "making consensus with OCOCO"
-	ococo -i ${file}.bam -c $mincov -F ${file}.fasta
+	echo "Making consensus with OCOCO..."
+	ococo -i ${file}.bam -c $mincov -F ${file}.fasta 2>/dev/null
 	#change name in fasta file
 	sed -i '1d' ${file}.fasta #delete first line
 	sed -i "1i >$file" ${file}.fasta #insert fasta header as a first line
@@ -154,7 +213,7 @@ done
 cat *.fasta > consensus.fasta
 #Remove line breaks from fasta file
 awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' consensus.fasta > tmp && mv tmp consensus.fasta
-mkdir $path/30consensus
+mkdir -p $path/30consensus
 cp consensus.fasta $path/30consensus
 
 #Clean scratch/work directory

@@ -4,7 +4,7 @@
 #PBS -l nodes=1:ppn=1
 #PBS -j oe
 #PBS -l mem=1gb
-#PBS -N HybPhyloMaker6_root_trees
+#PBS -N HybPhyloMaker7_root_trees
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -13,13 +13,13 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker6_root_trees
-#$ -o HybPhyloMaker6_root_trees.log
+#$ -N HybPhyloMaker7_root_trees
+#$ -o HybPhyloMaker7_root_trees.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                          Script 06 - Root gene trees                         *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -29,12 +29,12 @@
 # (2) remove bootstrap values and branch length information from tree files
 # Take trees starting with RAxML_bipartitions* (i.e., best ML tree with BS values) from /concatenated_exon_alignments/selected${CUT}RAxML/
 # or trees Assembly*.tre from /concatenated_exon_alignments/selected${CUT}FastTree/
-# Run first HybPhyloMaker4_missingdataremoval.sh with the same $CUT value 
-# and HybPhyloMaker5a_RAxML_for_selected.sh or HybPhyloMaker5b_FastTree_for_selected.sh with the same $CUT value
+# Run first HybPhyloMaker5_missingdataremoval.sh with the same $CUT value 
+# and HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same $CUT value
 
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker6 is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker7 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -47,27 +47,27 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker6 is running on Hydra..."
+	echo -e "\nHybPhyloMaker7 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir06
-	cd workdir06
+	mkdir -p workdir07
+	cd workdir07
 	#Add necessary modules
 	module load bioinformatics/newickutilities/0.0
 else
-	echo -e "\nHybPhyloMaker6 is running locally..."
+	echo -e "\nHybPhyloMaker7 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir06
-	cd workdir06
+	mkdir -p workdir07
+	cd workdir07
 fi
 
 #Setting for the case when working with cpDNA
@@ -106,22 +106,22 @@ if [[ $update =~ "yes" ]]; then
 					echo -e "OK\n"
 				else
 					echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}' is empty. Exiting...\n"
-					rm -d ../workdir06 2>/dev/null
+					rm -d ../workdir07 2>/dev/null
 					exit 3
 				fi
 			else
 				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}' is missing. Exiting...\n"
-				rm -d ../workdir06 2>/dev/null
+				rm -d ../workdir07 2>/dev/null
 				exit 3
 			fi
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update' is missing. Exiting...\n"
-			rm -d ../workdir06 2>/dev/null
+			rm -d ../workdir07 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-		rm -d ../workdir06 2>/dev/null
+		rm -d ../workdir07 2>/dev/null
 		exit 3
 	fi
 else
@@ -130,12 +130,12 @@ else
 			echo -e "OK\n"
 		else
 			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}' is empty. Exiting...\n"
-			rm -d ../workdir06 2>/dev/null
+			rm -d ../workdir07 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}' is missing. Exiting...\n"
-		rm -d ../workdir06 2>/dev/null
+		rm -d ../workdir07 2>/dev/null
 		exit 3
 	fi
 fi
@@ -144,18 +144,20 @@ fi
 if [[ $update =~ "yes" ]]; then
 	if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/*.newick 2>/dev/null | wc -w) ]; then
 		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees' already includes some *.newick trees. You are probably going to owerwrite previous results. exists. Delete or remove all *.newick files before running this script again. Exiting...\n"
-		rm -d ../workdir06 2>/dev/null
+		rm -d ../workdir07 2>/dev/null
 		exit 3
 	fi
 else
 	if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/*.newick 2>/dev/null | wc -w) ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees' already includes some *.newick trees. You are probably going to owerwrite previous results. Delete or remove all *.newick files before running this script again. Exiting...\n" && rm -d ../workdir06 2>/dev/null && exit 3
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees' already includes some *.newick trees. You are probably going to owerwrite previous results. Delete or remove all *.newick files before running this script again. Exiting...\n"
+		rm -d ../workdir07 2>/dev/null
+		exit 3
 	fi
 fi
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir06)" ]; then
-		echo -e "Directory 'workdir06' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir06 2>/dev/null
+	if [ "$(ls -A ../workdir07)" ]; then
+		echo -e "Directory 'workdir07' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir07 2>/dev/null
 		exit 3
 	fi
 fi
@@ -257,7 +259,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir06
+	rm -r workdir07
 fi
 
-echo -e "\nScript HybPhyloMaker6 finished...\n"
+echo -e "\nScript HybPhyloMaker7 finished...\n"

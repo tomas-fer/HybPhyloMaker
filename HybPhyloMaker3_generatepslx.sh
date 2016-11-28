@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=8gb
-#PBS -N HybPhyloMaker2_generate_pslx
+#PBS -N HybPhyloMaker3_generate_pslx
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -14,14 +14,14 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker2_generate_pslx
-#$ -o HybPhyloMaker2_generate_pslx.log
+#$ -N HybPhyloMaker3_generate_pslx
+#$ -o HybPhyloMaker3_generate_pslx.log
 
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *         Script 02 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.3.0                                    *
+# *         Script 03 - Process consensus after mapping, make pslx files         *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -34,7 +34,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker2 is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker3 is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
@@ -49,7 +49,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add blat-suite-34
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker2 is running on Hydra..."
+	echo -e "\nHybPhyloMaker3 is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -58,12 +58,12 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	othersourcepath=../$othersource
 	otherpslxpath=../$otherpslx
 	#Make and enter work directory
-	mkdir -p workdir02
-	cd workdir02
+	mkdir -p workdir03
+	cd workdir03
 	#Add necessary modules
 	module load bioinformatics/blat/36x1
 else
-	echo -e "\nHybPhyloMaker2 is running locally..."
+	echo -e "\nHybPhyloMaker3 is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -72,8 +72,8 @@ else
 	othersourcepath=../$othersource
 	otherpslxpath=../$otherpslx
 	#Make and enter work directory
-	mkdir -p workdir02
-	cd workdir02
+	mkdir -p workdir03
+	cd workdir03
 fi
 
 #Setting for the case when working with cpDNA
@@ -93,12 +93,12 @@ if [[ $cp =~ "yes" ]]; then
 			echo -e "OK\n"
 		else
 			echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
-			rm -d ../workdir02/ 2>/dev/null
+			rm -d ../workdir03/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/30consensus/consensus_cpDNA.fasta' is missing. Exiting...\n"
-		rm -d ../workdir02/ 2>/dev/null
+		rm -d ../workdir03/ 2>/dev/null
 		exit 3
 	fi
 else
@@ -107,12 +107,12 @@ else
 			echo -e "OK\n"
 		else
 			echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
-			rm -d ../workdir02/ 2>/dev/null
+			rm -d ../workdir03/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$path/30consensus/consensus.fasta' is missing. Exiting...\n"
-		rm -d ../workdir02/ 2>/dev/null
+		rm -d ../workdir03/ 2>/dev/null
 		exit 3
 	fi
 fi
@@ -120,18 +120,18 @@ fi
 #Test if folder for results exits
 if [ -d "$path/$type/40contigs" ]; then
 	echo -e "Directory '$path/$type/40contigs' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir02/ 2>/dev/null
+	rm -d ../workdir03/ 2>/dev/null
 	exit 3
 else
 	if [ -d "$path/$type/50pslx" ]; then
 		echo -e "Directory '$path/$type/50pslx' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir02/ 2>/dev/null
+		rm -d ../workdir03/ 2>/dev/null
 		exit 3
 	else
 		if [[ ! $location == "1" ]]; then
-			if [ "$(ls -A ../workdir02)" ]; then
-				echo -e "Directory 'workdir02' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-				rm -d ../workdir02/ 2>/dev/null
+			if [ "$(ls -A ../workdir03)" ]; then
+				echo -e "Directory 'workdir03' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir03/ 2>/dev/null
 				exit 3
 			fi
 		fi
@@ -145,7 +145,7 @@ mkdir -p $path/$type
 mkdir $path/$type/40contigs
 
 #-----------------------GENEIOUS CONSENSUS SEQUENCE MODIFICATION-----------------------
-echo -en "Parsing Geneious consensus sequence output..."
+echo -en "Parsing consensus sequence..."
 #Modify Windows EOLs to Unix EOLs (i.e., LF only)
 if [[ $cp =~ "yes" ]]; then
 	sed -i.bak 's/\x0D$//' consensus_cpDNA.fasta
@@ -242,7 +242,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir02
+	rm -r workdir03
 fi
 
-echo -e "\nScript HybPhyloMaker2 finished...\n"
+echo -e "\nScript HybPhyloMaker3 finished...\n"
