@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -63,25 +63,45 @@ else
 fi
 
 # Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
-name=`ls $source/$probes | cut -d'.' -f 1`
+#name=`ls $source/$probes | cut -d'.' -f 1`
 
 #Check necessary file
 echo -ne "Testing if input data are available..."
-if [ ! -f "$source/$probes" ]; then
-	echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
-	rm -d ../workdir00_ref/ 2>/dev/null
-	exit 3
-else
-	cp $source/$probes .
-	# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
-	name=`ls $probes | cut -d'.' -f 1`
-	rm $probes
-	if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
-		echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+if [[ $cp =~ "yes" ]]; then
+	if [ ! -f "$source/$cpDNACDS" ]; then
+		echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
 		rm -d ../workdir00_ref/ 2>/dev/null
-		exit
+		exit 3
 	else
-		echo -e "OK\n"
+		cp $source/$cpDNACDS .
+		# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
+		name=`ls $cpDNACDS | cut -d'.' -f 1`
+		rm $cpDNACDS
+		if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
+			echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir00_ref/ 2>/dev/null
+			exit
+		else
+			echo -e "OK\n"
+		fi
+	fi
+else
+	if [ ! -f "$source/$probes" ]; then
+		echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
+		rm -d ../workdir00_ref/ 2>/dev/null
+		exit 3
+	else
+		cp $source/$probes .
+		# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
+		name=`ls $probes | cut -d'.' -f 1`
+		rm $probes
+		if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
+			echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir00_ref/ 2>/dev/null
+			exit
+		else
+			echo -e "OK\n"
+		fi
 	fi
 fi
 
@@ -93,10 +113,18 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 #Copy probe sequence file
-cp $source/$probes .
+if [[ $cp =~ "yes" ]]; then
+	cp $source/$cpDNACDS .
+else
+	cp $source/$probes .
+fi
 
 # Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
-name=`ls $probes | cut -d'.' -f 1`
+if [[ $cp =~ "yes" ]]; then
+	name=`ls $cpDNACDS | cut -d'.' -f 1`
+else
+	name=`ls $probes | cut -d'.' -f 1`
+fi
 # Print headers in fasta file
 echo ">${name}_with${nrns}Ns_beginend" > ${name}_with${nrns}Ns_beginend.fas
 # 0. print N $nrns times to variable $a
@@ -108,8 +136,11 @@ a=$(printf "%0.sN" $(seq 1 $nrns))
 # 3. tr command to replace all EOLs ("\n") by Q
 # 4. sed command to replace all Qs by a sequence of $nrns Ns (saved in variable $a)
 # 5. awk command to print $nrns Ns to the beginning and the end of the reference
-cat $probes | awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' | sed '/>/d' | tr "\n" "Q" | sed "s/Q/$a/g" | awk -v val=$a '{ print val $0 val }' >> ${name}_with400Ns_beginend.fas
-
+if [[ $cp =~ "yes" ]]; then
+	cat $cpDNACDS | awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' | sed '/>/d' | tr "\n" "Q" | sed "s/Q/$a/g" | awk -v val=$a '{ print val $0 val }' >> ${name}_with${nrns}Ns_beginend.fas
+else
+	cat $probes | awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' | sed '/>/d' | tr "\n" "Q" | sed "s/Q/$a/g" | awk -v val=$a '{ print val $0 val }' >> ${name}_with${nrns}Ns_beginend.fas
+fi
 #Copy pseudoreference to home
 cp ${name}_with${nrns}Ns_beginend.fas $source
 
