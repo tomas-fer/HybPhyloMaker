@@ -21,7 +21,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.3.1                                    *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -88,7 +88,7 @@ fi
 #Check necessary file
 echo -ne "Testing if input data are available..."
 if [[ $cp =~ "yes" ]]; then
-	if [ -f "$path/30consensus/consensus_cpDNA.fasta" ]; then
+	if [ -f "$path/$type/30consensus/consensus_cpDNA.fasta" ]; then
 		if [ -f "$source/$cpDNACDS" ]; then
 			echo -e "OK\n"
 		else
@@ -97,12 +97,12 @@ if [[ $cp =~ "yes" ]]; then
 			exit 3
 		fi
 	else
-		echo -e "'$path/30consensus/consensus_cpDNA.fasta' is missing. Exiting...\n"
+		echo -e "'$path/$type/30consensus/consensus_cpDNA.fasta' is missing. Exiting...\n"
 		rm -d ../workdir03/ 2>/dev/null
 		exit 3
 	fi
 else
-	if [ -f "$path/30consensus/consensus.fasta" ]; then
+	if [ -f "$path/$type/30consensus/consensus.fasta" ]; then
 		if [ -f "$source/$probes" ]; then
 			echo -e "OK\n"
 		else
@@ -111,7 +111,7 @@ else
 			exit 3
 		fi
 	else
-		echo -e "'$path/30consensus/consensus.fasta' is missing. Exiting...\n"
+		echo -e "'$path/$type/30consensus/consensus.fasta' is missing. Exiting...\n"
 		rm -d ../workdir03/ 2>/dev/null
 		exit 3
 	fi
@@ -139,7 +139,7 @@ else
 fi
 
 #Copy fasta from home folder to scratch/workdir
-cp -r $path/30consensus/* .
+cp -r $path/$type/30consensus/* .
 #Make a new folder for results
 mkdir -p $path/$type
 mkdir $path/$type/40contigs

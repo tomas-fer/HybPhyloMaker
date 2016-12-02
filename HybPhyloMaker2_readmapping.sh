@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.3.1                                    *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -69,6 +69,15 @@ else
 	cd workdir02
 fi
 
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
+	type="cp"
+else
+	echo -e "Working with exons\n"
+	type="exons"
+fi
+
 #Test if 'workdir' exist
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir02)" ]; then
@@ -79,15 +88,16 @@ if [[ ! $location == "1" ]]; then
 fi
 
 #Test if folders for results exist
-if [ -d "$path/21mapped" ] && [[ $mapping =~ "yes" ]]; then
-	echo -e "Directory '$path/21mapped' already exists. Delete it or rename before running this script again. Exiting...\n"
+if [ -d "$path/$type/21mapped" ] && [[ $mapping =~ "yes" ]]; then
+	echo -e "Directory '$path/$type/21mapped' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir02/ 2>/dev/null
 	exit 3
-elif [ -d "$path/30consensus" ]; then
-	echo -e "Directory '$path/30consensus' already exists. Delete it or rename before running this script again. Exiting...\n"
+elif [ -d "$path/$type/30consensus" ]; then
+	echo -e "Directory '$path/$type/30consensus' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir02/ 2>/dev/null
 	exit 3
 fi
+
 #Test data structure
 echo -en "Testing input data structure..."
 if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
@@ -107,33 +117,49 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 				exit 3
 			else
 				if [ ! -f "$path/20filtered/$sample/${sample}-1P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-2P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-1U" ] || [ ! -f "$path/20filtered/$sample/${sample}-2U" ]; then #Test if filtered FASTQ files exist
-					echo -e "Proper filtered fastq files missing in $sample folder...\n"
+					echo -e "Appropriate filtered fastq files missing in $sample folder...\n"
 					rm SamplesFileNames.txt
 					rm -d ../workdir02/ 2>/dev/null
 					exit 3
 				fi
 			fi
 		else
-			if [ ! -f "$path/21mapped/${sample}.bam" ]; then
-				echo -e "$sample.bam does not exist within '21mapped'.\n"
+			if [ ! -f "$path/$type/21mapped/${sample}.bam" ]; then
+				echo -e "$sample.bam does not exist within '$type/21mapped'.\n"
 				rm SamplesFileNames.txt
 				rm -d ../workdir02/ 2>/dev/null
 				exit 3
 			fi
 		fi
 	done
-	if [ ! -f "$source/$probes" ]; then
-		echo -e "$probes does not exist within 'HybSeqSource'.\n"
-		rm SamplesFileNames.txt
-		rm -d ../workdir02/ 2>/dev/null
-		exit 3
+	if [[ $cp =~ "yes" ]]; then
+		if [ ! -f "$source/$cpDNACDS" ]; then
+			echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
+			rm -d ../workdir03/ 2>/dev/null
+			exit 3
+		else
+			cpDNACDS=$(echo $cpDNACDS | cut -d"." -f1)
+			if [ ! -f "$source/${cpDNACDS}_with${nrns}Ns_beginend.fas" ]; then
+				echo -e "${cpDNACDS}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+				rm SamplesFileNames.txt
+				rm -d ../workdir02/ 2>/dev/null
+				exit 3
+			fi
+		fi
 	else
-		probes=$(echo $probes | cut -d"." -f1)
-		if [ ! -f "$source/${probes}_with${nrns}Ns_beginend.fas" ]; then
-			echo -e "${probes}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+		if [ ! -f "$source/$probes" ]; then
+			echo -e "$probes does not exist within 'HybSeqSource'.\n"
 			rm SamplesFileNames.txt
 			rm -d ../workdir02/ 2>/dev/null
 			exit 3
+		else
+			probes=$(echo $probes | cut -d"." -f1)
+			if [ ! -f "$source/${probes}_with${nrns}Ns_beginend.fas" ]; then
+				echo -e "${probes}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+				rm SamplesFileNames.txt
+				rm -d ../workdir02/ 2>/dev/null
+				exit 3
+			fi
 		fi
 	fi
 else
@@ -143,20 +169,26 @@ else
 fi
 echo -e "OK for running HybPhyloMaker2\n"
 
+#Make a new folder for results
+mkdir -p $path/$type
+
 #Copy pseudoreference
-#probes=$(echo $probes | cut -d"." -f1)
+if [[ $cp =~ "yes" ]]; then
+	probes=$cpDNACDS
+fi
+probes=$(echo $probes | cut -d"." -f1)
 cp $source/${probes}_with${nrns}Ns_beginend.fas .
 
 #Make a new folder for results
-if [ ! -d "$path/21mapped" ]; then
-	mkdir $path/21mapped
+if [ ! -d "$path/$type/21mapped" ]; then
+	mkdir $path/$type/21mapped
 fi
 
 #Make index from pseudoreference
 if [[ $mapping =~ "yes" ]]; then
 	echo -en "Indexing pseudoreference..."
 	bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
-	cp indexing_pseudoreference.log $path/21mapped/
+	cp indexing_pseudoreference.log $path/$type/21mapped/
 fi
 
 #Copy list of samples
@@ -184,11 +216,11 @@ for file in $(cat SamplesFileNames.txt); do
 		echo "Converting to BAM..."
 		samtools view -bS -o ${file}.bam ${file}.sam
 		#copy results to home
-		cp ${file}.bam $path/21mapped
-		cp ${file}_bowtie2_out.txt $path/21mapped
+		cp ${file}.bam $path/$type/21mapped
+		cp ${file}_bowtie2_out.txt $path/$type/21mapped
 	else
 		echo "Copying BAM..."
-		cp $path/21mapped/${file}.bam .
+		cp $path/$type/21mapped/${file}.bam .
 	fi
 	#CONSENSUS USING OCOCO
 	echo "Making consensus with OCOCO..."
@@ -204,7 +236,7 @@ for file in $(cat SamplesFileNames.txt); do
 	#replace all Ns separating exons by '?'
 	sed -i "s/$a/$b/g" ${file}.fasta
 	#copy results to home
-	cp ${file}.fasta $path/21mapped
+	cp ${file}.fasta $path/$type/21mapped
 	#delete BAM
 	rm ${file}.bam
 done
@@ -213,8 +245,13 @@ done
 cat *.fasta > consensus.fasta
 #Remove line breaks from fasta file
 awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' consensus.fasta > tmp && mv tmp consensus.fasta
-mkdir -p $path/30consensus
-cp consensus.fasta $path/30consensus
+mkdir -p $path/$type/30consensus
+if [[ $cp =~ "yes" ]]; then
+	mv consensus.fasta consensus_cpDNA.fasta
+	cp consensus_cpDNA.fasta $path/$type/30consensus
+else
+	cp consensus.fasta $path/$type/30consensus
+fi
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

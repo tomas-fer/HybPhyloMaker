@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.3.1                                    *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -233,21 +233,19 @@ do
 	if [[ $location == "1" ]]; then
 		cp ${file}-1P_no-dups.fastq ${path}/20filtered/${file}
 		cp ${file}-2P_no-dups.fastq ${path}/20filtered/${file}
-		cp duplicate-removal-fastuniq.log ${path}/20filtered/${file}
 		# cp $file-1U ${path}/20filtered/${file}
 		# cp $file-2U ${path}/20filtered/${file}
 		# cp $file-all-no-dups.fas ${path}/20filtered/${file}
 		# cp $file-all.fa ${path}/20filtered/${file}
-		# cp *.log $path/20filtered/$file
+		cp *.log $path/20filtered/$file
 	else
 		cp ${file}-1P_no-dups.fastq ../${path}/20filtered/${file}
 		cp ${file}-2P_no-dups.fastq ../${path}/20filtered/${file}
-		cp duplicate-removal-fastuniq.log ../${path}/20filtered/${file}
 		# cp $file-1U ../${path}/20filtered/${file}
 		# cp $file-2U ../${path}/20filtered/${file}
 		# cp $file-all-no-dups.fas ../${path}/20filtered/${file}
 		# cp $file-all.fa ../$path/20filtered/$file
-		# cp *.log ../$path/20filtered/$file
+		cp *.log ../$path/20filtered/$file
 	fi
 	# rm $file-all-no-dups.fas $file-all.fa
 	mv ${file}-1U ${file}-1U_no-dups.fastq
