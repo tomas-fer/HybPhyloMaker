@@ -1,19 +1,19 @@
-#########################################################################################################
-# INSTALL SOFTWARE NECESSARY FOR running HybPhyloMaker                                                  #
-# and clone HybPhyloMaker GitHub repository (incl. test dataset)                                        #
-# This should work on major Linux distribution (tested on Debian, Ubuntu, OpenSUSE, Fedora, and CentOS) #
-# Without changes works only on 64-bit platforms (x86_64)                                               #
-# This script MUST be run with root privileges!                                                         #
-#                                                                                                       #
-# Tomas Fer, 2016                                                                                       #
-# tomas.fer@natur.cuni.cz                                                                               #
-# https://github.com/tomas-fer/HybPhyloMaker                                                            #
-# v.1.3.2                                                                                               #
-#########################################################################################################
+##########################################################################################################################
+# INSTALL SOFTWARE NECESSARY FOR running HybPhyloMaker                                                                   #
+# and clone HybPhyloMaker GitHub repository (incl. test dataset)                                                         #
+# This should work on major Linux distribution (tested on Debian, Ubuntu, OpenSUSE, Fedora, CentOS and Scientific Linux) #
+# Without changes works only on 64-bit platforms (x86_64)                                                                #
+# This script MUST be run with root privileges!                                                                          #
+#                                                                                                                        #
+# Tomas Fer, 2016                                                                                                        #
+# tomas.fer@natur.cuni.cz                                                                                                #
+# https://github.com/tomas-fer/HybPhyloMaker                                                                             #
+# v.1.3.2                                                                                                                #
+##########################################################################################################################
 
 #Carefully set your distribution
-distribution=Debian #one of: Debian (also for Ubuntu), OpenSUSE, Fedora, CentOS)
-#Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/RHEL/Scientific)
+distribution=Debian #one of: Debian (also for Ubuntu), OpenSUSE, Fedora, CentOS (also for Scientific Linux)
+#Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/Scientific/RHEL)
 installer=apt-get #one of apt-get, zypper, yum
 
 echo -e "\n************************************************"
@@ -39,7 +39,7 @@ if [[ $distribution =~ "Debian" ]]; then
 		fi
 	done
 elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	for i in gcc-c++ g++ make; do
+	for i in gcc gcc-c++ make; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
@@ -378,7 +378,7 @@ if ! [ -x "$(command -v p4)" ]; then
 		$installer install -y python-devel &> python-dev_install.log #CentOS, Fedora and OpenSUSE
 	fi
 	
-	if [[ $distribution =~ "Fedora" ]]; then
+	if [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		$installer install redhat-rpm-config &> rpm-config_install.log
 	fi
 	
@@ -432,22 +432,47 @@ chmod +x HybSeqSource/ASTRID
 echo -e "\nInstalation script finished.\n"
 
 # Successfully tested on
-# - Ubuntu 14.04 #Newer R version necessary!!!
+# - Ubuntu 14.04 LTS #Newer R version necessary, see below!!!
 # - Debian 8.6
 # - OpenSUSE 42
 # - CentOS 7.2
 # - Fedora 24
+# - Scientific Linux 7.2
 
 
-# Tips for older versions
+#Tips for older versions - run these command before running this 'install_software.sh'
+
+#Ubuntu 14.04
+#**********************************************************************************
+#too old R version (see https://cran.r-project.org/bin/linux/ubuntu/ how to update)
+# codename=$(lsb_release -c -s)
+# echo "deb http://cran.cnr.berkeley.edu/bin/linux/ubuntu $codename/" | sudo tee -a /etc/apt/sources.list > /dev/null
+# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
+# add-apt-repository ppa:marutter/rdev
+# apt-get update
+# apt-get upgrade
 
 #CentOS 6
+#**********************************************************************************
 #too old g++ (4.7 and later required for proper building of 'OCOCO')
 #see http://ask.xmodulo.com/upgrade-gcc-centos.html how to upgrade on CentOS
-#wget http://people.centos.org/tru/devtools-1.1/devtools-1.1.repo -P /etc/yum.repos.d
-#sh -c 'echo "enabled=1" >> /etc/yum.repos.d/devtools-1.1.repo'
-#yum install devtoolset-1.1
-#scl enable devtoolset-1.1 bash
+# wget http://people.centos.org/tru/devtools-1.1/devtools-1.1.repo -P /etc/yum.repos.d
+# sh -c 'echo "enabled=1" >> /etc/yum.repos.d/devtools-1.1.repo'
+# yum install -y devtoolset-1.1
+# scl enable devtoolset-1.1 bash
+#
+#and too old glibc. GLIBC_2.14 is required - and it is not easy to upgrade, better to upgrade to CentOS 7
+#NewickUtilities will not work!
 
-#Ubuntu
-#too old R version
+#**********************************************************************************
+#Debian 7
+#too old R version (see https://cran.r-project.org/bin/linux/debian/ how to update)
+# codename=$(lsb_release -c -s)
+# echo "deb http://cran.cnr.berkeley.edu/bin/linux/debian ${codename}-cran3/" | sudo tee -a /etc/apt/sources.list > /dev/null
+# apt-key adv --keyserver keys.gnupg.net --recv-key 6212B7B7931C4BB16280BA1306F90DE5381BA480
+# apt-get install -y r-base r-base-dev
+# apt-get update
+# apt-get upgrade
+#
+#and too old glibc. GLIBC_2.14 is required - and it is not easy to upgrade, better to upgrade to Debian 8
+#NewickUtilities will not work!

@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.3.1                                    *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -28,7 +28,7 @@
 # Compute ML gene trees using RAxML (100 rapid bootstrap replicates) for selected genes
 # Selection is based on maximum missing data per sample allowed ($MISSINGPERCENT) and minimum species percentage presence per assembly ($SPECIESPRESENCE)
 # Edit those two values in settings.cfg
-# Run first HybPipe4_missingdataremoval.sh with the same combination of $MISSINGPERCENT and $SPECIESPRESENCE values
+# Run first HybPhylomaker5_missingdataremoval.sh with the same combination of $MISSINGPERCENT and $SPECIESPRESENCE values
 # If running locally, gene trees are produced serially (can be very SLOW with large alignment and lot of loci)
 # If running on cluster, separate jobs are produced, number of jobs and number of loci per job is controlled by $raxmlperjob
 # MetaCentrum runs all jobs automatically, on Hydra go to homedir and run submitRAxMLjobs.sh

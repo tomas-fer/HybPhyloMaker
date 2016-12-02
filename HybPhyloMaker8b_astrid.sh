@@ -4,7 +4,7 @@
 #PBS -l nodes=1:ppn=4
 #PBS -j oe
 #PBS -l mem=8gb
-#PBS -N HybPhyloMaker8b_Astridb_Astrid
+#PBS -N HybPhyloMaker8b_Astrid
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.3.1                                    *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
