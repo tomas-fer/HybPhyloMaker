@@ -18,8 +18,8 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                           Script 08 - Update trees                           *
-# *                                   v.1.3.1                                    *
+# *                           Script 09 - Update trees                           *
+# *                                   v.1.3.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -170,7 +170,7 @@ cat gene_properties_update.txt | sed 1d | cut -f1 | sort | sed 's/Corrected/Corr
 mkdir -p $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 echo -e "\nList of updated selected genes saved to $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt..."
-echo -e "Change 'update' to 'update=yes' in 'settings.cfg' and continue with running scripts 6 and 7..."
+echo -e "Change 'update' to 'update=yes' in 'settings.cfg' and continue with running scripts 7 and 8..."
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
