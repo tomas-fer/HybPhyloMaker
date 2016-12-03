@@ -1,6 +1,6 @@
 #MAKE PNG PICTURE WITH HISTOGRAM AND BOXPLOT FOR TREE PROPERTIES
 #based on http://rgraphgallery.blogspot.com/2013/04/rg-plotting-boxplot-and-histogram.html
-#modified for HybPipe by T. Fer, 2016
+#modified for HybPhyloMaker by T. Fer, 2016
 #-------------------------------------------------------------
 
 #Read table from 'tree_stats_table.csv' 
