@@ -1,6 +1,6 @@
 #VISUALIZE CORRELATIONS AMONG TREE AND ALIGNMENT PROPERTIES
 #Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
-#Modified for HybPipe
+#Modified for HybPhyloMaker
 #--------------------------------------------------------------------------
 
 # disable scientific notation
