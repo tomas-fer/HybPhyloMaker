@@ -1,6 +1,6 @@
 #CALCULATE LONG-BRANCH SCORES
 #Taken from M. Borowiec GitHub (https://github.com/marekborowiec/metazoan_phylogenomics)
-#Modified for HybPipe
+#Modified for HybPhyloMaker
 #--------------------------------------------------------------------------
 
 # disable scientific notation
