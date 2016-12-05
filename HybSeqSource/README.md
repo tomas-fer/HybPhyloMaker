@@ -11,7 +11,7 @@ https://github.com/smirarab/ASTRAL
 **catfasta2phyml.pl**  
 https://github.com/nylander/catfasta2phyml  
 **combineboot.py**  
-_part of HybPhyloMaker_  
+_part of HybPhyloMaker_ based on http://p4.nhm.ac.uk/tutorial/combine_supports.html  
 **CompareToBootstrap.pl**  
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **CompareTree.pl**  
