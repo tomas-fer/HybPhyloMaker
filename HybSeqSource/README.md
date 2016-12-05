@@ -21,7 +21,7 @@ http://brianknaus.com/software/srtoolbox/fastq2fasta.pl
 **histogram.r**  
 _part of HybPhyloMaker_  
 **LBscores.R**  
-_part of HybPhyloMaker_  
+_part of HybPhyloMaker_ and https://github.com/marekborowiec/metazoan_phylogenomics/blob/master/gene_stats.R  
 **MOTree.pm**  
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **mrp.jar**  
