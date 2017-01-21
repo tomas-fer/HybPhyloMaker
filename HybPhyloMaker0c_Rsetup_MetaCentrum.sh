@@ -10,7 +10,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                              Setup R packages                                *
-# *                                   v.1.3.0                                    *
+# *                                   v.1.3.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -34,10 +34,10 @@ module add R-3.2.3-intel
 
 #Get ape 3.5 and other R packages
 echo -e "\nDownloading R packages..."
-wget https://cran.r-project.org/src/contrib/ape_3.5.tar.gz 
-wget https://cran.r-project.org/src/contrib/data.table_1.9.6.tar.gz
-wget https://cran.r-project.org/src/contrib/phytools_0.5-20.tar.gz
-wget https://cran.r-project.org/src/contrib/seqinr_3.1-3.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/ape/ape_3.5.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/data.table/data.table_1.9.6.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/phytools/phytools_0.5-20.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/seqinr/seqinr_3.1-3.tar.gz
 
 #Install packages to personal (writable) library
 mkdir -p /storage/$server/home/$LOGNAME/Rpackages
