@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2d
-#PBS -l nodes=1:ppn=1
+#PBS -l walltime=1d
+#PBS -l nodes=1:ppn=1:debian8
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=80gb
@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.3.2                                    *
+# *                                   v.1.3.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -43,7 +43,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add samtools-0.1.19
 	module add bam2fastq-1.1.0
 	module add trimmomatic-0.32
-	module add fastx-0.0.13
+	module add fastuniq-1.1
 	module add jdk-7
 	module add perl-5.10.1
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
@@ -59,10 +59,10 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load bioinformatics/bam2fastq/1.1.0
 	module load bioinformatics/bowtie2/2.2.6
-	module load bioinformatics/fastxtoolkit/0.0.13
+	module load bioinformatics/fastuniq/ #???
 	module load bioinformatics/samtools/1.3
-	#module load bioinformatics/trimmomatic/0.33
 	module load java/1.7
+	#module load bioinformatics/trimmomatic/0.33
 else
 	echo -e "\nHybPhyloMaker1 is running locally...\n"
 	#settings for local run
