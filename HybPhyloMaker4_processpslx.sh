@@ -22,7 +22,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 04 - Process pslx files                        *
-# *                                   v.1.3.2                                    *
+# *                                   v.1.3.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -324,8 +324,10 @@ if [[ $cp =~ "no" ]]; then
 	#Copy script
 	if [[ $location == "1" ]]; then
 		cp -r $source/catfasta2phyml.pl .
+		cp -r $source/AMAS.py .
 	else
 		cp -r ../$source/catfasta2phyml.pl .
+		cp -r ../$source/AMAS.py .
 	fi
 	#Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft to To_align_Assembly_10372_*mafft)
 	#(all files starting with "To_align_Assembly_10372_" will be merged)
@@ -347,8 +349,14 @@ if [[ $cp =~ "no" ]]; then
 	#transform fasta to phylip format, copy results from scratch to home
 	cat fileForLoop.txt | while read -r a b
 	do
-		perl catfasta2phyml.pl -f $a > $b.fasta
-		perl catfasta2phyml.pl $b.fasta > $b.phylip
+		#concatenate exons from the same locus
+		python3 AMAS.py concat -i $a -f fasta -d dna -u fasta -t ${b}.fasta >/dev/null
+		python3 AMAS.py concat -i $a -f fasta -d dna -u phylip -t ${b}.phylip >/dev/null
+		#modify and rename partitions.txt
+		sed -i.bak -e 's/^/DNA, /g' -e 's/_To_align//g' partitions.txt
+		mv partitions.txt ${b}.part
+		#perl catfasta2phyml.pl -f $a > $b.fasta
+		#perl catfasta2phyml.pl $b.fasta > $b.phylip
 		if [[ $location == "1" ]]; then
 			cp $b.* $path/$type/70concatenated_exon_alignments
 		else

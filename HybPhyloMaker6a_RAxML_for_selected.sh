@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.3.2                                    *
+# *                                   v.1.3.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -164,11 +164,14 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'SPECIESPRESENCE='"$SPECIESPRESENCE" >> ${group}.sh
 		echo 'type='"$type" >> ${group}.sh
 		echo 'location='"$location" >> ${group}.sh
+		echo 'genetreepart='"$genetreepart" >> ${group}.sh
+		echo 'raxmlpthreads='"$raxmlpthreads" >> ${group}.sh
 		echo 'cp '"$path"'/$type/71selected${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
 		echo 'cp '"$source"'/catfasta2phyml.pl .' >> ${group}.sh
 		echo 'for i in $(cat '"$group"')' >> ${group}.sh
 		echo 'do' >> ${group}.sh
 		echo '  cp '"$path"'/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
+		echo '  cp $path/$type/70concatenated_exon_alignments/${i}.part .' >> ${group}.sh
 		echo '  #Substitute '"'('"' by '"'_'"' and '"')'"' by nothing ('"'('"' and '"')'"' not allowed in RAxML)' >> ${group}.sh
 		echo '  sed -i '"'s/(/_/g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
 		echo '  sed -i '"'s/)//g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
@@ -179,13 +182,22 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'done' >> ${group}.sh
 		echo '#Make a list of all phylip files' >> ${group}.sh
 		echo 'ls *.phylip | cut -d"." -f1 > FileForRAxML.txt' >> ${group}.sh
-		echo 'for file in $(cat FileForRAxML.txt)' >> ${group}.sh
-		echo 'do' >> ${group}.sh
+		echo 'for file in $(cat FileForRAxML.txt); do' >> ${group}.sh
+		echo '  #modify name for partition file (remove '_modif${MISSINGPERCENT}')' >> ${group}.sh
+		echo '  filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)' >> ${group}.sh
 		echo '  #RAxML with 100 rapid bootstrap' >> ${group}.sh
 		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
-		echo '    raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    if [[ $genetreepart == "yes" ]]; then' >> ${group}.sh
+		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    else' >> ${group}.sh
+		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    fi'  >> ${group}.sh
 		echo '  elif [[ $location == "2" ]]; then' >> ${group}.sh
-		echo '    $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    if [[ $genetreepart == "yes" ]]; then' >> ${group}.sh
+		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    else' >> ${group}.sh
+		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    fi'  >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  cp *$file.result '"$path"'/$type/72trees'"${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
@@ -216,6 +228,7 @@ else
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 	do
 		cp $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
+		cp $path/$type/70concatenated_exon_alignments/${i}.part .
 		#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML)
 		sed -i.bak 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
 		sed -i.bak 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
@@ -232,7 +245,14 @@ else
 		calculating=$((calculating + 1))
 		echo -e "\nProcessing file: ${file}" >> raxml.log
 		echo -e "Processing file: ${file} ($calculating out of $numbertrees)"
-		$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		#modify name for partition file (remove '_modif${MISSINGPERCENT}'
+		filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)
+		#run RAxML
+		if [[ $genetreepart == "yes" ]]; then
+			$raxmlpthreads -T $numbcores -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		else
+			$raxmlpthreads -T $numbcores -f a -s $file.fas -q -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		fi
 		cp *$file.result $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
 #Copy raxml.log to home
