@@ -7,9 +7,9 @@ Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:
 1: Processing raw reads (PhiX removal, adaptor removal, quality filtering, summary statistics)  
 2: Mapping reads to reference (using Bowtie), create consensus sequence  
 3: Recognize sequences matching probes (generate PSLX files using BLAT)  
-4: Create alignments for all genes  
+4: Create alignments for all genes (+ correct reading frame)  
 5: Treat missing data, select best genes  
-6: Generate FastTree or RAxML gene trees + trees-alignment properties  
+6: Generate FastTree or RAxML gene trees + calculate/plot trees-alignment properties  
 7: Root gene trees with outgroup, combine gene trees into a single file  
 8: Estimate species tree (ASTRAL, ASTRID, MRL, concatenation)  
 9: Subselect suitable genes and repeat steps 7+8 
