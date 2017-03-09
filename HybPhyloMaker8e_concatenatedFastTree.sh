@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=2d
-#PBS -l nodes=1:ppn=8
+#PBS -l nodes=1:ppn=8:minspec=29
 #PBS -j oe
 #PBS -l mem=24gb
 #PBS -l scratch=8gb
@@ -21,8 +21,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.3.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 

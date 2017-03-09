@@ -9,9 +9,9 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                              Setup R packages                                *
-# *                                   v.1.3.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                 Script 0c - Setup R packages on Metacentrum                  *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 

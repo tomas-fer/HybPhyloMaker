@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=1d
-#PBS -l nodes=1:ppn=1:debian8
+#PBS -l nodes=1:ppn=1:debian8:minspec=29
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=80gb
@@ -20,8 +20,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.3.3                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************

@@ -20,8 +20,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.3.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -76,43 +76,54 @@ else
 	type="exons"
 fi
 
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
 #Check necessary file
 echo -ne "Testing if input data are available..."
-if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
-	if [ -d "$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
-		if [ "$(ls -A $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
-			if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
-				if [ "$(ls -A $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML)" ]; then
+if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
+	if [ -d "$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
+		if [ "$(ls -A $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
+			if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
+				if [ "$(ls -A $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML)" ]; then
 					echo -e "OK\n"
 				else
-					echo -e "'$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is empty. Exiting...\n"
+					echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is empty. Exiting...\n"
 					rm -d ../workdir06a2/ 2>/dev/null
 					exit 3
 				fi
 			else
-				echo -e "'$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is missing. Exiting...\n"
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' is missing. Exiting...\n"
 				rm -d ../workdir06a2/ 2>/dev/null
 				exit 3
 			fi
 		else
-			echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
+			echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
 			rm -d ../workdir06a2/ 2>/dev/null
 			exit 3
 		fi
 	else
-		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
+		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
 		rm -d ../workdir06a2/ 2>/dev/null
 		exit 3
 	fi
 else
-	echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
+	echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
 	rm -d ../workdir06a2/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
-if [ -f "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt" ]; then
-	echo -e "File '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt' already exists. You are probably going to owerwrite previous results. Delete this file or rename before running this script again. Exiting...\n"
+if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt" ]; then
+	echo -e "File '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/gene_properties.txt' already exists. You are probably going to overwrite previous results. Delete this file or rename before running this script again. Exiting...\n"
 	rm -d ../workdir06a2/ 2>/dev/null
 	exit 3
 else
@@ -133,12 +144,12 @@ cp $source/LBscores.R .
 mkdir trees
 mkdir alignments
 #Copy all fasta alignments to subfolder 'alignments'
-cp $path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt); do
-	cp $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas alignments/
+	cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas alignments/
 done
 #Copy all RAxML tree files (*.tre) with bootstrap values to subfolder 'trees'
-cp $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bipartitions.Assembly* trees/
+cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bipartitions.*Assembly* trees/
 #Rename RAxML trees
 cd trees
 for i in *; do
@@ -166,9 +177,9 @@ done
 for i in $(cat LBscores.csv | sed 1d | cut -d"," -f5 | sort | uniq); do
 	grep $i LBscores.csv | awk -F',' -v val=$i '{ if ($5 == val) result=$1 } END { print val "\t" result }' >> LBscoresSDPerLocus.txt
 done
-cp LBscores.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-cp LBscoresPerTaxon.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-cp LBscoresSDPerLocus.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp LBscores.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp LBscoresPerTaxon.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp LBscoresSDPerLocus.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 #Combine 'LBscoresSDPerLocus.txt' with 'tree_stats_table.csv'
 awk '{ print $2 }' LBscoresSDPerLocus.txt > tmp && mv tmp LBscoresSDPerLocus.txt
 paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
@@ -185,15 +196,15 @@ else
 fi
 
 #Copy results to home
-cp tree_stats_table.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-cp *.png $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp tree_stats_table.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp *.png $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #----------------Combine tree summary table with alignment summary and print comparison plots----------------
 #Copy script
 cp $source/plotting_correlations.R .
 echo -e "Combining alignment and tree properties...\n"
 #Copy alignment summary
-cp $path/$type/71selected${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/${alnpathselected}${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 #***Modify alignment summary***
 #Remove '_Assembly' (now locus names start with a number)
 sed -i.bak 's/Assembly_//g' summarySELECTED*.txt
@@ -237,13 +248,13 @@ if [[ $location == "1" ]]; then
 else
 	R --slave -f plotting_correlations.R >> R.log 2>&1
 fi
-cp genes_corrs.* $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp genes_corrs.* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 rm genes_corrs.*
 mv combined.txt gene_properties.txt
-cp gene_properties.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp gene_properties.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Copy R.log to home
-cp R.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

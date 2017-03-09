@@ -5,10 +5,10 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2016                                                                                                        #
+# Tomas Fer, 2017                                                                                                        #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.3.2                                                                                                                #
+# v.1.4.0                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -59,7 +59,7 @@ if ! [ -x "$(command -v python)" ]; then
 	$installer install -y python &> python_install.log
 fi
 
-#Python3
+#Python3 (+ Biopython)
 if ! [ -x "$(command -v python3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'python3'"
@@ -68,8 +68,32 @@ if ! [ -x "$(command -v python3)" ]; then
 	else
 		echo -e "Installing 'python3'"
 		$installer install -y python3 &> python3_install.log #Does not work on CentOS
+		
 	fi
 fi
+
+#Pip
+if ! [ -x "$(command -v pip)" ]; then
+	echo -e "Installing 'pip'"
+	$installer install -y python-pip &> pip_install.log
+fi
+
+#Pip3 (also required for 'kindel' installation, see below)
+if ! [ -x "$(command -v pip3)" ]; then
+	if [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'pip3'"
+		$installer install -y python34-devel &>> python3_install.log #Only for CentOS
+		$installer install -y python34-pip &> pip3_install.log #Only for CentOS
+	else
+		echo -e "Installing 'pip3'"
+		$installer install -y python3-dev &>> python3_install.log #Does not work on CentOS
+		$installer install -y python3-pip &> pip3_install.log #Does not work on CentOS
+	fi
+fi
+
+#Biopython
+echo -e "Installing 'biopython'"
+pip3 install biopython &> biopython_install.log
 
 #Java
 if [[ $distribution =~ "Debian" ]]; then
@@ -104,15 +128,9 @@ elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 fi
 
 #R
-#Comment for Ubuntu: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
-#(see, e.g., https://cran.r-project.org/bin/linux/ubuntu/README.html)
-# codename=$(lsb_release -c -s)
-# echo "deb http://cran.cnr.berkeley.edu/bin/linux/ubuntu $codename/" | sudo tee -a /etc/apt/sources.list > /dev/null
-# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-# add-apt-repository ppa:marutter/rdev
-# apt-get update
-# apt-get upgrade
-# apt-get install -y r-base r-base-dev
+#Comment for Ubuntu/Debian: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
+#Look at the end of this script for an advice how to do that...
+#Newer version (i.e., at least v3.2) should be installed before running this script!
 if [[ $distribution =~ "Debian" ]]; then
 	echo -e "Installing 'R'"
 	$installer install -y r-base-dev &> R_install.log #Debian/Ubuntu
@@ -218,6 +236,20 @@ if ! [ -x "$(command -v FastTree)" ]; then
 	gcc -DOPENMP -fopenmp -O3 -finline-functions -funroll-loops -Wall -o FastTreeMP FastTree.c -lm &>> ../fasttree_install.log
 	chmod +x FastTreeMP
 	cp FastTreeMP /usr/local/bin
+	cd ..
+fi
+
+#EMBOSS
+if ! [ -x "$(command -v transeq)" ]; then
+	echo -e "Installing 'EMBOSS'"
+	wget ftp://emboss.open-bio.org/pub/EMBOSS/emboss-latest.tar.gz &> ../EMBOSS_install.log
+	tar xfz emboss-latest.tar.gz 1>/dev/null
+	rm emboss-latest.tar.gz
+	cd EMBOSS*
+	./configure &>> ../EMBOSS_install.log
+	make &>> ../EMBOSS_install.log
+	ldconfig
+	make install &>> ../EMBOSS_install.log
 	cd ..
 fi
 
@@ -354,6 +386,12 @@ if ! [ -x "$(command -v ococo)" ]; then
 	cd ..
 fi
 
+#kindel (necessary for majority rule consensus building from mapped reads in BAM file)
+#see https://pypi.python.org/pypi/kindel
+if ! [ -x "$(command -v kindel)" ]; then
+	pip3 install kindel &>> kindel_install.log
+fi
+
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
 #For compilation on Fedora/CentOS/OpenSUSE you need to specify where 'gsl' is installed (in setup.py) - modification of 'setup.py' is included below
@@ -381,14 +419,16 @@ if ! [ -x "$(command -v p4)" ]; then
 	if [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		$installer install redhat-rpm-config &> rpm-config_install.log
 	fi
+	#install python module 'future'
+	pip install future &> python-future_install.log
 	
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
 	#Modify setup.py to be able to find gsl
 	if [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "Fedora" ]]; then
 		replace="my_include_dirs = [\'\/usr\/include\/\']"
-		sed -i.bak "45s/.*/$replace/" setup.py
-		sed -i.bak2 "46s/# //" setup.py
+		sed -i.bak "46s/.*/$replace/" setup.py
+		sed -i.bak2 "47s/# //" setup.py
 	fi
 	python setup.py build &>> ../p4_install.log
 	python setup.py install &>> ../p4_install.log
@@ -402,7 +442,7 @@ cd ..
 #Check if everything is installed correctly
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
-for i in parallel bowtie2 ococo samtools bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
+for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
 	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 done
 
@@ -433,7 +473,7 @@ echo -e "\nInstalation script finished.\n"
 
 # Successfully tested on
 # - Ubuntu 14.04 LTS #Newer R version necessary, see below!!!
-# - Debian 8.6
+# - Debian 8.6 #Newer R version necessary, see below!!!
 # - OpenSUSE 42
 # - CentOS 7.2
 # - Fedora 24
@@ -465,14 +505,13 @@ echo -e "\nInstalation script finished.\n"
 #NewickUtilities will not work!
 
 #**********************************************************************************
-#Debian 7
+#Debian 7, 8
 #too old R version (see https://cran.r-project.org/bin/linux/debian/ how to update)
 # codename=$(lsb_release -c -s)
 # echo "deb http://cran.cnr.berkeley.edu/bin/linux/debian ${codename}-cran3/" | sudo tee -a /etc/apt/sources.list > /dev/null
 # apt-key adv --keyserver keys.gnupg.net --recv-key 6212B7B7931C4BB16280BA1306F90DE5381BA480
-# apt-get install -y r-base r-base-dev
 # apt-get update
 # apt-get upgrade
 #
-#and too old glibc. GLIBC_2.14 is required - and it is not easy to upgrade, better to upgrade to Debian 8
+#only Debian 7 - too old glibc. GLIBC_2.14 is required - and it is not easy to upgrade, better to upgrade to Debian 8
 #NewickUtilities will not work!

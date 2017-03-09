@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=2h
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=4:debian8
 #PBS -j oe
 #PBS -l mem=8gb
 #PBS -N HybPhyloMaker8b_Astrid
@@ -20,8 +20,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.3.2                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -53,6 +53,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python27-modules-gcc
 	module add python-3.4.1-intel
 	module add newick-utils-1.6
+	module add p4
 elif [[ $HOSTNAME == *local* ]]; then
 	echo -e "\nHybPhyloMaker8b is running on Hydra..."
 	#settings for Hydra
@@ -66,6 +67,7 @@ elif [[ $HOSTNAME == *local* ]]; then
 	#Add necessary modules
 	module load bioinformatics/anaconda3/2.3.0
 	module load bioinformatics/newickutilities/0.0
+	module load bioinformatics/p4/ #???
 else
 	echo -e "\nHybPhyloMaker8b is running locally..."
 	#settings for local run

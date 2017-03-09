@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=2d
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=4:minspec=29
 #PBS -j oe
 #PBS -l mem=4gb
 #PBS -l scratch=80gb
@@ -20,8 +20,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.3.2                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -43,6 +43,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add samtools-1.3
 	module add perl-5.10.1
 	module add gcc-4.8.4
+	module add python34-modules-gcc
 	module add ococo-2016-11
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
@@ -57,6 +58,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load bioinformatics/bowtie2/2.2.6
 	module load bioinformatics/samtools/1.3
+	module load bioinformatics/ococo/ #???
 else
 	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
@@ -222,19 +224,24 @@ for file in $(cat SamplesFileNames.txt); do
 		echo "Copying BAM..."
 		cp $path/$type/21mapped/${file}.bam .
 	fi
-	#CONSENSUS USING OCOCO
-	echo "Making consensus with OCOCO..."
-	ococo -i ${file}.bam -c $mincov -F ${file}.fasta 2>/dev/null
+	#CONSENSUS USING KINDEL/OCOCO
+	if [[ $conscall =~ "ococo" ]]; then
+		echo "Making consensus with OCOCO..."
+		ococo -i ${file}.bam -x ococo64 -c $mincov -F ${file}.fasta 2>/dev/null
+	else
+		echo "Making consensus with kindel..."
+		kindel -m $mincov -t $majthres ${file}.bam > ${file}.fasta
+	fi
 	#change name in fasta file
-	sed -i '1d' ${file}.fasta #delete first line
-	sed -i "1i >$file" ${file}.fasta #insert fasta header as a first line
+	sed -i.bak '1d' ${file}.fasta #delete first line
+	sed -i.bak "1i >$file" ${file}.fasta #insert fasta header as a first line
 	#Remove line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' ${file}.fasta > tmp && mv tmp ${file}.fasta
 	#put $nrns Ns to variable 'a' and $nrns ?s to variable 'b'
 	a=$(printf "%0.sN" $(seq 1 $nrns))
 	b=$(printf "%0.s?" $(seq 1 $nrns))
 	#replace all Ns separating exons by '?'
-	sed -i "s/$a/$b/g" ${file}.fasta
+	sed -i.bak "s/$a/$b/g" ${file}.fasta
 	#copy results to home
 	cp ${file}.fasta $path/$type/21mapped
 	#delete BAM

@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=1d
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=4:minspec=29
 #PBS -j oe
 #PBS -l mem=16gb
 #PBS -l scratch=4gb
@@ -21,8 +21,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.3.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -86,31 +86,42 @@ else
 	type="exons"
 fi
 
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
 #Check necessary file
 echo -ne "Testing if input data are available..."
-if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
-	if [ -d "$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
-		if [ "$(ls -A $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
+if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
+	if [ -d "$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
+		if [ "$(ls -A $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
 			echo -e "OK\n"
 		else
-			echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
+			echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
 			rm -d ../workdir06b/ 2>/dev/null
 			exit 3
 		fi
 	else
-		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
+		echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
 		rm -d ../workdir06b/ 2>/dev/null
 		exit 3
 	fi
 else
-	echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
+	echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
 	rm -d ../workdir06b/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
-if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree" ]; then
-	echo -e "Directory '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree' already exists. Delete it or rename before running this script again. Exiting...\n"
+if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree" ]; then
+	echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir06b/ 2>/dev/null
 	exit 3
 else
@@ -129,12 +140,12 @@ cp $source/catfasta2phyml.pl .
 cp $source/AMAS.py .
 cp $source/CompareToBootstrap.pl .
 cp $source/MOTree.pm .
-cp $path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 # Copy and modify selected FASTA files
 echo -en "\nModifying selected FASTA files..."
 for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 do
-	cp $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
+	cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
 	#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in FastTree)
 	sed -i.bak 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
 	sed -i.bak 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
@@ -145,8 +156,8 @@ done
 #Make a list of all fasta files
 ls *.fas | cut -d"." -f1 > FileForFastTree.txt
 #Make dir for results
-mkdir -p $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}
-mkdir -p $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}
+mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 echo -e "done\n"
 #----------------Generate gene trees using FastTree----------------
@@ -165,10 +176,10 @@ for file in $(cat FileForFastTree.txt); do
 	else
 		$fasttreebin -nt ${file}.fas > ${file}.fast.tre 2>>FastTree.log
 	fi
-	cp *$file.fast.tre $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp *$file.fast.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 done
 #Copy log to home
-cp FastTree.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp FastTree.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #----------------Generate bootstrapped gene trees using FastTree----------------
 #Bootstrap using FastTree 
@@ -229,11 +240,11 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 		#Map bootstrap support values onto the original tree
 		perl ./CompareToBootstrap.pl -tree *${file}.fast.tre -boot ${file}.boot.fast.trees > ${file}.boot.fast.tre
 		#Copy bootstrap trees and final tree with bootstrap values to home
-		cp ${file}.boot.fast.trees $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-		cp ${file}.boot.fast.tre $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+		cp ${file}.boot.fast.trees $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+		cp ${file}.boot.fast.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	done
 	#Copy logs to home
-	cp *.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 fi
 
 #----------------Make a summary table with statistical properties for trees using R----------------
@@ -266,9 +277,9 @@ done
 for i in $(cat LBscores.csv | sed 1d | cut -d"," -f5 | sort | uniq); do
 	grep $i LBscores.csv | awk -F',' -v val=$i '{ if ($5 == val) result=$1 } END { print val "\t" result }' >> LBscoresSDPerLocus.txt
 done
-cp LBscores.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp LBscoresPerTaxon.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp LBscoresSDPerLocus.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscores.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscoresPerTaxon.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp LBscoresSDPerLocus.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 #Combine 'LBscoresSDPerLocus.txt' with 'tree_stats_table.csv'
 awk '{ print $2 }' LBscoresSDPerLocus.txt > tmp && mv tmp LBscoresSDPerLocus.txt
 paste tree_stats_table.csv LBscoresSDPerLocus.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
@@ -285,8 +296,8 @@ else
 fi
 
 #Copy results to home
-cp tree_stats_table.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-cp *.png $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp tree_stats_table.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp *.png $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 #Remove results
 rm *.png
 rm LB*.txt LB*.csv
@@ -318,9 +329,9 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	mv LBscores.csv LBscores_bootstrap.csv
 	mv LBscoresPerTaxon.txt LBscoresPerTaxon_bootstrap.txt
 	mv LBscoresSDPerLocus.txt LBscoresSDPerLocus_bootstrap.txt
-	cp LBscores_bootstrap.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-	cp LBscoresPerTaxon_bootstrap.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
-	cp LBscoresSDPerLocus_bootstrap.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscores_bootstrap.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscoresPerTaxon_bootstrap.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp LBscoresSDPerLocus_bootstrap.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	#Combine 'LBscoresSDPerLocus_bootstrap.txt' with 'tree_stats_table.csv'
 	awk '{ print $2 }' LBscoresSDPerLocus_bootstrap.txt > tmp && mv tmp LBscoresSDPerLocus_bootstrap.txt
 	paste tree_stats_table.csv LBscoresSDPerLocus_bootstrap.txt | tr "\t" "," > tmp && mv tmp tree_stats_table.csv
@@ -337,10 +348,10 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	fi
 	#Rename results and copy results to home
 	mv tree_stats_table.csv tree_stats_table_bootstrap.csv
-	cp tree_stats_table_bootstrap.csv $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp tree_stats_table_bootstrap.csv $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	#Rename all PNG files generated by R (add 'bootstrap')and copy them to home
 	for file in *.png; do mv "$file" "${file/.png/_bootstrap.png}"; done
-	cp *.png $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp *.png $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 fi
 
 #----------------Combine tree summary table with alignment summary and print comparison plots----------------
@@ -348,7 +359,7 @@ fi
 cp $source/plotting_correlations.R .
 echo -e "Combining alignment and tree properties...\n"
 #Copy alignment summary
-cp $path/$type/71selected${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+cp $path/${alnpathselected}${MISSINGPERCENT}/summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 #***Modify alignment summary***
 #Remove '_Assembly' (now locus names start with a number)
 sed -i.bak 's/Assembly_//g' summarySELECTED*.txt
@@ -405,10 +416,10 @@ if [[ $location == "1" ]]; then
 else
 	R --slave -f plotting_correlations.R >> R.log 2>&1
 fi
-cp genes_corrs.* $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp genes_corrs.* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 rm genes_corrs.*
 mv combined.txt gene_properties.txt
-cp gene_properties.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp gene_properties.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #Run comparison plots for FastTrees with true bootstrap ('bootstrap')
 if [[ $FastTreeBoot =~ "yes" ]]; then
@@ -424,14 +435,14 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 	fi
 	mv genes_corrs.png genes_corrs_bootstrap.png
 	mv genes_corrs.pdf genes_corrs_bootstrap.pdf
-	cp genes_corrs_bootstrap.* $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp genes_corrs_bootstrap.* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 	rm genes_corrs_bootstrap.*
 	mv combined.txt gene_properties_bootstrap.txt
-	cp gene_properties_bootstrap.txt $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+	cp gene_properties_bootstrap.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 fi
 
 #Copy R.log to home
-cp R.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

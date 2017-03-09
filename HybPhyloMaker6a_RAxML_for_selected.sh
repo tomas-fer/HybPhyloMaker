@@ -20,8 +20,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.3.3                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2015 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -77,31 +77,50 @@ else
 	type="exons"
 fi
 
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
+#Check compatible setting (corrected=no is incompatible with genepart=codon)
+if [[ $genetreepart == "codon" ]] && [[ $corrected == "no" ]]; then
+	echo "You have incompatible settings (partitioning by codon [genetreepart=codon] is not allowed with uncorrected data [corrected=no]."
+	echo "Change the settings before running the script again..."
+	rm -d ../workdir06a/ 2>/dev/null
+	exit 3
+fi
+
 #Check necessary file
 echo -ne "Testing if input data are available..."
-if [ -d "$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
-	if [ "$(ls -A $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
-		if [ -f "$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
+if [ -d "$path/$alnpathselected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}" ]; then
+	if [ "$(ls -A $path/$alnpathselected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT})" ]; then
+		if [ -f "$path/$alnpathselected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
 			echo -e "OK\n"
 		else
-			echo -e "'$path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
+			echo -e "'$path/$alnpathselected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt' is missing. Exiting...\n"
 			rm -d ../workdir06a/ 2>/dev/null
 			exit 3
 		fi
 	else
-		echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
+		echo -e "'$path/$alnpathselected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is empty. Exiting...\n"
 		rm -d ../workdir06a/ 2>/dev/null
 		exit 3
 	fi
 else
-	echo -e "'$path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
+	echo -e "'$path/$alnpathselected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}' is missing. Exiting...\n"
 	rm -d ../workdir06a/ 2>/dev/null
 	exit 3
 fi
 
 #Test if folder for results exits
-if [ -d "$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
-	echo -e "Directory '$path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' already exists. Delete it or rename before running this script again. Exiting...\n"
+if [ -d "$path/$treepath${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML" ]; then
+	echo -e "Directory '$path/$treepath${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir06a/ 2>/dev/null
 	exit 3
 else
@@ -115,9 +134,9 @@ else
 fi
 
 #Add necessary scripts and files
-cp $path/$type/71selected${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
-mkdir -p $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}
-mkdir $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}
+mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 if [[ $location == "1" || $location == "2" ]]; then
 	echo -e "\nGenerating multiple jobs with $raxmlperjob alignments per job..."
@@ -125,7 +144,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 	#Divide selected_genes$CUT.txt into files by $raxmlperjob
 	split --lines=$raxmlperjob selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.
 	rm selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
-	cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.* $path/$type/71selected${MISSINGPERCENT}
+	cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.* $path/${alnpathselected}${MISSINGPERCENT}
 	for group in $(ls selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.*)
 	do
 		echo '#!/bin/bash' >> ${group}.sh
@@ -163,15 +182,30 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'MISSINGPERCENT='"$MISSINGPERCENT" >> ${group}.sh
 		echo 'SPECIESPRESENCE='"$SPECIESPRESENCE" >> ${group}.sh
 		echo 'type='"$type" >> ${group}.sh
+		echo 'corrected='"$corrected" >> ${group}.sh
 		echo 'location='"$location" >> ${group}.sh
 		echo 'genetreepart='"$genetreepart" >> ${group}.sh
 		echo 'raxmlpthreads='"$raxmlpthreads" >> ${group}.sh
-		echo 'cp '"$path"'/$type/71selected${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
+		echo 'if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
+		echo '  alnpath=$type/80concatenated_exon_alignments_corrected' >> ${group}.sh
+		echo '  alnpathselected=$type/81selected_corrected' >> ${group}.sh
+		echo '  treepath=$type/82trees_corrected' >> ${group}.sh
+		echo 'else' >> ${group}.sh
+		echo '  alnpath=$type/70concatenated_exon_alignments' >> ${group}.sh
+		echo '  alnpathselected=$type/71selected' >> ${group}.sh
+		echo '  treepath=$type/72trees' >> ${group}.sh
+		echo 'fi' >> ${group}.sh
+		echo 'cp '"$path"'/${alnpathselected}${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
 		echo 'cp '"$source"'/catfasta2phyml.pl .' >> ${group}.sh
 		echo 'for i in $(cat '"$group"')' >> ${group}.sh
 		echo 'do' >> ${group}.sh
-		echo '  cp '"$path"'/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
-		echo '  cp $path/$type/70concatenated_exon_alignments/${i}.part .' >> ${group}.sh
+		echo '  cp '"$path"'/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
+		echo '  if [[ $genetreepart == "exon" ]]; then' >> ${group}.sh
+		echo '    cp $path/${alnpath}/${i}.part .' >> ${group}.sh
+		echo '  elif [[ $genetreepart == "codon" ]]; then' >> ${group}.sh
+		echo '    cp $path/${alnpath}/${i}.codonpart.file .' >> ${group}.sh
+		echo '    mv ${i}.codonpart.file ${i}.part' >> ${group}.sh
+		echo '  fi' >> ${group}.sh
 		echo '  #Substitute '"'('"' by '"'_'"' and '"')'"' by nothing ('"'('"' and '"')'"' not allowed in RAxML)' >> ${group}.sh
 		echo '  sed -i '"'s/(/_/g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
 		echo '  sed -i '"'s/)//g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
@@ -186,20 +220,43 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  #modify name for partition file (remove '_modif${MISSINGPERCENT}')' >> ${group}.sh
 		echo '  filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)' >> ${group}.sh
 		echo '  #RAxML with 100 rapid bootstrap' >> ${group}.sh
-		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
-		echo '    if [[ $genetreepart == "yes" ]]; then' >> ${group}.sh
-		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '  #1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)' >> ${group}.sh
+		echo '  #  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file' >> ${group}.sh
+		echo '  if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml.log' >> ${group}.sh
+		echo '  else' >> ${group}.sh
+		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml.log' >> ${group}.sh
+		echo '  fi' >> ${group}.sh
+		echo '  #2.Test if reduced files were produced' >> ${group}.sh
+		echo '  if [ -f $file.fas.reduced ]; then' >> ${group}.sh
+		echo '    echo "Reduced alignment found...using it" >> raxml.log' >> ${group}.sh
+		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '      rm $file.fas' >> ${group}.sh
+		echo '      mv $file.fas.reduced $file.fas' >> ${group}.sh
 		echo '    else' >> ${group}.sh
+		echo '      rm $filepart.part' >> ${group}.sh
+		echo '      mv $filepart.part.reduced $filepart.part' >> ${group}.sh
+		echo '      rm $file.fas' >> ${group}.sh
+		echo '      mv $file.fas.reduced $file.fas' >> ${group}.sh
+		echo '    fi' >> ${group}.sh
+		echo '  else' >> ${group}.sh
+		echo '    echo "Reduced alignment not found...using original alignment" >> raxml.log' >> ${group}.sh
+		echo '  fi' >> ${group}.sh
+		echo '  #3.Run RAxML' >> ${group}.sh
+		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
+		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
 		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    else' >> ${group}.sh
+		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    fi'  >> ${group}.sh
 		echo '  elif [[ $location == "2" ]]; then' >> ${group}.sh
-		echo '    if [[ $genetreepart == "yes" ]]; then' >> ${group}.sh
-		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
-		echo '    else' >> ${group}.sh
+		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
 		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '    else' >> ${group}.sh
+		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    fi'  >> ${group}.sh
 		echo '  fi' >> ${group}.sh
-		echo '  cp *$file.result '"$path"'/$type/72trees'"${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '  cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
@@ -212,10 +269,10 @@ if [[ $location == "1" || $location == "2" ]]; then
 		
 		chmod +x ${group}.sh
 		if [[ $location == "1" ]]; then
-			cp ${group}.sh $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+			cp ${group}.sh $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 			qsub ${group}.sh
 		else
-			cp ${group}.sh $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+			cp ${group}.sh $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 			cp ${group}.sh ..
 			echo 'qsub '"${group}"'.sh' >> ../submitRAxMLjobs.sh
 		fi
@@ -227,8 +284,13 @@ else
 	echo -e "Modifying selected FASTA files...\n"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
 	do
-		cp $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
-		cp $path/$type/70concatenated_exon_alignments/${i}.part .
+		cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .
+		if [[ $genetreepart == "exon" ]]; then
+			cp $path/${alnpath}/${i}.part .
+		elif [[ $genetreepart == "codon" ]]; then
+			cp $path/${alnpath}/${i}.codonpart.file .
+			mv ${i}.codonpart.file ${i}.part
+		fi
 		#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML)
 		sed -i.bak 's/(/_/g' ${i}_modif${MISSINGPERCENT}.fas
 		sed -i.bak 's/)//g' ${i}_modif${MISSINGPERCENT}.fas
@@ -248,15 +310,38 @@ else
 		#modify name for partition file (remove '_modif${MISSINGPERCENT}'
 		filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)
 		#run RAxML
-		if [[ $genetreepart == "yes" ]]; then
-			$raxmlpthreads -T $numbcores -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		#1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)
+		#  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file
+		if [[ $genetreepart == "no" ]]; then
+			$raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml.log
 		else
-			$raxmlpthreads -T $numbcores -f a -s $file.fas -q -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+			$raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml.log
 		fi
-		cp *$file.result $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+		#2.Test if reduced files were produced
+		if [ -f $file.fas.reduced ]; then
+			echo "Reduced alignment found...using it" >> raxml.log
+			if [[ $genetreepart == "no" ]]; then
+				rm $file.fas
+				mv $file.fas.reduced $file.fas
+			else
+				rm $filepart.part
+				mv $filepart.part.reduced $filepart.part
+				rm $file.fas
+				mv $file.fas.reduced $file.fas
+			fi
+		else
+			echo "Reduced alignment not found...using original alignment" >> raxml.log
+		fi
+		#3.Run RAxML
+		if [[ $genetreepart == "yes" ]]; then
+			$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		else
+			$raxmlpthreads -T $numbcores -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		fi
+		cp *${file}.result $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
 #Copy raxml.log to home
-cp raxml.log $path/$type/72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
 
 #Clean scratch/work directory
@@ -275,5 +360,6 @@ if [[ $location == "2" ]]; then
 	echo -e "\nGo to homedir and run submitRAxMLjobs.sh..."
 elif [[ $location == "1" ]]; then
 	echo -e "\nAfter all jobs finish run script HybPhyloMaker6a2 in order to calculate tree properties..."
+elif [[ $location == "0" ]]; then
+	echo -e "\nRun script HybPhyloMaker6a2 in order to calculate tree properties..."
 fi
-echo -e "\nRun script HybPhyloMaker6a2 in order to calculate tree properties..."

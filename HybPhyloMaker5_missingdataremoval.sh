@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=1d
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=4:minspec=29
 #PBS -j oe
 #PBS -l mem=12gb
 #PBS -l scratch=4gb
@@ -22,8 +22,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.3.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -96,6 +96,17 @@ else
 	type="exons"
 fi
 
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+else
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
 #Check necessary file
 echo -ne "Testing if input data are available..."
 if [[ $cp =~ "yes" ]]; then
@@ -113,36 +124,67 @@ if [[ $cp =~ "yes" ]]; then
 		exit 3
 	fi
 else
-	if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
-		if [ "$(ls -A $path/$type/70concatenated_exon_alignments)" ]; then
-			echo -e "OK\n"
+	if [[ $corrected =~ "yes" ]]; then
+		if [ -d "$path/$type/80concatenated_exon_alignments_corrected" ]; then
+			if [ "$(ls -A $path/$type/80concatenated_exon_alignments_corrected)" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/$type/80concatenated_exon_alignments_corrected' is empty. Exiting...\n"
+				rm -d ../workdir05/ 2>/dev/null
+				exit 3
+			fi
 		else
-			echo -e "'$path/$type/70concatenated_exon_alignments' is empty. Exiting...\n"
+			echo -e "'$path/$type/80concatenated_exon_alignments_corrected' is missing. Exiting...\n"
 			rm -d ../workdir05/ 2>/dev/null
 			exit 3
 		fi
 	else
-		echo -e "'$path/$type/70concatenated_exon_alignments' is missing. Exiting...\n"
-		rm -d ../workdir05/ 2>/dev/null
-		exit 3
-	fi
-fi
-
-#Test if folder for results exits
-if [ -d "$path/$type/71selected${MISSINGPERCENT}" ]; then
-	echo -e "Directory '$path/$type/71selected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir05/ 2>/dev/null
-	exit 3
-else
-	if [[ ! $location == "1" ]]; then
-		if [ "$(ls -A ../workdir05)" ]; then
-			echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
+			if [ "$(ls -A $path/$type/70concatenated_exon_alignments)" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/$type/70concatenated_exon_alignments' is empty. Exiting...\n"
+				rm -d ../workdir05/ 2>/dev/null
+				exit 3
+			fi
+		else
+			echo -e "'$path/$type/70concatenated_exon_alignments' is missing. Exiting...\n"
 			rm -d ../workdir05/ 2>/dev/null
 			exit 3
 		fi
 	fi
 fi
 
+#Test if folder for results exits
+if [[ $corrected =~ "yes" ]]; then
+	if [ -d "$path/$type/81selected_corrected${MISSINGPERCENT}" ]; then
+		echo -e "Directory '$path/$type/81selected_corrected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir05/ 2>/dev/null
+		exit 3
+	else
+		if [[ ! $location == "1" ]]; then
+			if [ "$(ls -A ../workdir05)" ]; then
+				echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir05/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	fi
+else
+	if [ -d "$path/$type/71selected${MISSINGPERCENT}" ]; then
+		echo -e "Directory '$path/$type/71selected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir05/ 2>/dev/null
+		exit 3
+	else
+		if [[ ! $location == "1" ]]; then
+			if [ "$(ls -A ../workdir05)" ]; then
+				echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir05/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	fi
+fi
 #Copy data folder to scratch
 if [[ $cp =~ "yes" ]]; then
 	cp $path/$type/60mafft/*.fasta .
@@ -151,15 +193,15 @@ if [[ $cp =~ "yes" ]]; then
 		# mv "$file" "${file%.fasta.mafft}.fasta"
 	# done
 else
-	cp $path/$type/70concatenated_exon_alignments/*.fasta .
+	cp $path/$alnpath/*.fasta .
 fi
 
 #-----------PREPARE ALIGNMENTS WITH SPECIES WITH MAXIMUM SPECIFIED MISSING DATA ONLY----------------------
 #Make a list of all fasta files
 ls *.fasta | cut -d"." -f1 > fileForDeletePercentage.txt
 #Make new dir for results
-mkdir $path/$type/71selected${MISSINGPERCENT}
-mkdir $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+mkdir $path/${alnpathselected}${MISSINGPERCENT}
+mkdir $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 numberfiles=$(cat fileForDeletePercentage.txt | wc -l)
 calculating=0
 for file in $(cat fileForDeletePercentage.txt)
@@ -216,13 +258,13 @@ do
 	#sed -i.bak '/^>/{s/ /\n/}' ${file}_modif${MISSINGPERCENT}.fas
 	cat ${file}_modif${MISSINGPERCENT}.fas | tr " " "\n" > tmp && mv tmp ${file}_modif${MISSINGPERCENT}.fas
 	#Copy results home
-	cp ${file}_${MISSINGPERCENT}percN.fas $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
-	cp ${file}_modif${MISSINGPERCENT}.fas $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	cp ${file}_${MISSINGPERCENT}percN.fas $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
+	cp ${file}_modif${MISSINGPERCENT}.fas $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
 	calculating=$((calculating + 1))
 	echo -e "\t$file processed ($calculating out of $numberfiles)\n"
 done
 echo -e "\nDeleting samples with more than ${MISSINGPERCENT}% missing data finished."
-echo -e "Modified alignments saved in $path/$type/71selected${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
+echo -e "Modified alignments saved in $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
 
 #-----------MAKE A TABLE WITH % OF MISSING DATA IN EACH SPECIES AND ASSEMBLY----------------------
 #Prepare header file
@@ -236,7 +278,7 @@ awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); prin
 sed -i.bak '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
 paste headers.txt missing_percentage_overview.txt > missing_percentage_overview_and_headers.txt
-cp missing_percentage_overview_and_headers.txt $path/$type/71selected${MISSINGPERCENT}
+cp missing_percentage_overview_and_headers.txt $path/${alnpathselected}${MISSINGPERCENT}
 
 # Transpose data matrix (with percentages of missing data)
 awk '
@@ -285,7 +327,7 @@ sed -i '1s/ 0/ nr_assemblies_with_completely_missing_data/' transposedPlusMeanPl
 # Combine AssembliesList.txt and transposedPlusMeanPlusNumberOf100.txt
 paste AssembliesList.txt transposedPlusMeanPlusNumberOf100.txt > MissingDataOverview.txt
 # Copy table and list to home
-cp MissingDataOverview.txt $path/$type/71selected${MISSINGPERCENT}
+cp MissingDataOverview.txt $path/${alnpathselected}${MISSINGPERCENT}
 echo -e "Table with % of missing data per gene and sample saved to $path/$type/71selected${MISSINGPERCENT}\n"
 
 #-----------SELECTION OF MOST COMPLETE ASSEMBLIES----------------------
@@ -339,8 +381,8 @@ cat MissingDataOverview_${MISSINGPERCENT}.txt average_missing_${MISSINGPERCENT}.
 # Select assemblies with more than 75% of species (and delete first and last line including header and sum legend)
 awk -F' ' -v val=$SPECIESPRESENCE '( $(NF) > val/100 ) { print $1 }' MissingDataOverview_${MISSINGPERCENT}.txt | tail -n +2 | head -n -2 > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 # Copy table and list to home
-cp MissingDataOverview_${MISSINGPERCENT}.txt $path/$type/71selected${MISSINGPERCENT}
-cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/$type/71selected${MISSINGPERCENT}
+cp MissingDataOverview_${MISSINGPERCENT}.txt $path/${alnpathselected}${MISSINGPERCENT}
+cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/${alnpathselected}${MISSINGPERCENT}
 echo -e "Assemblies including at least ${SPECIESPRESENCE}% of species selected"
 
 #-----------CALCULATE CHARACTERISTICS FOR ALL GENES AND FOR SELECTED GENES (USING AMAS)----------------------
@@ -397,8 +439,8 @@ else
 	R --slave -f alignmentSummary.R
 fi
 #Copy summary table to home
-cp summaryALL.txt $path/$type/71selected${MISSINGPERCENT}
-cp *.png $path/$type/71selected${MISSINGPERCENT}
+cp summaryALL.txt $path/${alnpathselected}${MISSINGPERCENT}
+cp *.png $path/${alnpathselected}${MISSINGPERCENT}
 rm summaryALL.txt
 rm *.png
 # 2. For selected genes
@@ -455,8 +497,8 @@ mv summaryALL.txt summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 #Rename all PNG files generated by R (add '_${MISSINGPERCENT}_${SPECIESPRESENCE}')
 for file in *.png; do mv "$file" "${file/.png/_${MISSINGPERCENT}_${SPECIESPRESENCE}.png}"; done
 #Copy summary table and PNG files to home
-cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/$type/71selected${MISSINGPERCENT}
-cp *.png $path/$type/71selected${MISSINGPERCENT}
+cp summarySELECTED_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/${alnpathselected}${MISSINGPERCENT}
+cp *.png $path/${alnpathselected}${MISSINGPERCENT}
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

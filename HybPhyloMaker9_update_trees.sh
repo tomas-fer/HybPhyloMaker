@@ -19,8 +19,8 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                           Script 09 - Update trees                           *
-# *                                   v.1.3.2                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -166,7 +166,7 @@ cp *histogram.png $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/
 #Copy R.log to home
 cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/
 #Prepare list of genes of updated selection
-cat gene_properties_update.txt | sed 1d | cut -f1 | sort | sed 's/Corrected/CorrectedAssembly_/g' | sed "s/_modif${MISSINGPERCENT}.fas//g" > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt
+cat gene_properties_update.txt | sed 1d | cut -f1 | sort | sed 's/Corrected//g' | sed "s/_modif${MISSINGPERCENT}.fas//g" > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt
 mkdir -p $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 echo -e "\nList of updated selected genes saved to $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt..."

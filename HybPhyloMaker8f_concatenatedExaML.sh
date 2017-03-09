@@ -1,17 +1,17 @@
 #!/bin/bash
 #PBS -l walltime=2d
-#PBS -l nodes=4:ppn=16:infiniband
+#PBS -l nodes=1:ppn=12:minspec=29
 #PBS -j oe
 #PBS -l mem=4gb
-#PBS -l scratch=32gb:shared
+#PBS -l scratch=32gb
 #PBS -N HybPhyloMaker8f_ExaMLconcatenated_tree
 #PBS -m abe
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.3.2                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2016 *
+# *                                   v.1.4.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -222,7 +222,7 @@ else
 	module add hdf5-1.8.12-gcc
 	# Run PartitionFinder
 	#python partitionfinder/PartitionFinder.py PartitionFinder --raxml --rcluster-max 1000 --rcluster-percent 10
-	python partitionfinder/PartitionFinder.py PartitionFinder --raxml
+	python partitionfinder/PartitionFinder.py -p $TORQUE_RESC_TOTAL_PROCS PartitionFinder --raxml
 	#Prepare RAxML (ExaML) partition file from PartitionFinder results
 	grep "DNA, Subset" PartitionFinder/analysis/best_scheme.txt > RAxMLpartitions.txt
 	echo -e "\nPartitionFinder finished...\n"
