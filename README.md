@@ -1,6 +1,6 @@
 # HybPhyloMaker
    
-Set of bash scripts for analysis of HybSeq raw data. Consists of several steps:   
+Set of bash scripts for analysis of HybSeq data (from raw reads to species trees). Consists of several steps:   
   
 
 0: Download FASTQ files from Illumina BaseSpace storage  
