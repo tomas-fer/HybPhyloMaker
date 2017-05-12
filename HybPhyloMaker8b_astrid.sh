@@ -1,9 +1,8 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2h
-#PBS -l nodes=1:ppn=4:debian8
+#PBS -l walltime=2:0:0
+#PBS -l select=1:ncpus=4:mem=8gb:scratch_local=1gb
 #PBS -j oe
-#PBS -l mem=8gb
 #PBS -N HybPhyloMaker8b_Astrid
 #PBS -m abe
 
@@ -20,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -397,6 +396,10 @@ if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]
 			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
 			sed -i.bak 's/-/XX/' concatenated.phylip
 			sed -i.bak2 's/_/YY/' concatenated.phylip
+			#Remove python3 module if on MetaCentrum
+			if [[ $PBS_O_HOST == *".cz" ]]; then
+				module rm python-3.4.1-intel
+			fi
 			#Combine bootstrap with consensus tree
 			python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
 			mv combinedSupportsTree.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre

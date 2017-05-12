@@ -1,10 +1,8 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1d
-#PBS -l nodes=4:ppn=6
+#PBS -l walltime=1:0:0
+#PBS -l select=4:ncpus=6:mem=4gb:scratch_local=80gb
 #PBS -j oe
-#PBS -l mem=1gb
-#PBS -l scratch=8gb
 #PBS -N HybPhyloMaker0a_datadownloadprepare
 #PBS -m abe
 
@@ -21,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

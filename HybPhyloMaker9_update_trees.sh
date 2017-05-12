@@ -1,9 +1,8 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2h
-#PBS -l nodes=1:ppn=1
+#PBS -l walltime=2:00:00
+#PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
-#PBS -l mem=1gb
 #PBS -N HybPhyloMaker9_update_trees
 #PBS -m abe
 
@@ -19,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                           Script 09 - Update trees                           *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

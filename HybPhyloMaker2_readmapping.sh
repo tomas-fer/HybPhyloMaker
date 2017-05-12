@@ -1,10 +1,8 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2d
-#PBS -l nodes=1:ppn=4:minspec=29
+#PBS -l walltime=12:0:0
+#PBS -l select=1:ncpus=4:mem=4gb:scratch_local=80gb
 #PBS -j oe
-#PBS -l mem=4gb
-#PBS -l scratch=80gb
 #PBS -N HybPhyloMaker2_readmapping
 #PBS -m abe
 
@@ -20,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

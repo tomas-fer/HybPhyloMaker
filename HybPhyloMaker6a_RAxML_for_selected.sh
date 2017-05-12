@@ -1,13 +1,10 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1d
-#PBS -l nodes=1:ppn=1
+#PBS -l walltime=12:0:0
+#PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
-#PBS -l mem=1gb
-#PBS -l scratch=1gb
 #PBS -N HybPhyloMaker6a_RAxML_for_selected_parallel
 #PBS -m abe
-
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -q sThC.q
@@ -20,7 +17,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

@@ -1,13 +1,10 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1d
-#PBS -l nodes=1:ppn=4:minspec=29
+#PBS -l walltime=24:0:0
+#PBS -l select=1:ncpus=4:mem=12gb:scratch_local=4gb
 #PBS -j oe
-#PBS -l mem=12gb
-#PBS -l scratch=4gb
 #PBS -N HybPhyloMaker5_missingdata_handling
 #PBS -m abe
-
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -pe mthread 4
@@ -22,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

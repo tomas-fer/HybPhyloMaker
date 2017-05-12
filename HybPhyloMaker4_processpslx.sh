@@ -1,10 +1,8 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1d
-#PBS -l nodes=1:ppn=16
+#PBS -l walltime=12:0:0
+#PBS -l select=1:ncpus=14:mem=1gb:scratch_local=8gb
 #PBS -j oe
-#PBS -l mem=1gb
-#PBS -l scratch=8gb
 #PBS -N HybPhyloMaker4_process_pslx
 #PBS -m abe
 
@@ -22,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 04 - Process pslx files                        *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -51,6 +49,8 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add mafft-7.029
 	module add parallel
 	module add perl-5.10.1
+	#available processors
+	procavail=`expr $TORQUE_RESC_TOTAL_PROCS - 2`
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker4 is running on Hydra..."
 	#settings for Hydra
@@ -215,8 +215,8 @@ fi
 if [[ $cp =~ "yes" ]]; then
 	if [ "$parallelmafft" = "yes" ]; then
 		if [[ $location == "1" ]]; then
-			echo -e "\nAligning exons using MAFFT with GNU parallel on $TORQUE_RESC_TOTAL_PROCS cores..."
-			cat listOfFastaFiles.txt | parallel -j $TORQUE_RESC_TOTAL_PROCS 'mafft --auto {} > {}.mafft'
+			echo -e "\nAligning exons using MAFFT with GNU parallel on $procavail ($TORQUE_RESC_TOTAL_PROCS cores - 2)..."
+			cat listOfFastaFiles.txt | parallel -j $procavail 'mafft --auto {} > {}.mafft'
 		elif [[ $location == "2" ]]; then
 			echo -e "\nAligning exons using MAFFT with GNU parallel on $NSLOTS cores..."
 			cat listOfFastaFiles.txt | parallel -j $NSLOTS --max-procs $NSLOTS 'mafft --auto {} > {}.mafft'
@@ -261,8 +261,8 @@ if [[ $cp =~ "yes" ]]; then
 else
 	if [ "$parallelmafft" = "yes" ]; then
 		if [[ $location == "1" ]]; then
-			echo -e "\nAligning exons using MAFFT with GNU parallel on $TORQUE_RESC_TOTAL_PROCS cores..."
-			cat listOfFastaFiles.txt | parallel -j $TORQUE_RESC_TOTAL_PROCS 'mafft --auto {} > {}.mafft'
+			echo -e "\nAligning exons using MAFFT with GNU parallel on $procavail ($TORQUE_RESC_TOTAL_PROCS cores - 2)..."
+			cat listOfFastaFiles.txt | parallel -j $procavail 'mafft --auto {} > {}.mafft'
 		elif [[ $location == "2" ]]; then
 			echo -e "\nAligning exons using MAFFT with GNU parallel on $NSLOTS cores..."
 			cat listOfFastaFiles.txt | parallel -j $NSLOTS --max-procs $NSLOTS 'mafft --auto {} > {}.mafft'

@@ -1,13 +1,10 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2d
-#PBS -l nodes=1:ppn=8:minspec=29
+#PBS -l walltime=12:00:00
+#PBS -l select=1:ncpus=8:mem=24gb:scratch_local=8gb
 #PBS -j oe
-#PBS -l mem=24gb
-#PBS -l scratch=8gb
 #PBS -N HybPhyloMaker8e_concatenated_tree
 #PBS -m abe
-
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -pe mthread 8
@@ -21,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

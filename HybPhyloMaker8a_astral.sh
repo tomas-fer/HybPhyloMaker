@@ -1,13 +1,10 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2h
-#PBS -l nodes=1:ppn=4:debian8:minspec=29
+#PBS -l walltime=4:0:0
+#PBS -l select=1:ncpus=4:mem=16gb:scratch_local=4gb
 #PBS -j oe
-#PBS -l mem=16gb
-#PBS -l scratch=2gb
 #PBS -N HybPhyloMaker8a_Astral
 #PBS -m abe
-
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -pe mthread 2
@@ -21,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -437,6 +434,10 @@ if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]
 			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
 			sed -i.bak 's/-/XX/' concatenated.phylip
 			sed -i.bak2 's/_/YY/' concatenated.phylip
+			#Remove python3 module if on MetaCentrum
+			if [[ $PBS_O_HOST == *".cz" ]]; then
+				module rm python-3.4.1-intel
+			fi
 			#Combine basic Astral tree with bootstrap tree
 			python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 			mv combinedSupportsTree.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDboot.tre

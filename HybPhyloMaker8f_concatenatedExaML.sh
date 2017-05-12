@@ -1,16 +1,14 @@
 #!/bin/bash
-#PBS -l walltime=2d
-#PBS -l nodes=1:ppn=12:minspec=29
+#PBS -l walltime=24:00:00
+#PBS -l select=1:ncpus=12:mem=4gb:scratch_local=32gb
 #PBS -j oe
-#PBS -l mem=4gb
-#PBS -l scratch=32gb
 #PBS -N HybPhyloMaker8f_ExaMLconcatenated_tree
 #PBS -m abe
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************

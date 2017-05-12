@@ -1,13 +1,10 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1d
-#PBS -l nodes=1:ppn=1
+#PBS -l walltime=6:0:0
+#PBS -l select=1:ncpus=1:mem=4gb:scratch_local=8gb
 #PBS -j oe
-#PBS -l mem=4gb
-#PBS -l scratch=8gb
 #PBS -N HybPhyloMaker3_generate_pslx
 #PBS -m abe
-
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -q sThC.q
@@ -21,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.4.0                                    *
+# *                                   v.1.4.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
