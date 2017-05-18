@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.4.1                                    *
+# *                                   v.1.4.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -41,7 +41,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add samtools-1.3
 	module add perl-5.10.1
 	module add gcc-4.8.4
-	module add python34-modules-gcc
+	module add python34-modules-gcc #adds also kindel
 	module add ococo-2016-11
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
@@ -194,6 +194,11 @@ fi
 #Copy list of samples
 cp $path/10rawreads/SamplesFileNames.txt .
 
+#Creating a summary table
+#Produce tab-separated table
+#Write headers (number of reads, nr paired reads, nr forward unpaired reads, nr reverse unpaired reads, nr mapped reads, % of mapped reads)
+echo -e "Sample no.\tGenus\tSpecies\tTotal nr. reads\tNr. paired reads\tNr. forward unpaired reads\tNr. reverse unpaired reads\tNr. mapped reads\tPercentage of mapped reads" > mapping_summary.txt
+
 #A loop to process all samples in folders named as specified in SamplesFileNames.txt
 numberfiles=$(cat SamplesFileNames.txt | wc -l)
 calculating=0
@@ -204,20 +209,37 @@ for file in $(cat SamplesFileNames.txt); do
 	score=G,20,8
 	#sensitive mapping
 	if [[ $mapping =~ "yes" ]]; then
-		#copy fastq files
+		#copy fastq files and count number of reads
 		cp $path/20filtered/${file}/${file}-1P_no-dups.fastq .
+		nr1P=$(awk '{s++}END{print s/4}' ${file}-1P_no-dups.fastq)
 		cp $path/20filtered/${file}/${file}-2P_no-dups.fastq .
+		nr2P=$(awk '{s++}END{print s/4}' ${file}-2P_no-dups.fastq)
 		cp $path/20filtered/${file}/${file}-1U .
+		nr1U=$(awk '{s++}END{print s/4}' ${file}-1U)
 		cp $path/20filtered/${file}/${file}-2U .
+		nr2U=$(awk '{s++}END{print s/4}' ${file}-2U)
 		echo "Mapping..."
 		#Bowtie2 parameters are derived from --very-sensitive-local
 		bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq  -2 ${file}-2P_no-dups.fastq  -U ${file}-1U,${file}-2U -S ${file}.sam 2>${file}_bowtie2_out.txt
-		#create SAM from BAM
+		#create BAM from SAM
 		echo "Converting to BAM..."
-		samtools view -bS -o ${file}.bam ${file}.sam
+		samtools view -bS -o ${file}.bam ${file}.sam 2>/dev/null
+		#number of mapped reads in BAM
+		nrmapped=$(samtools view -F 0x04 -c ${file}.bam)
+		#number of all reads in BAM
+		nrall=$(samtools view -c ${file}.bam)
+		#calculate percentage of mapped reads
+		percmapped=$(echo -e "scale=5;100 * ($nrmapped / $nrall)" | bc)
+		#extracting header data
+		number=$(cut -d'_' -f2 <<< $file | sed 's/S//')
+		genus=$(cut -d'-' -f1 <<< $file)
+		species=$(cut -d'_' -f1 <<< $file | cut -d'-' -f2)
+		#adding data to table
+		echo -e "$number\t$genus\t$species\t$nrall\t$nr1P\t$nr1U\t$nr2U\t$nrmapped\t$percmapped" >> mapping_summary.txt
 		#copy results to home
 		cp ${file}.bam $path/$type/21mapped
 		cp ${file}_bowtie2_out.txt $path/$type/21mapped
+		cp mapping_summary.txt $path/$type/21mapped
 	else
 		echo "Copying BAM..."
 		cp $path/$type/21mapped/${file}.bam .
@@ -232,7 +254,9 @@ for file in $(cat SamplesFileNames.txt); do
 	fi
 	#change name in fasta file
 	sed -i.bak '1d' ${file}.fasta #delete first line
-	sed -i.bak "1i >$file" ${file}.fasta #insert fasta header as a first line
+	echo ">$file" > header.txt
+	cat header.txt ${file}.fasta > tmp && mv tmp ${file}.fasta
+	rm header.txt
 	#Remove line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' ${file}.fasta > tmp && mv tmp ${file}.fasta
 	#put $nrns Ns to variable 'a' and $nrns ?s to variable 'b'
