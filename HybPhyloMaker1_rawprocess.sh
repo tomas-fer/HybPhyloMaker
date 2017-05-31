@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.4.1                                    *
+# *                                   v.1.4.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -179,12 +179,12 @@ do
 	#Adapter and general quality trimming
 	echo "Adapter removal & quality trimming..."
 	if [[ $location == "1" ]]; then
-		java -jar /software/trimmomatic-0.32/dist/jar/trimmomatic-0.32.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
+		java -jar /software/trimmomatic-0.32/dist/jar/trimmomatic-0.32.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 		#trimmomatic PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	elif [[ $location == "2" ]]; then
-		java -d64 -server -XX:MaxHeapSize=10g -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
+		java -d64 -server -XX:MaxHeapSize=10g -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	else
-		java -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
+		java -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	fi	
 	#Copy trimmed reads to home
 	if [[ $location == "1" ]]; then

@@ -8,7 +8,7 @@
 # Tomas Fer, 2017                                                                                                        #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.4.0                                                                                                                #
+# v.1.4.2                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution

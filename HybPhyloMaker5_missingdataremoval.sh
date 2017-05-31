@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.4.1                                    *
+# *                                   v.1.4.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -243,7 +243,7 @@ do
 		#Calculate percentage of missing data as integer (for evaluation in bash)
 		percentage=$(echo -e "scale=0;($count * 100) / $y" | bc)
 		echo -e "$header\t$percentageprint" >> ${file}_${MISSINGPERCENT}percN.fas
-		if [ "$percentage" -lt "$MISSINGPERCENT" ]; then
+		if [ "$percentage" -le "$MISSINGPERCENT" ]; then
 			echo "$line" >> ${file}_modif${MISSINGPERCENT}.fas
 		else
 			echo -e "Deleting $header with $percentageprint of missing data"
