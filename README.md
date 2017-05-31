@@ -19,4 +19,4 @@ Also utilizes many scripts developed by others (located in HybSeqSource folder).
 
 Read manual located in docs folder before running HybPhyloMaker.  
 
-![HybPhyloMaker workflow]()
+![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_workflow.png)
