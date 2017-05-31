@@ -18,5 +18,8 @@ Uses many additional software that must be installed and put in the PATH prior t
 Also utilizes many scripts developed by others (located in HybSeqSource folder). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
 
 Read manual located in docs folder before running HybPhyloMaker.  
-
+  
+  
+  
+# HybPhyloMaker workflow
 ![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_workflow.png)
