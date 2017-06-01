@@ -22,4 +22,4 @@ Read manual located in docs folder before running HybPhyloMaker.
   
   
 # HybPhyloMaker workflow
-![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_software.pdf)
+![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_workflow2.png)
