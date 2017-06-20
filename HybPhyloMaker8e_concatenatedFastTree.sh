@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -164,8 +164,10 @@ fi
 
 # Make new dir for results
 if [[ $update =~ "yes" ]]; then
+	mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated
 else
+	mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated
 fi
 

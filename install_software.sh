@@ -8,7 +8,7 @@
 # Tomas Fer, 2017                                                                                                        #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.4.2                                                                                                                #
+# v.1.4.3                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -289,6 +289,21 @@ fi
 cp raxmlHPC* /usr/local/bin
 cd ..
 
+#ExaML
+if ! [ -x "$(command -v examl)" ]; then
+	echo -e "Installing 'ExaML'"
+	git clone https://github.com/stamatak/ExaML/tree/master/examl &> mstatx_install.log
+	cd ExaML/parser
+	make -f Makefile.SSE3.gcc &> ../../mstatx_install.log
+	cp parse-examl /usr/local/bin
+	cd ../examl
+	make -f Makefile.SSE3.gcc &> ../../mstatx_install.log
+	cp examl /usr/local/bin
+	make -f Makefile.AVX.gcc &> ../../mstatx_install.log
+	cp examl-AVX /usr/local/bin
+	cd ../..
+fi
+
 #MstatX
 if ! [ -x "$(command -v mstatx)" ]; then
 	echo -e "Installing 'MstatX'"
@@ -436,13 +451,22 @@ if ! [ -x "$(command -v p4)" ]; then
 	cd ..
 fi
 
+#other python modules (mainly for PartitionFinder)
+if [[ $distribution =~ "Debian" ]]; then
+	$installer install -y python-pandas &> python-pandas_install.log #Debian
+	$installer install -y python-sklearn &> python-sklearn_install.log #Debian
+elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	pip install scikit-learn #CentOS, Fedora and OpenSUSE
+	pip install pandas #CentOS, Fedora and OpenSUSE
+fi
+
 #Leave 'install' directory
 cd ..
 
 #Check if everything is installed correctly
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
-for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS R p4; do
+for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
 	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 done
 

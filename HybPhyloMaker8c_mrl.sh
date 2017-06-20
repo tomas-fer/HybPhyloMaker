@@ -18,19 +18,19 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 08c - MRL species tree                         *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
 #Compute species tree using MRL methods using RAxML from trees saved in single gene tree file (with *.newick suffix)
-#Take trees from /concatenated_exon_alignments/selected${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 #Run first
 #(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#or specify another input trees below
+#Works also for trees after update, requisite taxa selection and collapsing (see HybPhyloMaker9_update_trees.sh and HybPhyloMaker10_requisite_collapse.sh)
+#Calculation of multilocus bootstrap does not work for trees after selection and/or collapsing
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -89,6 +89,19 @@ else
 	echo -e "\n"
 fi
 
+if [[ ! $collapse -eq "0" ]]; then
+	echo -e "...and with trees with branches below ${collapse} BS collapsed\n"
+else
+	if [[ $requisite =~ "no" ]]; then
+		echo -e "\n"
+	fi
+fi
+
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "...and only with trees with requisite taxa present\n"
+	
+fi
+
 #Settings for (un)corrected reading frame
 if [[ $corrected =~ "yes" ]]; then
 	alnpath=$type/80concatenated_exon_alignments_corrected
@@ -100,60 +113,82 @@ else
 	treepath=$type/72trees
 fi
 
-#Check necessary file
-echo -ne "Testing if input data are available..."
-if [[ $update =~ "yes" ]]; then
-	if [ -z "$OUTGROUP" ]; then
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
-			echo -e "OK\n"
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir08c 2>/dev/null
-			exit 3
-		fi
+#Settings for collapsed and requisite selection
+if [[ $requisite =~ "yes" ]]; then
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=with_requisite/collapsed${collapse}/
+		treefile=trees_with_requisite_collapsed${collapse}.newick
 	else
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-			echo -e "OK\n"
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir08c 2>/dev/null
-			exit 3
-		fi
+		modif=with_requisite/
+		treefile=trees_rooted_with_requisite.newick
 	fi
 else
-	if [ -z "$OUTGROUP" ]; then
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
-			echo -e "OK\n"
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=collapsed${collapse}/
+		treefile=trees_collapsed${collapse}.newick
+	else
+		modif=""
+		treefile=trees_rooted.newick
+	fi
+fi
+
+#Check necessary file
+if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+	echo -ne "Testing if input data are available..."
+	if [[ $update =~ "yes" ]]; then
+		if [ -z "$OUTGROUP" ]; then
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08c 2>/dev/null
+				exit 3
+			fi
 		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08c 2>/dev/null
+				exit 3
+			fi
+		fi
+	else
+		if [ -z "$OUTGROUP" ]; then
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08c 2>/dev/null
+				exit 3
+			fi
+		else
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+				echo -e "OK\n"
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08c 2>/dev/null
+				exit 3
+			fi
+		fi
+	fi
+	
+	#Test if folder for results exits
+	if [[ $update =~ "yes" ]]; then
+		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL" ]; then
+			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	else
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-			echo -e "OK\n"
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL" ]; then
+			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir08c 2>/dev/null
 			exit 3
 		fi
 	fi
 fi
 
-#Test if folder for results exits
-if [[ $update =~ "yes" ]]; then
-	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08c 2>/dev/null
-		exit 3
-	fi
-else
-	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08c 2>/dev/null
-		exit 3
-	fi
-fi
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir08c)" ]; then
 		echo -e "Directory 'workdir08c' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
@@ -168,29 +203,33 @@ cp $source/mrp.jar .
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
-		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile} .
+		#mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile} .
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	fi
 else
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
-		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile} .
+		#mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile} .
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	fi
 fi
 
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
-	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}MRL
 else
-	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}MRL
 fi
 
 #Make MRP matrix
-echo -e "Preparing MRP matrix...\n"
+echo -e "Preparing MRL matrix...\n"
 #java -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRPmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex NEXUS
 #Make MRL matrix
 if [[ $location == "2" ]]; then
@@ -236,11 +275,30 @@ rm RAxML_bipartitionsBranchLabels.MRLresult
 rm RAxML_bipartitions.MRLresult
 rm RAxML_bestTree.MRLresult
 
+#Rename MRL trees
+if [[ $requisite =~ "yes" ]]; then
+	if [[ ! $collapse -eq "0" ]]; then
+		mrltree=MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}
+	else
+		mrltree=MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite
+	fi
+else
+	if [[ ! $collapse -eq "0" ]]; then
+		mrltree=MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}
+	else
+		mrltree=MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}
+	fi
+fi
+
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
-	cp *MR* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/MRL
+	cp RAxML_MRL_info.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}MRL/${mrltree}_info.log
+	cp MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}MRL/${mrltree}_allbootstraptrees.tre
+	cp MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}MRL/${mrltree}.tre
 else
-	cp *MR* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/MRL
+	cp RAxML_MRL_info.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}MRL/${mrltree}_info.log
+	cp MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}MRL/${mrltree}_allbootstraptrees.tre
+	cp MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}MRL/${mrltree}.tre
 fi
 
 #Clean scratch/work directory

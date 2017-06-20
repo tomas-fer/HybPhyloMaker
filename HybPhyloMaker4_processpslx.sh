@@ -20,7 +20,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 04 - Process pslx files                        *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -339,6 +339,7 @@ if [[ $cp =~ "no" ]]; then
 
 	if [[ $location == "1" ]]; then
 		#Add necessary module
+		module add python-3.4.1-intel
 		#module add perl-5.10.1
 		#Make a new folder for results
 		mkdir $path/$type/70concatenated_exon_alignments

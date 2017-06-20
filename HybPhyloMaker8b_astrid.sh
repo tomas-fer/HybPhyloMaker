@@ -19,19 +19,19 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
-#Compute species tree using Astrid methods from trees saved in single gene tree file (with *.newick suffix)
-#Take trees from 72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+#Compute species tree using Astrid methods from gene trees trees saved in a single gene tree file (with *.newick suffix)
 #Run first
-#(1) HybPhyloMaker4_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(2) HybPhyloMaker5a_RAxML_for_selected.sh or HybPhyloMaker5b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(3) HybPhyloMaker6_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-
+#(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#Works also for trees after update, requisite taxa selection and collapsing (see HybPhyloMaker9_update_trees.sh and HybPhyloMaker10_requisite_collapse.sh)
+#Calculation of multilocus bootstrap does not work for trees after selection and/or collapsing
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -94,6 +94,19 @@ else
 	echo -e "\n"
 fi
 
+if [[ ! $collapse -eq "0" ]]; then
+	echo -e "...and with trees with branches below ${collapse} BS collapsed\n"
+else
+	if [[ $requisite =~ "no" ]]; then
+		echo -e "\n"
+	fi
+fi
+
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "...and only with trees with requisite taxa present\n"
+	
+fi
+
 #Settings for (un)corrected reading frame
 if [[ $corrected =~ "yes" ]]; then
 	alnpath=$type/80concatenated_exon_alignments_corrected
@@ -105,164 +118,185 @@ else
 	treepath=$type/72trees
 fi
 
-#Check necessary file
-echo -ne "Testing if input data are available..."
-if [[ $update =~ "yes" ]]; then
-	if [ -z "$OUTGROUP" ]; then
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
-			if [[ $mlbs =~ "yes" ]]; then
-				if [[ $tree =~ "RAxML" ]]; then
-					if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_*_modif${MISSINGPERCENT}.result 2>/dev/null | wc -w) ]; then
-							echo -e "OK\n"
-						else
-							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-							rm -d ../workdir08b/ 2>/dev/null
-							exit 3
-						fi
-					else
-						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-					if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_*_*.boot.fast.trees 2>/dev/null | wc -w) ]; then
-							echo -e "OK\n"
-						else
-							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-							rm -d ../workdir08b/ 2>/dev/null
-							exit 3
-						fi
-					else
-						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				fi
-			else
-				echo -e "OK\n"
-			fi
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir08b/ 2>/dev/null
-			exit 3
-		fi
+#Settings for collapsed and requisite selection
+if [[ $requisite =~ "yes" ]]; then
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=with_requisite/collapsed${collapse}/
+		treefile=trees_with_requisite_collapsed${collapse}.newick
 	else
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-			if [[ $mlbs =~ "yes" ]]; then
-				if [[ $tree =~ "RAxML" ]]; then
-					if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_*_modif${MISSINGPERCENT}.result 2>/dev/null | wc -w) ]; then
-							echo -e "OK\n"
-						else
-							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-							rm -d ../workdir08b/ 2>/dev/null
-							exit 3
-						fi
-					else
-						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-					if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_*_*.boot.fast.trees 2>/dev/null | wc -w) ]; then
-							echo -e "OK\n"
-						else
-							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-							rm -d ../workdir08b/ 2>/dev/null
-							exit 3
-						fi
-					else
-						echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				fi
-			else
-				echo -e "OK\n"
-			fi
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
-			rm -d ../workdir08b/ 2>/dev/null
-			exit 3
-		fi
+		modif=with_requisite/
+		treefile=trees_rooted_with_requisite.newick
 	fi
 else
-	if [ -z "$OUTGROUP" ]; then
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
-			if [[ $mlbs =~ "yes" ]]; then
-				if [[ $tree =~ "RAxML" ]]; then
-					if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* 2>/dev/null | wc -w) ]; then
-						echo -e "OK\n"
-					else
-						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=collapsed${collapse}/
+		treefile=trees_collapsed${collapse}.newick
+	else
+		modif=""
+		treefile=trees_rooted.newick
+	fi
+fi
+
+#Check necessary file
+if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+	echo -ne "Testing if input data are available..."
+	if [[ $update =~ "yes" ]]; then
+		if [ -z "$OUTGROUP" ]; then
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+				if [[ $mlbs =~ "yes" ]]; then
+					if [[ $tree =~ "RAxML" ]]; then
+						if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
+							if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_*_modif${MISSINGPERCENT}.result 2>/dev/null | wc -w) ]; then
+								echo -e "OK\n"
+							else
+								echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
+								rm -d ../workdir08b/ 2>/dev/null
+								exit 3
+							fi
+						else
+							echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+						if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
+							if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_*_*.boot.fast.trees 2>/dev/null | wc -w) ]; then
+								echo -e "OK\n"
+							else
+								echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
+								rm -d ../workdir08b/ 2>/dev/null
+								exit 3
+							fi
+						else
+							echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
 					fi
-				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-					if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees 2>/dev/null | wc -w) ]; then
-						echo -e "OK\n"
-					else
-						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
+				else
+					echo -e "OK\n"
 				fi
 			else
-				echo -e "OK\n"
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08b/ 2>/dev/null
+				exit 3
 			fi
 		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+				if [[ $mlbs =~ "yes" ]]; then
+					if [[ $tree =~ "RAxML" ]]; then
+						if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
+							if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_*_modif${MISSINGPERCENT}.result 2>/dev/null | wc -w) ]; then
+								echo -e "OK\n"
+							else
+								echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
+								rm -d ../workdir08b/ 2>/dev/null
+								exit 3
+							fi
+						else
+							echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+						if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
+							if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_*_*.boot.fast.trees 2>/dev/null | wc -w) ]; then
+								echo -e "OK\n"
+							else
+								echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
+								rm -d ../workdir08b/ 2>/dev/null
+								exit 3
+							fi
+						else
+							echo -e "'$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt' is missing. Exiting...\n"
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					fi
+				else
+					echo -e "OK\n"
+				fi
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08b/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	else
+		if [ -z "$OUTGROUP" ]; then
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick" ]; then
+				if [[ $mlbs =~ "yes" ]]; then
+					if [[ $tree =~ "RAxML" ]]; then
+						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* 2>/dev/null | wc -w) ]; then
+							echo -e "OK\n"
+						else
+							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees 2>/dev/null | wc -w) ]; then
+							echo -e "OK\n"
+						else
+							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					fi
+				else
+					echo -e "OK\n"
+				fi
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08b/ 2>/dev/null
+				exit 3
+			fi
+		else
+			if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+				if [[ $mlbs =~ "yes" ]]; then
+					if [[ $tree =~ "RAxML" ]]; then
+						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* 2>/dev/null | wc -w) ]; then
+							echo -e "OK\n"
+						else
+							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+						if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees 2>/dev/null | wc -w) ]; then
+							echo -e "OK\n"
+						else
+							echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
+							rm -d ../workdir08b/ 2>/dev/null
+							exit 3
+						fi
+					fi
+				else
+					echo -e "OK\n"
+				fi
+			else
+				echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+				rm -d ../workdir08b/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	fi
+	#Test if folder for results exits
+	if [[ $update =~ "yes" ]]; then
+		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid" ]; then
+			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	else
-		if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-			if [[ $mlbs =~ "yes" ]]; then
-				if [[ $tree =~ "RAxML" ]]; then
-					if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* 2>/dev/null | wc -w) ]; then
-						echo -e "OK\n"
-					else
-						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML'. Exiting..."
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-					if [ 0 -lt $(ls $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees 2>/dev/null | wc -w) ]; then
-						echo -e "OK\n"
-					else
-						echo -e "MLBS was requested but no bootstrap replicate trees were found in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree'. Exiting..."
-						rm -d ../workdir08b/ 2>/dev/null
-						exit 3
-					fi
-				fi
-			else
-				echo -e "OK\n"
-			fi
-		else
-			echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick' is missing. Exiting...\n"
+		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid" ]; then
+			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir08b/ 2>/dev/null
 			exit 3
 		fi
 	fi
 fi
 
-#Test if folder for results exits
-if [[ $update =~ "yes" ]]; then
-	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08b/ 2>/dev/null
-		exit 3
-	fi
-else
-	if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08b/ 2>/dev/null
-		exit 3
-	fi
-fi
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir08b)" ]; then
 		echo -e "Directory 'workdir08b' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
@@ -280,17 +314,21 @@ cp $source/AMAS.py .
 #Copy genetree file
 if [[ $update =~ "yes" ]]; then
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
-		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile} .
+		#mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile} .
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	fi
 else
 	if [ -z "$OUTGROUP" ]; then
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick .
-		mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile} .
+		#mv trees${MISSINGPERCENT}_${SPECIESPRESENCE}_withoutBS.newick trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	else
-		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick .
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile} .
+		mv $treefile trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 	fi
 fi
 
@@ -298,36 +336,38 @@ fi
 sed -i.bak 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 sed -i.bak2 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 
-if [[ $mlbs =~ "yes" ]]; then
-	#Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
-	if [[ $tree =~ "RAxML" ]]; then
-		#Make dir for for bootstraped trees
-		mkdir boot
-		#Copy RAxML bootstraped trees
-		if [[ $update =~ "yes" ]]; then
-			cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
-			for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_${i}_modif${MISSINGPERCENT}.result boot/
-			done
-		else
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* boot/
+if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+	if [[ $mlbs =~ "yes" ]]; then
+		#Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
+		if [[ $tree =~ "RAxML" ]]; then
+			#Make dir for for bootstraped trees
+			mkdir boot
+			#Copy RAxML bootstraped trees
+			if [[ $update =~ "yes" ]]; then
+				cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_${i}_modif${MISSINGPERCENT}.result boot/
+				done
+			else
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* boot/
+			fi
+			#Make a list of bootstraped trees
+			ls boot/*bootstrap* > bs-files
+		elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+			#Make dir for for bootstraped trees
+			mkdir boot
+			#Copy FastTree bootstraped trees
+			if [[ $update =~ "yes" ]]; then
+				cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_${i}_*.boot.fast.trees boot/
+				done
+			else
+				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
+			fi
+			#Make a list of bootstraped trees
+			ls boot/*.boot.fast.trees > bs-files
 		fi
-		#Make a list of bootstraped trees
-		ls boot/*bootstrap* > bs-files
-	elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-		#Make dir for for bootstraped trees
-		mkdir boot
-		#Copy FastTree bootstraped trees
-		if [[ $update =~ "yes" ]]; then
-			cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
-			for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_${i}_*.boot.fast.trees boot/
-			done
-		else
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
-		fi
-		#Make a list of bootstraped trees
-		ls boot/*.boot.fast.trees > bs-files
 	fi
 fi
 
@@ -339,73 +379,82 @@ if [[ $cp =~ "yes" ]]; then
 fi
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
-	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astrid
 else
-	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astrid
 fi
 
 #Run ASTRID
-echo -e "Computing ASTRID multilocus bootstrap..."
 #ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -m bionj -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-	if [[ $mlbs =~ "yes" ]]; then
-		#Run Astrid bootstrap
-		./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
-		#Remove "'" from resulting trees
-		sed -i.bak4 "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}*
-		#Rename resulting trees
-		mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-		mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs_tree Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-		mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs_consensus Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
-		mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
-		#Make combined trees
-		if [[ $combine =~ "yes" ]]; then
-			echo -e "\nCombining support values from main, bootstrap and bootstrap consensus trees to one tree..."
-			sed -i.bak5 's/-/XX/g' Astrid*.tre
-			sed -i.bak6 's/_/YY/g' Astrid*.tre
-			
-			#Copy alignment (for sample names) and rename it
-			if [ ! -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip ]; then
-				#Copy list of genes
-				if [[ $update =~ "yes" ]]; then
-					cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
-					mv selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
+if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+	if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
+		if [[ $mlbs =~ "yes" ]]; then
+			#Run Astrid bootstrap
+			echo -e "Computing ASTRID multilocus bootstrap..."
+			./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
+			#Remove "'" from resulting trees
+			sed -i.bak4 "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}*
+			#Rename resulting trees
+			mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+			mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs_tree Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+			mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs_consensus Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+			mv Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.bs Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
+			#Make combined trees
+			if [[ $combine =~ "yes" ]]; then
+				echo -e "\nCombining support values from main, bootstrap and bootstrap consensus trees to one tree..."
+				sed -i.bak5 's/-/XX/g' Astrid*.tre
+				sed -i.bak6 's/_/YY/g' Astrid*.tre
+				
+				#Copy alignment (for sample names) and rename it
+				if [ ! -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip ]; then
+					#Copy list of genes
+					if [[ $update =~ "yes" ]]; then
+						cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+						mv selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
+					else
+						cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+					fi
+					#Copy and modify selected FASTA files
+					for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
+						#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
+						cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
+						#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML/FastTree)
+						sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+						sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+						#Delete '_contigs' and '.fas' from labels (i.e., keep only genus-species_nr)
+						sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+						sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+					done
+					#Prepare concatenated dataset and transform it to phylip format
+					python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
 				else
-					cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
 				fi
-				#Copy and modify selected FASTA files
-				for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
-					#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
-					cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
-					#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML/FastTree)
-					sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-					sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-					#Delete '_contigs' and '.fas' from labels (i.e., keep only genus-species_nr)
-					sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-					sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-				done
-				#Prepare concatenated dataset and transform it to phylip format
-				python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
-			else
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+				if [[ $cp =~ "yes" ]]; then
+					#Removing '_cpDNA' from names in alignment
+					sed -i.bak 's/_cpDNA//g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
+				fi
+				mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
+				sed -i.bak 's/-/XX/' concatenated.phylip
+				sed -i.bak2 's/_/YY/' concatenated.phylip
+				#Remove python3 module if on MetaCentrum
+				if [[ $PBS_O_HOST == *".cz" ]]; then
+					module rm python-3.4.1-intel
+					module add python-2.7.6-gcc
+					module add python27-modules-gcc
+				fi
+				#Combine bootstrap with consensus tree
+				python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				mv combinedSupportsTree.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+				echo
 			fi
-			if [[ $cp =~ "yes" ]]; then
-				#Removing '_cpDNA' from names in alignment
-				sed -i.bak 's/_cpDNA//g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
-			fi
-			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
-			sed -i.bak 's/-/XX/' concatenated.phylip
-			sed -i.bak2 's/_/YY/' concatenated.phylip
-			#Remove python3 module if on MetaCentrum
-			if [[ $PBS_O_HOST == *".cz" ]]; then
-				module rm python-3.4.1-intel
-			fi
-			#Combine bootstrap with consensus tree
-			python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
-			mv combinedSupportsTree.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
-			echo
+		else
+			./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre > Astrid.log
+			#Remove "'" from resulting trees
+			sed -i.bak "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 		fi
 	else
+		echo -e "Computing ASTRID tree..."
 		./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre > Astrid.log
 		#Remove "'" from resulting trees
 		sed -i.bak "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
@@ -424,14 +473,31 @@ sed -i.bak8 's/YY/_/g' Astrid*.tre
 #(Re)root a final Astrid species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
 	nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-	if [[ $mlbs =~ "yes" ]]; then
-		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-		nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
-		if [[ $combine =~ "yes" ]]; then
-			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
-			#Remove possible excessive zeros from combined tree
-			sed -i.bak11 's/.0000//g' Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+	if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+		if [[ $mlbs =~ "yes" ]]; then
+			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+			if [[ $combine =~ "yes" ]]; then
+				nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+				#Remove possible excessive zeros from combined tree
+				sed -i.bak11 's/.0000//g' Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+			fi
 		fi
+	fi
+fi
+
+#Rename Astrid trees
+if [[ $requisite =~ "yes" ]]; then
+	if [[ ! $collapse -eq "0" ]]; then
+		astridtree=Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}.tre
+	else
+		astridtree=Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.tre
+	fi
+else
+	if [[ ! $collapse -eq "0" ]]; then
+		astridtree=Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}.tre
+	else
+		astridtree=Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 	fi
 fi
 
@@ -440,12 +506,22 @@ sed -i.bak9 's/-/ /g' Astrid*.tre
 sed -i.bak10 's/_/ /g' Astrid*.tre
 
 #Copy results and logs to home
-if [[ $update =~ "yes" ]]; then
-	cp Astrid*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
-	cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+	if [[ $update =~ "yes" ]]; then
+		cp Astrid*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+		cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astrid
+	else
+		cp Astrid*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+		cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+	fi
 else
-	cp Astrid*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
-	cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astrid
+	if [[ $update =~ "yes" ]]; then
+		cp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astrid/${astridtree}
+		cp Astrid.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astrid
+	else
+		cp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astrid/${astridtree}
+		cp Astrid.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astrid
+	fi
 fi
 echo -e "\nProgress of ASTRID run is written to Astrid.log or Astrid_boot.log (if MLBS was requested)..."
 

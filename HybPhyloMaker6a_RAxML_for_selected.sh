@@ -17,7 +17,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -146,11 +146,10 @@ if [[ $location == "1" || $location == "2" ]]; then
 	do
 		echo '#!/bin/bash' >> ${group}.sh
 		echo '#----------------MetaCentrum----------------' >> ${group}.sh
-		echo '#PBS -l walltime=1d' >> ${group}.sh
-		echo '#PBS -l nodes=1:ppn=4' >> ${group}.sh
+		echo '#PBS -l walltime=12:0:0' >> ${group}.sh
+		echo '#PBS -l select=1:ncpus=4:mem=1gb:scratch_local=1gb' >> ${group}.sh
 		echo '#PBS -j oe' >> ${group}.sh
 		echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> ${group}.sh
-		echo '#PBS -l mem=1gb' >> ${group}.sh
 		echo '#PBS -N RAxML_for_'"${group}" >> ${group}.sh
 		echo '#-------------------HYDRA-------------------' >> ${group}.sh
 		echo '#$ -S /bin/bash' >> ${group}.sh
@@ -193,7 +192,6 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  treepath=$type/72trees' >> ${group}.sh
 		echo 'fi' >> ${group}.sh
 		echo 'cp '"$path"'/${alnpathselected}${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
-		echo 'cp '"$source"'/catfasta2phyml.pl .' >> ${group}.sh
 		echo 'for i in $(cat '"$group"')' >> ${group}.sh
 		echo 'do' >> ${group}.sh
 		echo '  cp '"$path"'/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas .' >> ${group}.sh
@@ -209,10 +207,9 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  #Delete '"'_contigs'"' and '"'.fas'"' from labels (i.e., keep only genus-species_nr)' >> ${group}.sh
 		echo '  sed -i '"'s/_contigs//g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
 		echo '  sed -i '"'s/.fas//g'"' ${i}_modif${MISSINGPERCENT}.fas' >> ${group}.sh
-		echo '  perl catfasta2phyml.pl ${i}_modif${MISSINGPERCENT}.fas > ${i}_modif${MISSINGPERCENT}.phylip' >> ${group}.sh
 		echo 'done' >> ${group}.sh
-		echo '#Make a list of all phylip files' >> ${group}.sh
-		echo 'ls *.phylip | cut -d"." -f1 > FileForRAxML.txt' >> ${group}.sh
+		echo '#Make a list of all *.fas files' >> ${group}.sh
+		echo 'ls *.fas | cut -d"." -f1 > FileForRAxML.txt' >> ${group}.sh
 		echo 'for file in $(cat FileForRAxML.txt); do' >> ${group}.sh
 		echo '  #modify name for partition file (remove '_modif${MISSINGPERCENT}')' >> ${group}.sh
 		echo '  filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)' >> ${group}.sh
@@ -242,15 +239,15 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  #3.Run RAxML' >> ${group}.sh
 		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
 		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    else' >> ${group}.sh
-		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    fi'  >> ${group}.sh
 		echo '  elif [[ $location == "2" ]]; then' >> ${group}.sh
 		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    else' >> ${group}.sh
-		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.phylip -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
+		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
 		echo '    fi'  >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
@@ -337,8 +334,8 @@ else
 		fi
 		cp *${file}.result $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
-#Copy raxml.log to home
-cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+	#Copy raxml.log to home
+	cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
 
 #Clean scratch/work directory
