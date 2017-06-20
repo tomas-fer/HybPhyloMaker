@@ -182,6 +182,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'location='"$location" >> ${group}.sh
 		echo 'genetreepart='"$genetreepart" >> ${group}.sh
 		echo 'raxmlpthreads='"$raxmlpthreads" >> ${group}.sh
+		echo 'raxmlseq='"$raxmlseq" >> ${group}.sh
 		echo 'if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
 		echo '  alnpath=$type/80concatenated_exon_alignments_corrected' >> ${group}.sh
 		echo '  alnpathselected=$type/81selected_corrected' >> ${group}.sh
@@ -252,6 +253,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  fi' >> ${group}.sh
 		echo '  cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
+		echo 'cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
 		echo '  #delete scratch' >> ${group}.sh
