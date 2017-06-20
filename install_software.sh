@@ -246,8 +246,10 @@ if ! [ -x "$(command -v transeq)" ]; then
 	tar xfz emboss-latest.tar.gz 1>/dev/null
 	rm emboss-latest.tar.gz
 	cd EMBOSS*
-	./configure &>> ../EMBOSS_install.log
+	./configure --without-x &>> ../EMBOSS_install.log
 	make &>> ../EMBOSS_install.log
+	ldconfig
+	make install &>> ../EMBOSS_install.log
 	ldconfig
 	make install &>> ../EMBOSS_install.log
 	cd ..
@@ -289,17 +291,22 @@ fi
 cp raxmlHPC* /usr/local/bin
 cd ..
 
+#OpenMPI
+if ! [ -x "$(command -v mpicc)" ]; then
+	$installer install -y openmpi-bin &> openmpi_install.log
+fi
+
 #ExaML
 if ! [ -x "$(command -v examl)" ]; then
 	echo -e "Installing 'ExaML'"
-	git clone https://github.com/stamatak/ExaML/tree/master/examl &> mstatx_install.log
+	git clone https://github.com/stamatak/ExaML &> examl_install.log
 	cd ExaML/parser
-	make -f Makefile.SSE3.gcc &> ../../mstatx_install.log
+	make -f Makefile.SSE3.gcc &> ../../examl_install.log
 	cp parse-examl /usr/local/bin
 	cd ../examl
-	make -f Makefile.SSE3.gcc &> ../../mstatx_install.log
+	make -f Makefile.SSE3.gcc &> ../../examl_install.log
 	cp examl /usr/local/bin
-	make -f Makefile.AVX.gcc &> ../../mstatx_install.log
+	make -f Makefile.AVX.gcc &> ../../examl_install.log
 	cp examl-AVX /usr/local/bin
 	cd ../..
 fi
@@ -391,13 +398,10 @@ fi
 #see https://github.com/karel-brinda/ococo
 if ! [ -x "$(command -v ococo)" ]; then
 	echo -e "Installing 'OCOCO'"
-	wget https://github.com/karel-brinda/ococo/archive/0.1.2.4.tar.gz &> ococo_install.log
-	tar xfz 0.1.2.4.tar.gz 1>/dev/null
-	cd ococo-0.1.2.4/ext
-	git clone https://github.com/samtools/htslib &>> ococo_install.log
-	cd ..
+	git clone --recursive https://github.com/karel-brinda/ococo &>> ococo_install.log
+	cd ococo
 	make -j &>> ../ococo_install.log
-	cp ococo /usr/local/bin
+	make install
 	cd ..
 fi
 
