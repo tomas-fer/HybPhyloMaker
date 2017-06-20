@@ -12,7 +12,7 @@ Set of bash scripts for analysis of HybSeq data (from raw reads to species trees
 6: Generate FastTree or RAxML gene trees + calculate/plot trees-alignment properties  
 7: Root gene trees with outgroup, combine gene trees into a single file  
 8: Estimate species tree (ASTRAL, ASTRID, MRL, concatenation)  
-9: Subselect suitable genes and repeat steps 7+8 
+9: Subselect suitable genes and repeat steps 7+8  
 10:Subselect trees based on samples presence, collapse unsupported branches - experimental!  
   
 Uses many additional software that must be installed and put in the PATH prior to run scripts (see Table located in docs folder and consider to run install_software.sh).  
