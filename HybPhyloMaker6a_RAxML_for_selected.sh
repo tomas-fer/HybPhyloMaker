@@ -214,28 +214,44 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'for file in $(cat FileForRAxML.txt); do' >> ${group}.sh
 		echo '  #modify name for partition file (remove '_modif${MISSINGPERCENT}')' >> ${group}.sh
 		echo '  filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)' >> ${group}.sh
+		echo '  echo "Analysing $filepart" >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  #RAxML with 100 rapid bootstrap' >> ${group}.sh
 		echo '  #1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)' >> ${group}.sh
 		echo '  #  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file' >> ${group}.sh
 		echo '  if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml.log' >> ${group}.sh
+		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  else' >> ${group}.sh
-		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml.log' >> ${group}.sh
+		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  #2.Test if reduced files were produced' >> ${group}.sh
 		echo '  if [ -f $file.fas.reduced ]; then' >> ${group}.sh
-		echo '    echo "Reduced alignment found...using it" >> raxml.log' >> ${group}.sh
+		echo '    echo "Reduced alignment found...using it" >> raxml'"$group"'.log' >> ${group}.sh
+		echo '    #Put identical sequences back to the alignment (removed by RAxML when producing *.reduced dataset)' >> ${group}.sh
+		echo '    #i.e., final alignemnt will have undetermined position removed but all samples present)' >> ${group}.sh
+		echo "    grep \"exactly identical\" RAxML_info."'${file}'".check | grep \"WARNING\" | awk -F \"Sequences |and |are \" '{print \$2 \$3}' > recombine.txt" >> ${group}.sh
+		echo '    nrlines=$(cat recombine.txt | wc -l )' >> ${group}.sh
+		echo '    cat recombine.txt | while read -r a b' >> ${group}.sh
+		echo '    do' >> ${group}.sh
+		echo '      grep $a $file.fas.reduced > toadd.txt' >> ${group}.sh
+		echo '      sed -i "s/$a/$b/" toadd.txt' >> ${group}.sh
+		echo '      cat $file.fas.reduced toadd.txt > tmp && mv tmp $file.fas.reduced' >> ${group}.sh
+		echo '    done' >> ${group}.sh
+		echo '    rm recombine.txt toadd.txt' >> ${group}.sh
+		echo '    #Correct number of samples in the final phylip file' >> ${group}.sh
+		echo '    nrreduced=$(head -1 $file.fas.reduced | cut -d " " -f1)' >> ${group}.sh
+		echo '    num=`expr $nrlines + $nrreduced`' >> ${group}.sh
+		echo '    sed -i "1s/$nrreduced/$num/" $file.fas.reduced' >> ${group}.sh
 		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '      rm $file.fas' >> ${group}.sh
+		echo '      #rm $file.fas' >> ${group}.sh
 		echo '      mv $file.fas.reduced $file.fas' >> ${group}.sh
 		echo '    else' >> ${group}.sh
-		echo '      rm $filepart.part' >> ${group}.sh
+		echo '      #rm $filepart.part' >> ${group}.sh
 		echo '      mv $filepart.part.reduced $filepart.part' >> ${group}.sh
-		echo '      rm $file.fas' >> ${group}.sh
+		echo '      #rm $file.fas' >> ${group}.sh
 		echo '      mv $file.fas.reduced $file.fas' >> ${group}.sh
 		echo '    fi' >> ${group}.sh
 		echo '  else' >> ${group}.sh
-		echo '    echo "Reduced alignment not found...using original alignment" >> raxml.log' >> ${group}.sh
+		echo '    echo "Reduced alignment not found...using original alignment" >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  #3.Run RAxML' >> ${group}.sh
 		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
@@ -253,7 +269,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  fi' >> ${group}.sh
 		echo '  cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
-		echo 'cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
+		echo 'cp raxml'"$group"'.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
 		echo '  #delete scratch' >> ${group}.sh
@@ -316,13 +332,28 @@ else
 		#2.Test if reduced files were produced
 		if [ -f $file.fas.reduced ]; then
 			echo "Reduced alignment found...using it" >> raxml.log
+			#Put identical sequences back to the alignment (removed by RAxML when producing *.reduced dataset)
+			#i.e., final alignemnt will have undetermined position removed but all samples present)
+			grep "exactly identical" RAxML_info.${file}.check | grep "WARNING" | awk -F "Sequences |and |are " '{print $2 $3}' > recombine.txt
+			nrlines=$(cat recombine.txt | wc -l )
+			cat recombine.txt | while read -r a b
+			do
+				grep $a $file.fas.reduced > toadd.txt
+				sed -i "s/$a/$b/" toadd.txt
+				cat $file.fas.reduced toadd.txt > tmp && mv tmp $file.fas.reduced
+			done
+			rm recombine.txt toadd.txt
+			#Correct number of samples in the final phylip file
+			nrreduced=$(head -1 $file.fas.reduced | cut -d " " -f1)
+			num=`expr $nrlines + $nrreduced`
+			sed -i "1s/$nrreduced/$num/" $file.fas.reduced
 			if [[ $genetreepart == "no" ]]; then
-				rm $file.fas
+				#rm $file.fas
 				mv $file.fas.reduced $file.fas
 			else
-				rm $filepart.part
+				#rm $filepart.part
 				mv $filepart.part.reduced $filepart.part
-				rm $file.fas
+				#rm $file.fas
 				mv $file.fas.reduced $file.fas
 			fi
 		else

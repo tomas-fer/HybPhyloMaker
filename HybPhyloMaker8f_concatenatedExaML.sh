@@ -306,7 +306,7 @@ if [[ $runpf =~ "yes" ]]; then
 	#Get the newest version of PartitionFinder (2.0.0 from GitHub)
 	#git clone https://github.com/brettc/partitionfinder
 	#Copy working version of PartitionFinder 2.0.0.
-	wget https://github.com/brettc/partitionfinder/archive/v2.1.1.tar.gz
+	wget --no-check-certificate https://github.com/brettc/partitionfinder/archive/v2.1.1.tar.gz
 	tar xfz v2.1.1.tar.gz
 	mv partitionfinder-2.1.1 partitionfinder
 	#cp $source/partitionfinder-2.0.0-pre13.tar.gz .
