@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=4:0:0
+#PBS -l walltime=24:0:0
 #PBS -l select=1:ncpus=4:mem=16gb:scratch_local=4gb
 #PBS -j oe
 #PBS -N HybPhyloMaker8a_Astral
@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.4.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -46,10 +46,11 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add jdk-1.6.0
-	module add python-2.7.6-gcc
-	module add python27-modules-gcc
-	module add python-3.4.1-intel
-	module add newick-utils-1.6
+	#Python (and its modules) are added later in the script
+	#module add python-2.7.6-gcc
+	#module add python27-modules-gcc
+	#module add python-3.4.1-intel
+	module add newick-utils-13042016
 	module add p4
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8a is running on Hydra..."
@@ -124,7 +125,11 @@ if [[ $requisite =~ "yes" ]]; then
 		treefile=trees_with_requisite_collapsed${collapse}.newick
 	else
 		modif=with_requisite/
-		treefile=trees_rooted_with_requisite.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees_with_requisite.newick
+		else
+			treefile=trees_rooted_with_requisite.newick
+		fi
 	fi
 else
 	if [[ ! $collapse -eq "0" ]]; then
@@ -132,7 +137,11 @@ else
 		treefile=trees_collapsed${collapse}.newick
 	else
 		modif=""
-		treefile=trees_rooted.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees.newick
+		else
+			treefile=trees_rooted.newick
+		fi
 	fi
 fi
 
@@ -397,7 +406,8 @@ fi
 
 #(Re)root a final Astral species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
-	nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	echo
 fi
 #Make a copy of the main Astral tree for future combination(s)
 cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
@@ -452,8 +462,9 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 			tac Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | sed '1,2d' | tac > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
 			#(Re)root a final Astral species tree with $OUTGROUP
 			if [ -n "$OUTGROUP" ]; then
-				nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-				nw_reroot Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+				nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				echo
 			fi
 			sed -i.bak3 's/-/XX/g' Astral*.tre
 			sed -i.bak4 's/_/YY/g' Astral*.tre
@@ -480,6 +491,10 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 						sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 						sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 					done
+					#Add python3 module if on MetaCentrum
+					if [[ $PBS_O_HOST == *".cz" ]]; then
+						module add python-3.4.1-intel
+					fi
 					#Prepare concatenated dataset and transform it to phylip format
 					python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
 				else

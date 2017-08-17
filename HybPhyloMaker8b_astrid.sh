@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2:0:0
+#PBS -l walltime=24:0:0
 #PBS -l select=1:ncpus=4:mem=8gb:scratch_local=1gb
 #PBS -j oe
 #PBS -N HybPhyloMaker8b_Astrid
@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.4.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -48,10 +48,10 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	#module add astrid-1.0
 	#module add jdk-7
-	module add python-2.7.6-gcc
-	module add python27-modules-gcc
-	module add python-3.4.1-intel
-	module add newick-utils-1.6
+	#module add python-2.7.6-gcc
+	#module add python27-modules-gcc
+	#module add python-3.4.1-intel
+	module add newick-utils-13042016
 	module add p4
 elif [[ $HOSTNAME == *local* ]]; then
 	echo -e "\nHybPhyloMaker8b is running on Hydra..."
@@ -125,7 +125,11 @@ if [[ $requisite =~ "yes" ]]; then
 		treefile=trees_with_requisite_collapsed${collapse}.newick
 	else
 		modif=with_requisite/
-		treefile=trees_rooted_with_requisite.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees_with_requisite.newick
+		else
+			treefile=trees_rooted_with_requisite.newick
+		fi
 	fi
 else
 	if [[ ! $collapse -eq "0" ]]; then
@@ -133,7 +137,11 @@ else
 		treefile=trees_collapsed${collapse}.newick
 	else
 		modif=""
-		treefile=trees_rooted.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees.newick
+		else
+			treefile=trees_rooted.newick
+		fi
 	fi
 fi
 
@@ -425,6 +433,10 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 						sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 						sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 					done
+					#Add python3 module if on MetaCentrum
+					if [[ $PBS_O_HOST == *".cz" ]]; then
+						module add python-3.4.1-intel
+					fi
 					#Prepare concatenated dataset and transform it to phylip format
 					python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
 				else
@@ -472,13 +484,13 @@ sed -i.bak8 's/YY/_/g' Astrid*.tre
 
 #(Re)root a final Astrid species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
-	nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	nw_reroot -s Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 	if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 		if [[ $mlbs =~ "yes" ]]; then
-			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-			nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+			nw_reroot -s Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+			nw_reroot -s Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
 			if [[ $combine =~ "yes" ]]; then
-				nw_reroot Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
+				nw_reroot -s Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre $OUTGROUP > tmp && mv tmp Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
 				#Remove possible excessive zeros from combined tree
 				sed -i.bak11 's/.0000//g' Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
 			fi

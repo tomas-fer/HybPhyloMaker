@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 08c - MRL species tree                         *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.4.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add jdk-1.6.0
 	module add raxml-8.2.4
-	module add newick-utils-1.6
+	module add newick-utils-13042016
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8c is running on Hydra..."
 	#settings for Hydra
@@ -120,7 +120,11 @@ if [[ $requisite =~ "yes" ]]; then
 		treefile=trees_with_requisite_collapsed${collapse}.newick
 	else
 		modif=with_requisite/
-		treefile=trees_rooted_with_requisite.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees_with_requisite.newick
+		else
+			treefile=trees_rooted_with_requisite.newick
+		fi
 	fi
 else
 	if [[ ! $collapse -eq "0" ]]; then
@@ -128,7 +132,11 @@ else
 		treefile=trees_collapsed${collapse}.newick
 	else
 		modif=""
-		treefile=trees_rooted.newick
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees.newick
+		else
+			treefile=trees_rooted.newick
+		fi
 	fi
 fi
 
@@ -256,7 +264,7 @@ sed -i.bak 's/YY/_/g' RAxML_bipartitions.MRLresult
 
 #(Re)root/rename a final MRL species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
-	nw_reroot RAxML_bipartitions.MRLresult $OUTGROUP > MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	nw_reroot -s RAxML_bipartitions.MRLresult $OUTGROUP > MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 else
 	cp RAxML_bipartitions.MRLresult MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 fi
