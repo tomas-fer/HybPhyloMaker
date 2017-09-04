@@ -8,7 +8,7 @@
 # Tomas Fer, 2017                                                                                                        #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.4.3                                                                                                                #
+# v.1.4.4                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -406,9 +406,10 @@ if ! [ -x "$(command -v ococo)" ]; then
 fi
 
 #kindel (necessary for majority rule consensus building from mapped reads in BAM file)
+#requires v0.1.4 (higher version will not work as they are missing option for threshold!)
 #see https://pypi.python.org/pypi/kindel
 if ! [ -x "$(command -v kindel)" ]; then
-	pip3 install kindel &>> kindel_install.log
+	pip3 install 'kindel==0.1.4' &>> kindel_install.log
 fi
 
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
