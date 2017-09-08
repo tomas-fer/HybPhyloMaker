@@ -293,7 +293,7 @@ cd ..
 
 #OpenMPI
 if ! [ -x "$(command -v mpicc)" ]; then
-	$installer install -y openmpi-bin &> openmpi_install.log
+	$installer install mpi-default-dev &> openmpi_install.log
 fi
 
 #ExaML
@@ -334,10 +334,28 @@ fi
 #Newick Utilities
 if ! [ -x "$(command -v nw_reroot)" ]; then
 	echo -e "Installing 'Newick Utilities'"
-	wget http://cegg.unige.ch/pub/newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz &> newickutil_install.log
-	tar xfz newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz 1>/dev/null
-	rm newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz
-	cp newick-utils-1.6/src/nw_* /usr/local/bin
+	# wget http://cegg.unige.ch/pub/newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz &> newickutil_install.log
+	# tar xfz newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz 1>/dev/null
+	# rm newick-utils-1.6-Linux-x86_64-disabled-extra.tar.gz
+	# cp newick-utils-1.6/src/nw_* /usr/local/bin
+	if ! [ -x "$(command -v bison)" ]; then
+		$installer install -y bison &> bison_install.log
+	fi
+	if ! [ -x "$(command -v flex)" ]; then
+		$installer install -y flex &> flex_install.log
+	fi
+	if ! [ -x "$(command -v autoreconf)" ]; then
+		$installer install -y dh-autoreconf &> autoreconf_install.log
+	fi
+	git clone https://github.com/tjunier/newick_utils
+	cd newick_utils/
+	autoreconf -fi
+	./configure
+	make
+	make check
+	make install
+	ldconfig
+	cd ..
 fi
 
 #bam2fastq
@@ -394,6 +412,18 @@ if ! [ -x "$(command -v bowtie2)" ]; then
 	cd ..
 fi
 
+#bwa
+if ! [ -x "$(command -v bwa)" ]; then
+	echo -e "Installing 'bwa'"
+	wget https://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.16a.tar.bz2 &> bwa_install.log
+	tar jxf bwa-0.7.16a.tar.bz2 1>/dev/null
+	rm bwa-0.7.16a.tar.bz2
+	cd bwa-0.7.16a
+	make &>> ../bwa_install.log
+	cp bwa /usr/local/bin
+	cd ..
+fi
+
 #ococo (necessary for majority rule consensus building from mapped reads in BAM file)
 #see https://github.com/karel-brinda/ococo
 if ! [ -x "$(command -v ococo)" ]; then
@@ -401,7 +431,7 @@ if ! [ -x "$(command -v ococo)" ]; then
 	git clone --recursive https://github.com/karel-brinda/ococo &>> ococo_install.log
 	cd ococo
 	make -j &>> ../ococo_install.log
-	make install
+	make install  &>> ../ococo_install.log
 	cd ..
 fi
 
@@ -409,6 +439,7 @@ fi
 #requires v0.1.4 (higher version will not work as they are missing option for threshold!)
 #see https://pypi.python.org/pypi/kindel
 if ! [ -x "$(command -v kindel)" ]; then
+	echo -e "Installing 'kindel'"
 	pip3 install 'kindel==0.1.4' &>> kindel_install.log
 fi
 
@@ -457,6 +488,7 @@ if ! [ -x "$(command -v p4)" ]; then
 fi
 
 #other python modules (mainly for PartitionFinder)
+echo -e "Installing 'python modules'"
 if [[ $distribution =~ "Debian" ]]; then
 	$installer install -y python-pandas &> python-pandas_install.log #Debian
 	$installer install -y python-sklearn &> python-sklearn_install.log #Debian
