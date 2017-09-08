@@ -17,8 +17,8 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                     Script 02 - Read mapping using bowtie2                   *
-# *                                   v.1.4.2                                    *
+# *                   Script 02 - Read mapping using bowtie2/bwa                 *
+# *                                   v.1.4.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -37,6 +37,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	cd $SCRATCHDIR
 	#Add necessary modules
 	module add bowtie2-2.2.4
+	module add bwa-0.7.15
 	#module add bcftools-1.3.1
 	module add samtools-1.3
 	module add perl-5.10.1
@@ -88,8 +89,8 @@ if [[ ! $location == "1" ]]; then
 fi
 
 #Test if folders for results exist
-if [ -d "$path/$type/21mapped" ] && [[ $mapping =~ "yes" ]]; then
-	echo -e "Directory '$path/$type/21mapped' already exists. Delete it or rename before running this script again. Exiting...\n"
+if [ -d "$path/$type/21mapped_${mappingmethod}" ] && [[ $mapping =~ "yes" ]]; then
+	echo -e "Directory '$path/$type/21mapped_${mappingmethod}' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir02/ 2>/dev/null
 	exit 3
 elif [ -d "$path/$type/30consensus" ]; then
@@ -124,8 +125,8 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 				fi
 			fi
 		else
-			if [ ! -f "$path/$type/21mapped/${sample}.bam" ]; then
-				echo -e "$sample.bam does not exist within '$type/21mapped'.\n"
+			if [ ! -f "$path/$type/21mapped_${mappingmethod}/${sample}.bam" ]; then
+				echo -e "$sample.bam does not exist within '$type/21mapped_${mappingmethod}'.\n"
 				rm SamplesFileNames.txt
 				rm -d ../workdir02/ 2>/dev/null
 				exit 3
@@ -180,15 +181,23 @@ probes=$(echo $probes | cut -d"." -f1)
 cp $source/${probes}_with${nrns}Ns_beginend.fas .
 
 #Make a new folder for results
-if [ ! -d "$path/$type/21mapped" ]; then
-	mkdir $path/$type/21mapped
+if [ ! -d "$path/$type/21mapped_${mappingmethod}" ]; then
+	mkdir $path/$type/21mapped_${mappingmethod}
 fi
 
 #Make index from pseudoreference
 if [[ $mapping =~ "yes" ]]; then
-	echo -en "Indexing pseudoreference..."
-	bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
-	cp indexing_pseudoreference.log $path/$type/21mapped/
+	if [[ $mappingmethod =~ "bowtie2" ]]; then
+		echo -en "Indexing pseudoreference for bowtie2..."
+		bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
+		cp indexing_pseudoreference.log $path/$type/21mapped_bowtie2/
+		#set parameters for mapping using bowtie2
+		score=G,20,8
+	else
+		echo -en "Indexing pseudoreference for bwa...\n"
+		bwa index ${probes}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log
+		cp indexing_pseudoreference.log $path/$type/21mapped_bwa/
+	fi
 fi
 
 #Copy list of samples
@@ -205,8 +214,7 @@ calculating=0
 for file in $(cat SamplesFileNames.txt); do
 	calculating=$((calculating + 1))
 	echo -e "\nProcessing sample $file ($calculating out of $numberfiles)"
-	#set parameters for mapping
-	score=G,20,8
+	
 	#sensitive mapping
 	if [[ $mapping =~ "yes" ]]; then
 		#copy fastq files and count number of reads
@@ -218,9 +226,14 @@ for file in $(cat SamplesFileNames.txt); do
 		nr1U=$(awk '{s++}END{print s/4}' ${file}-1U)
 		cp $path/20filtered/${file}/${file}-2U .
 		nr2U=$(awk '{s++}END{print s/4}' ${file}-2U)
-		echo "Mapping..."
-		#Bowtie2 parameters are derived from --very-sensitive-local
-		bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq  -2 ${file}-2P_no-dups.fastq  -U ${file}-1U,${file}-2U -S ${file}.sam 2>${file}_bowtie2_out.txt
+		if [[ $mappingmethod =~ "bowtie2" ]]; then
+			echo "Mapping using bowtie2..."
+			#Bowtie2 parameters are derived from --very-sensitive-local
+			bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq  -2 ${file}-2P_no-dups.fastq  -U ${file}-1U,${file}-2U -S ${file}.sam 2>${file}_bowtie2_out.txt
+		else
+			echo "Mapping using bwa..."
+			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq ${file}-2P_no-dups.fastq > ${file}.sam 2>${file}_bwa_out.txt
+		fi
 		#create BAM from SAM
 		echo "Converting to BAM..."
 		samtools view -bS -o ${file}.bam ${file}.sam 2>/dev/null
@@ -237,12 +250,12 @@ for file in $(cat SamplesFileNames.txt); do
 		#adding data to table
 		echo -e "$number\t$genus\t$species\t$nrall\t$nr1P\t$nr1U\t$nr2U\t$nrmapped\t$percmapped" >> mapping_summary.txt
 		#copy results to home
-		cp ${file}.bam $path/$type/21mapped
-		cp ${file}_bowtie2_out.txt $path/$type/21mapped
-		cp mapping_summary.txt $path/$type/21mapped
+		cp ${file}.bam $path/$type/21mapped_${mappingmethod}
+		cp ${file}_${mappingmethod}_out.txt $path/$type/21mapped_${mappingmethod}
+		cp mapping_summary.txt $path/$type/21mapped_${mappingmethod}
 	else
 		echo "Copying BAM..."
-		cp $path/$type/21mapped/${file}.bam .
+		cp $path/$type/21mapped_${mappingmethod}/${file}.bam .
 	fi
 	#CONSENSUS USING KINDEL/OCOCO
 	if [[ $conscall =~ "ococo" ]]; then
@@ -265,7 +278,7 @@ for file in $(cat SamplesFileNames.txt); do
 	#replace all Ns separating exons by '?'
 	sed -i.bak "s/$a/$b/g" ${file}.fasta
 	#copy results to home
-	cp ${file}.fasta $path/$type/21mapped
+	cp ${file}.fasta $path/$type/21mapped_${mappingmethod}
 	#delete BAM
 	rm ${file}.bam
 done
