@@ -5,7 +5,7 @@ Set of bash scripts for analysis of HybSeq data (from raw reads to species trees
 
 0:  Download FASTQ files from Illumina BaseSpace storage  
 1:  Processing raw reads (PhiX removal, adaptor removal, quality filtering, summary statistics)  
-2:  Mapping reads to reference (using Bowtie), create consensus sequence  
+2:  Mapping reads to reference (using Bowtie2/BWA), create consensus sequence  
 3:  Recognize sequences matching probes (generate PSLX files using BLAT)  
 4:  Create alignments for all genes (+ correct reading frame)  
 5:  Treat missing data, select best genes  
