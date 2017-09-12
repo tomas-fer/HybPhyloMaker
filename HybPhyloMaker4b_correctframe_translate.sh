@@ -8,7 +8,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *       Script 04b - Put exons to correct reading frame and translate          *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.4.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -144,7 +144,16 @@ echo -e "done\n"
 
 echo -en "Preparing summary table..."
 #combine the information about stop codons by frame
-paste *overview.txt > stop_codons_by_frame.txt
+#paste *overview.txt > stop_codons_by_frame.txt #this usually does not work with more loci than 4096
+touch stop_codons_by_frame.txt
+for f in *overview.txt; do
+        cat stop_codons_by_frame.txt | paste - $f > temp
+        cp temp stop_codons_by_frame.txt
+done
+cut -f2- stop_codons_by_frame.txt > tmp && mv tmp stop_codons_by_frame.txt
+rm temp
+
+
 #transpose the matrix
 awk '
 {
