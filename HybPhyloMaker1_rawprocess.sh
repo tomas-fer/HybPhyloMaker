@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -185,19 +185,8 @@ do
 		java -d64 -server -XX:MaxHeapSize=10g -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	else
 		java -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
-	fi	
-	#Copy trimmed reads to home
-	if [[ $location == "1" ]]; then
-		cp $file-1P ${path}/20filtered/${file}
-		cp $file-1U ${path}/20filtered/${file}
-		cp $file-2P ${path}/20filtered/${file}
-		cp $file-2U ${path}/20filtered/${file}
-	else
-		cp $file-1P ../${path}/20filtered/${file}
-		cp $file-1U ../${path}/20filtered/${file}
-		cp $file-2P ../${path}/20filtered/${file}
-		cp $file-2U ../${path}/20filtered/${file}
 	fi
+	
 	#Convert .fastq files to .fasta
 	# perl ../fastq2fasta.pl -a $file-1P
 	# perl ../fastq2fasta.pl -a $file-1U
@@ -227,18 +216,33 @@ do
 	b=`expr $(cat ${file}-1P_no-dups.fastq | wc -l) / 4`
 	after=`expr $b + $b + $u1 + $u2`
 	echo $after >> duplicate-removal-fastuniq.log
+	#gzip trimmed and deduplicated reads
+	gzip ${file}-1P
+	gzip ${file}-1U
+	gzip ${file}-2P
+	gzip ${file}-2U
+	gzip ${file}-1P_no-dups.fastq
+	gzip ${file}-2P_no-dups.fastq
 	#Copy results from scratch to storage
 	if [[ $location == "1" ]]; then
-		cp ${file}-1P_no-dups.fastq ${path}/20filtered/${file}
-		cp ${file}-2P_no-dups.fastq ${path}/20filtered/${file}
+		cp ${file}-1P_no-dups.fastq.gz ${path}/20filtered/${file}
+		cp ${file}-2P_no-dups.fastq.gz ${path}/20filtered/${file}
+		cp ${file}-1P.gz ${path}/20filtered/${file}
+		cp ${file}-1U.gz ${path}/20filtered/${file}
+		cp ${file}-2P.gz ${path}/20filtered/${file}
+		cp ${file}-2U.gz ${path}/20filtered/${file}
 		# cp $file-1U ${path}/20filtered/${file}
 		# cp $file-2U ${path}/20filtered/${file}
 		# cp $file-all-no-dups.fas ${path}/20filtered/${file}
 		# cp $file-all.fa ${path}/20filtered/${file}
 		cp *.log $path/20filtered/$file
 	else
-		cp ${file}-1P_no-dups.fastq ../${path}/20filtered/${file}
-		cp ${file}-2P_no-dups.fastq ../${path}/20filtered/${file}
+		cp ${file}-1P_no-dups.fastq.gz ../${path}/20filtered/${file}
+		cp ${file}-2P_no-dups.fastq.gz ../${path}/20filtered/${file}
+		cp ${file}-1P.gz ../${path}/20filtered/${file}
+		cp ${file}-1U.gz ../${path}/20filtered/${file}
+		cp ${file}-2P.gz ../${path}/20filtered/${file}
+		cp ${file}-2U.gz ../${path}/20filtered/${file}
 		# cp $file-1U ../${path}/20filtered/${file}
 		# cp $file-2U ../${path}/20filtered/${file}
 		# cp $file-all-no-dups.fas ../${path}/20filtered/${file}
@@ -246,19 +250,19 @@ do
 		cp *.log ../$path/20filtered/$file
 	fi
 	# rm $file-all-no-dups.fas $file-all.fa
-	mv ${file}-1U ${file}-1U_no-dups.fastq
-	mv ${file}-2U ${file}-2U_no-dups.fastq
+	mv ${file}-1U.gz ${file}-1U_no-dups.fastq
+	mv ${file}-2U.gz ${file}-2U_no-dups.fastq
 	cd ..
 done
 
 echo -e "\nGenerating file for download and for import to Geneious...\n"
 #Copy all -all-no-dups.fas from all subfolders to folder 'for_Geneious' (for easy import to Geneious)
 mkdir $path/20filtered/for_Geneious
-find $path/20filtered/ -name '*no-dups.fastq' -exec cp -t $path/20filtered/for_Geneious/ {} +
+find $path/20filtered/ -name '*no-dups.fastq.gz' -exec cp -t $path/20filtered/for_Geneious/ {} +
 #Pack and combine all *all-no-dups.fas files to one archive for easy download
 tar cfz $path/20filtered/for_Geneious/$data-no-dups.tar.gz -C $path/20filtered/for_Geneious/ . 2>/dev/null
 #Delete copies of fastq files in 'for Geneious' folder
-rm $path/20filtered/for_Geneious/*.fastq
+rm $path/20filtered/for_Geneious/*.fastq.gz
 
 #Summary of basic reads processing (nr. reads, PhiX filtering, quality trimming, duplicate removal)
 #Produce tab-separated table

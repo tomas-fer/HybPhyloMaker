@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.4.4                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -118,10 +118,14 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 				exit 3
 			else
 				if [ ! -f "$path/20filtered/$sample/${sample}-1P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-2P_no-dups.fastq" ] || [ ! -f "$path/20filtered/$sample/${sample}-1U" ] || [ ! -f "$path/20filtered/$sample/${sample}-2U" ]; then #Test if filtered FASTQ files exist
-					echo -e "Appropriate filtered fastq files missing in $sample folder...\n"
-					rm SamplesFileNames.txt
-					rm -d ../workdir02/ 2>/dev/null
-					exit 3
+					if [ ! -f "$path/20filtered/$sample/${sample}-1P_no-dups.fastq.gz" ] || [ ! -f "$path/20filtered/$sample/${sample}-2P_no-dups.fastq.gz" ] || [ ! -f "$path/20filtered/$sample/${sample}-1U.gz" ] || [ ! -f "$path/20filtered/$sample/${sample}-2U.gz" ]; then #Test if filtered and compressed FASTQ files exist
+						echo -e "Appropriate filtered fastq files missing in $sample folder...\n"
+						rm SamplesFileNames.txt
+						rm -d ../workdir02/ 2>/dev/null
+						exit 3
+					else
+						compressed=yes
+					fi
 				fi
 			fi
 		else
@@ -191,8 +195,6 @@ if [[ $mapping =~ "yes" ]]; then
 		echo -en "Indexing pseudoreference for bowtie2..."
 		bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
 		cp indexing_pseudoreference.log $path/$type/21mapped_bowtie2/
-		#set parameters for mapping using bowtie2
-		score=G,20,8
 	else
 		echo -en "Indexing pseudoreference for bwa...\n"
 		bwa index ${probes}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log
@@ -217,26 +219,56 @@ for file in $(cat SamplesFileNames.txt); do
 	
 	#sensitive mapping
 	if [[ $mapping =~ "yes" ]]; then
-		#copy fastq files and count number of reads
-		cp $path/20filtered/${file}/${file}-1P_no-dups.fastq .
-		nr1P=$(awk '{s++}END{print s/4}' ${file}-1P_no-dups.fastq)
-		cp $path/20filtered/${file}/${file}-2P_no-dups.fastq .
-		nr2P=$(awk '{s++}END{print s/4}' ${file}-2P_no-dups.fastq)
-		cp $path/20filtered/${file}/${file}-1U .
-		nr1U=$(awk '{s++}END{print s/4}' ${file}-1U)
-		cp $path/20filtered/${file}/${file}-2U .
-		nr2U=$(awk '{s++}END{print s/4}' ${file}-2U)
+		if [[ $compressed =~ "yes" ]]; then
+			suffix=".gz"
+			#copy fastq.gz files and count number of reads
+			cp $path/20filtered/${file}/${file}-1P_no-dups.fastq.gz .
+			nr1P=$(gunzip -c ${file}-1P_no-dups.fastq.gz | awk '{s++}END{print s/4}')
+			cp $path/20filtered/${file}/${file}-2P_no-dups.fastq.gz .
+			nr2P=$(gunzip -c ${file}-2P_no-dups.fastq.gz | awk '{s++}END{print s/4}')
+			cp $path/20filtered/${file}/${file}-1U.gz .
+			nr1U=$(gunzip -c ${file}-1U.gz | awk '{s++}END{print s/4}')
+			cp $path/20filtered/${file}/${file}-2U.gz .
+			nr2U=$(gunzip -c ${file}-2U.gz | awk '{s++}END{print s/4}')
+		else
+			suffix=""
+			cp $path/20filtered/${file}/${file}-1P_no-dups.fastq .
+			nr1P=$(awk '{s++}END{print s/4}' ${file}-1P_no-dups.fastq)
+			cp $path/20filtered/${file}/${file}-2P_no-dups.fastq .
+			nr2P=$(awk '{s++}END{print s/4}' ${file}-2P_no-dups.fastq)
+			cp $path/20filtered/${file}/${file}-1U .
+			nr1U=$(awk '{s++}END{print s/4}' ${file}-1U)
+			cp $path/20filtered/${file}/${file}-2U .
+			nr2U=$(awk '{s++}END{print s/4}' ${file}-2U)
+		fi
 		if [[ $mappingmethod =~ "bowtie2" ]]; then
 			echo "Mapping using bowtie2..."
 			#Bowtie2 parameters are derived from --very-sensitive-local
-			bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq  -2 ${file}-2P_no-dups.fastq  -U ${file}-1U,${file}-2U -S ${file}.sam 2>${file}_bowtie2_out.txt
+			#set parameters for mapping using bowtie2
+			score=G,20,8
+			bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq${suffix}  -2 ${file}-2P_no-dups.fastq${suffix} -U ${file}-1U${suffix},${file}-2U${suffix} -S ${file}.sam 2>${file}_bowtie2_out.txt
 		else
-			echo "Mapping using bwa..."
-			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq ${file}-2P_no-dups.fastq > ${file}.sam 2>${file}_bwa_out.txt
+			echo "Mapping pair-end reads using bwa..."
+			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt
+			echo "Mapping orphaned reads using bwa..."
+			if [[ $compressed =~ "yes" ]]; then
+				gunzip ${file}-1U.gz
+				gunzip ${file}-2U.gz
+			fi
+			cat ${file}-1U ${file}-2U > ${file}-unpaired
+			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt
 		fi
 		#create BAM from SAM
 		echo "Converting to BAM..."
-		samtools view -bS -o ${file}.bam ${file}.sam 2>/dev/null
+		if [[ $mappingmethod =~ "bowtie2" ]]; then
+			samtools view -bS -o ${file}.bam ${file}.sam 2>/dev/null
+			rm ${file}.sam
+		else
+			samtools view -bS -o ${file}_paired.bam ${file}_paired.sam 2>/dev/null
+			samtools view -bS -o ${file}_unpaired.bam ${file}_unpaired.sam 2>/dev/null
+			samtools merge ${file}.bam ${file}_paired.bam ${file}_unpaired.bam 2>/dev/null
+			rm ${file}_paired.sam ${file}_unpaired.sam ${file}_paired.bam ${file}_unpaired.bam
+		fi
 		#number of mapped reads in BAM
 		nrmapped=$(samtools view -F 0x04 -c ${file}.bam)
 		#number of all reads in BAM
