@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -375,8 +375,8 @@ done
 cat genespresent_${MISSINGPERCENT}.txt | tr "\n" " " | awk '{ print "total_genes " $0 }' > tmp && mv tmp genespresent_${MISSINGPERCENT}.txt
 cat average_missing_${MISSINGPERCENT}.txt | tr "\n" " " | awk '{ print "average_missing " $0 }' > tmp && mv tmp average_missing_${MISSINGPERCENT}.txt
 cat MissingDataOverview_${MISSINGPERCENT}.txt average_missing_${MISSINGPERCENT}.txt genespresent_${MISSINGPERCENT}.txt > tmp && mv tmp MissingDataOverview_${MISSINGPERCENT}.txt
-# Select assemblies with more than 75% of species (and delete first and last line including header and sum legend)
-awk -F' ' -v val=$SPECIESPRESENCE '( $(NF) > val/100 ) { print $1 }' MissingDataOverview_${MISSINGPERCENT}.txt | tail -n +2 | head -n -2 > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
+# Select assemblies with equal or more than SPECIESPRESENCE of species (and delete first and last line including header and sum legend)
+awk -F' ' -v val=$SPECIESPRESENCE '( $(NF) >= val/100 ) { print $1 }' MissingDataOverview_${MISSINGPERCENT}.txt | tail -n +2 | head -n -2 > selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
 # Copy table and list to home
 cp MissingDataOverview_${MISSINGPERCENT}.txt $path/${alnpathselected}${MISSINGPERCENT}
 cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt $path/${alnpathselected}${MISSINGPERCENT}

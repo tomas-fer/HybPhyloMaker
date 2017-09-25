@@ -8,7 +8,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -101,6 +101,41 @@ else
 	treefile=trees_rooted.newick
 fi
 
+#Check if there is already partition file (PartitionFinder was already run)
+if [[ $update =~ "yes" ]]; then
+	if [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt ]; then
+		echo "Partition file found, skipping PartitionFinder run..."
+		if [[ $requisite =~ "yes" ]]; then
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip .
+			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
+			runpf=no
+		else
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+			runpf=no
+		fi
+	else
+		runpf=yes
+	fi
+else
+	if [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt ]; then
+		echo "Partition file found, skipping PartitionFinder run..."
+		if [[ $requisite =~ "yes" ]]; then
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip .
+			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
+			runpf=no
+		else
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
+			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+			runpf=no
+		fi
+	else
+		runpf=yes
+	fi
+fi
+
 
 #Check necessary file
 if [[ $requisite =~ "no" ]]; then
@@ -135,61 +170,28 @@ if [[ $requisite =~ "no" ]]; then
 		fi
 	fi
 	
-	#Test if folder for results exits
-	if [[ $update =~ "yes" ]]; then
-		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML" ]; then
-			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir08f 2>/dev/null
-			exit 3
-		fi
-	else
-		if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML" ]; then
-			echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir08f 2>/dev/null
-			exit 3
-		fi
-	fi
-	if [[ ! $location == "1" ]]; then
-		if [ "$(ls -A ../workdir08f)" ]; then
-			echo -e "Directory 'workdir08f' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir08f 2>/dev/null
-			exit 3
-		fi
-	fi
-fi
-
-#Check if there is already partition file (PartitionFinder was already run)
-if [[ $update =~ "yes" ]]; then
-	if [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt ]; then
-		echo "Partition file found, skipping PartitionFinder run..."
-		if [[ $requisite =~ "yes" ]]; then
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip .
-			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
-			runpf=no
+	if [[ $runpf =~ "yes" ]]; then
+		#Test if folder for results exits
+		if [[ $update =~ "yes" ]]; then
+			if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML" ]; then
+				echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir08f 2>/dev/null
+				exit 3
+			fi
 		else
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
-			runpf=no
+			if [ -d "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML" ]; then
+				echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML' already exists. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir08f 2>/dev/null
+				exit 3
+			fi
 		fi
-	else
-		runpf=yes
-	fi
-else
-	if [ -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt ]; then
-		echo "Partition file found, skipping PartitionFinder run..."
-		if [[ $requisite =~ "yes" ]]; then
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip .
-			mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.phylip concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
-			runpf=no
-		else
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/RAxMLpartitions.txt .
-			cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
-			runpf=no
+		if [[ ! $location == "1" ]]; then
+			if [ "$(ls -A ../workdir08f)" ]; then
+				echo -e "Directory 'workdir08f' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir08f 2>/dev/null
+				exit 3
+			fi
 		fi
-	else
-		runpf=yes
 	fi
 fi
 
@@ -375,7 +377,11 @@ echo -e "Preparing starting tree using RAxML...\n"
 $raxmlseq -y -m GTRCAT -p 12345 -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n RandomStartingTree > RAxML_starttree_besttree.log
 #Run ExaML
 echo -e "Building best ExaML tree...\n"
-mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log
+else
+	$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log
+fi
 #Measure time
 timenow=`date +%s`
 timespan=`echo "scale=2;($timenow-$time)/60" | bc`
@@ -410,6 +416,11 @@ if [[ $examlboot =~ "yes" ]]; then
 		#Prepare binary file for ExaML
 		parse-examl -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} -m DNA -q RAxMLpartitions.txt.BS${i} -n concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} >> parse-examl_boot.log
 		#Run ExaML
+		if [[ $PBS_O_HOST == *".cz" ]]; then
+			mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
+		else
+			$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
+		fi
 		mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
 		#Measure time
 		timenow=`date +%s`

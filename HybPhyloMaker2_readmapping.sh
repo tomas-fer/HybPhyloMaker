@@ -56,6 +56,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir02
 	#Add necessary modules
 	module load bioinformatics/bowtie2/2.2.6
+	module load bioinformatics/bwa
 	module load bioinformatics/samtools/1.3
 	module load bioinformatics/ococo/ #???
 else

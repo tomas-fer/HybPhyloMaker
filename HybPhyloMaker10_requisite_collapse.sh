@@ -18,7 +18,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *  Script 10 - Select trees with requisite taxa, collapse unsupported branches *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -168,9 +168,17 @@ if [[ $requisite =~ "yes" ]]; then
 		grep -E "$requisitetaxa" trees_rooted.newick > trees_rooted_with_requisite.newick
 		#Copy selected trees to home
 		if [[ $update =~ "yes" ]]; then
-			cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite
+			if [ -z "$OUTGROUP" ]; then
+				cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite/trees_with_requisite.newick
+			else
+				cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite
+			fi
 		else
-			cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite
+			if [ -z "$OUTGROUP" ]; then
+				cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite/trees_with_requisite.newick
+			else
+				cp trees_rooted_with_requisite.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite
+			fi
 		fi
 	fi
 fi

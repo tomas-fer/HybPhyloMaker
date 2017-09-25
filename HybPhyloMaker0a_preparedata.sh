@@ -19,7 +19,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.4.2                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -35,7 +35,7 @@
 # Download from BaseSpace is parallelized
 
 #####################################################################################################################
-# Usage:                                                                                                            #
+# Usage (only if you require download from BaseSpace, otherwise continue with step 4:                               #
 # 1. You must obtain 'token' from Illumina BaseSpace (how to do this see steps 1-5 at                               #
 # https://support.basespace.illumina.com/knowledgebase/articles/403618-python-run-downloader                        #
 # 2. Save this token to text file (token_header.txt) with one line text:                                            #
@@ -187,8 +187,8 @@ done
 echo -e "Renaming and moving FASTQ files...\n"
 cat renamelist.txt | while read -r a b
 do
-	mv ${b}*R1* ${a}/${a}_L001_R1_001.fastq.gz
-	mv ${b}*R2* ${a}/${a}_L001_R2_001.fastq.gz
+	mv *${b}*R1* ${a}/${a}_L001_R1_001.fastq.gz
+	mv *${b}*R2* ${a}/${a}_L001_R2_001.fastq.gz
 done
 
 # Prepare samples list

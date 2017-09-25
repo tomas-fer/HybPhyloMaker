@@ -8,7 +8,7 @@
 # Tomas Fer, 2017                                                                                                        #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.4.4                                                                                                                #
+# v.1.5.0                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -291,26 +291,6 @@ fi
 cp raxmlHPC* /usr/local/bin
 cd ..
 
-#OpenMPI
-if ! [ -x "$(command -v mpicc)" ]; then
-	$installer install mpi-default-dev &> openmpi_install.log
-fi
-
-#ExaML
-if ! [ -x "$(command -v examl)" ]; then
-	echo -e "Installing 'ExaML'"
-	git clone https://github.com/stamatak/ExaML &> examl_install.log
-	cd ExaML/parser
-	make -f Makefile.SSE3.gcc &> ../../examl_install.log
-	cp parse-examl /usr/local/bin
-	cd ../examl
-	make -f Makefile.SSE3.gcc &> ../../examl_install.log
-	cp examl /usr/local/bin
-	make -f Makefile.AVX.gcc &> ../../examl_install.log
-	cp examl-AVX /usr/local/bin
-	cd ../..
-fi
-
 #MstatX
 if ! [ -x "$(command -v mstatx)" ]; then
 	echo -e "Installing 'MstatX'"
@@ -497,38 +477,103 @@ elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ 
 	pip install pandas #CentOS, Fedora and OpenSUSE
 fi
 
+#OpenMPI
+if ! [ -x "$(command -v module load mpi/openmpi-x86_64)" ] && [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	echo -e "\nDo you want to install ExaML [y/n]:"
+	read -s -n 1 instexaml
+	if [[ $instexaml =~ "y" ]]; then
+		$installer -y install openmpi openmpi-devel &> openmpi_install.log
+		$installer -y install environment-modules &> openmpi_install.log
+		echo -e "\nPlease logout and login back and run again 'instal_software.sh' in order to complete ExaML installation" && exit 3
+	fi
+fi
+if ! [ -x "$(command -v mpicc)" ]; then
+	echo -e "Installing 'OpenMPI'"
+	if [[ $distribution =~ "Debian" ]]; then
+		instexaml=yes
+		$installer install mpi-default-dev &> openmpi_install.log
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		$installer -y install openmpi openmpi-devel &> openmpi_install.log
+		$installer -y install environment-modules &> openmpi_install.log
+		echo -e "\nPlease"
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		instexaml=yes
+		wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.1.tar.gz &> openmpi_install.log
+		tar -xvf openmpi-2.1.1.tar.gz 1>/dev/null
+		cd openmpi-2.1.1/
+		./configure &> openmpi_install.log
+		make &> openmpi_install.log
+		make install &> openmpi_install.log
+		ldconfig &> openmpi_install.log
+		cd ..
+	fi
+fi
+
+#ExaML
+if [[ $instexaml =~ "y" ]]; then
+	if ! [ -x "$(command -v examl)" ]; then
+		echo -e "Installing 'ExaML'"
+		git clone https://github.com/stamatak/ExaML &> examl_install.log
+		cd ExaML/parser
+		make -f Makefile.SSE3.gcc &> ../../examl_install.log
+		cp parse-examl /usr/local/bin
+		cd ../examl
+		make -f Makefile.SSE3.gcc &> ../../examl_install.log
+		cp examl /usr/local/bin
+		make -f Makefile.AVX.gcc &> ../../examl_install.log
+		cp examl-AVX /usr/local/bin
+		cd ../..
+	fi
+fi
+
 #Leave 'install' directory
 cd ..
 
 #Check if everything is installed correctly
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
+rm not.txt
 for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
-	command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
+	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
+	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not.txt; }
 done
+echo -e "\n**************************************************************"
+echo -e "List of software which is not installed:"
+cat not.txt
+echo -e "Check particular log file(s) to look for possible solution..."
+echo -e "**************************************************************"
 
 #Check R packages
+echo -e "\n**************************************************************"
+echo -e "Checking R packages"
 for Rpackage in ape seqinr data.table; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
 	elif grep -Fq "Error" Rtest; then
 		echo -e "R package $Rpackage...unable to load"
+	elif
+		echo -e "R package $Rpackage...OK"
 	fi
 done
 rm Rtest
-echo "Necessary software installed, possible errors indicated above."
+echo -e "**************************************************************"
+
+echo -e "\n**************************************************************"
+echo -e "Necessary software installed, possible errors indicated above."
 echo -e "**************************************************************"
 echo -e "\nIf you don't see any *not found* your system is now ready to run HybPhyloMaker!"
 echo -e "Consult appropriate '_install.log' (in case *not found* was reported) to solve the installation problem."
 echo -e "If there is a problems with R packages, installation of newer R version might solve the problem."
 
 #Clone HybPhyloMaker GitHub repository
-echo -e "\nCloning HybPhyloMaker GitHub repository..."
-git clone https://github.com/tomas-fer/HybPhyloMaker &> HybPhyloMaker_gitcloning.log
-cd HybPhyloMaker
-chmod +x *.sh
-chmod +x HybSeqSource/ASTRID
+if [[ ! -d HybPhyloMaker]]; then
+	echo -e "\nCloning HybPhyloMaker GitHub repository..."
+	git clone https://github.com/tomas-fer/HybPhyloMaker &> HybPhyloMaker_gitcloning.log
+	cd HybPhyloMaker
+	chmod +x *.sh
+	chmod +x HybSeqSource/ASTRID
+fi
 
 echo -e "\nInstalation script finished.\n"
 

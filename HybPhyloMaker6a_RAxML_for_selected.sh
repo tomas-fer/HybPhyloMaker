@@ -17,7 +17,7 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.4.3                                    *
+# *                                   v.1.5.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -146,7 +146,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 	do
 		echo '#!/bin/bash' >> ${group}.sh
 		echo '#----------------MetaCentrum----------------' >> ${group}.sh
-		echo '#PBS -l walltime=12:0:0' >> ${group}.sh
+		echo '#PBS -l walltime=24:0:0' >> ${group}.sh
 		echo '#PBS -l select=1:ncpus=4:mem=1gb:scratch_local=1gb' >> ${group}.sh
 		echo '#PBS -j oe' >> ${group}.sh
 		echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> ${group}.sh
