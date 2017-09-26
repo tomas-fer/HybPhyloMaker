@@ -30,7 +30,7 @@ cd install
 #------INSTALL SOFTWARE FROM REPOSITORIES------
 #Install software using default package manager specified above
 
-#Compilation utilities, i.e., gcc, g++, make
+#Compilation utilities, i.e., gcc, g++, make, autoconf
 if [[ $distribution =~ "Debian" ]]; then
 	for i in gcc g++ make; do
 		if ! [ -x "$(command -v $i)" ]; then
@@ -39,12 +39,22 @@ if [[ $distribution =~ "Debian" ]]; then
 		fi
 	done
 elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	for i in gcc gcc-c++ make; do
+	for i in make; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
 		fi
 	done
+	if ! [ -x "$(command -v gcc)" ]; then
+		$installer install -y gcc &> gcc_install.log
+		$installer install -y gcc-c++ &> g++_install.log
+	fi
+fi
+if ! [ -x "$(command -v autoconf)" ]; then
+	echo -e "Installing 'dh-autoreconf'"
+	$installer install -y dh-autoreconf &> dh-autoreconf_install.log
+	echo -e "Installing 'autoconf'"
+	$installer install -y autoconf &> autoconf_install.log
 fi
 
 #Perl
@@ -59,7 +69,7 @@ if ! [ -x "$(command -v python)" ]; then
 	$installer install -y python &> python_install.log
 fi
 
-#Python3 (+ Biopython)
+#Python3
 if ! [ -x "$(command -v python3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'python3'"
@@ -76,6 +86,7 @@ fi
 if ! [ -x "$(command -v pip)" ]; then
 	echo -e "Installing 'pip'"
 	$installer install -y python-pip &> pip_install.log
+	pip install --upgrade pip &> pip_install.log
 fi
 
 #Pip3 (also required for 'kindel' installation, see below)
@@ -92,57 +103,67 @@ if ! [ -x "$(command -v pip3)" ]; then
 fi
 
 #Biopython
-echo -e "Installing 'biopython'"
-pip3 install biopython &> biopython_install.log
+if [ ! `python3 -c "import Bio; print(Bio.__version__)" 2>/dev/null` ]; then
+	echo -e "Installing 'biopython for python3'"
+	pip3 install biopython &> biopython_install.log
+fi
 
 #Java
-if [[ $distribution =~ "Debian" ]]; then
-	echo -e "Installing 'java'"
-	$installer install -y openjdk-7-jre &> java_install.log #Debian/Ubuntu
-elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	echo -e "Installing 'java'"
-	$installer install -y java-1.7.0-openjdk.x86_64 &> java_install.log #Fedora/CentOS
-elif [[ $distribution =~ "OpenSUSE" ]]; then
-	echo -e "Installing 'java'"
-	$installer install -y java-1_7_0-openjdk &> java_install.log #OpenSUSE
+if ! [ -x "$(command -v java)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'java'"
+		$installer install -y openjdk-7-jre &> java_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'java'"
+		$installer install -y java-1.7.0-openjdk.x86_64 &> java_install.log #Fedora/CentOS
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'java'"
+		$installer install -y java-1_7_0-openjdk &> java_install.log #OpenSUSE
+	fi
 fi
 
 #zlib library
-if [[ $distribution =~ "Debian" ]]; then
-	echo -e "Installing 'zlib'"
-	$installer install -y libpng-dev &> zlib_install.log #Debian/Ubuntu
-	$installer install -y zlib1g-dev &>> zlib_install.log #Debian/Ubuntu
-elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	echo -e "Installing 'zlib'"
-	$installer install -y libpng-devel &> zlib_install.log #Fedora/CentOS/OpenSUSE
-	$installer install -y zlib-devel &>> zlib_install.log #Fedora/CentOS/OpenSUSE
+if [ ! "$(whereis zlib | grep /)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'zlib'"
+		$installer install -y libpng-dev &> zlib_install.log #Debian/Ubuntu
+		$installer install -y zlib1g-dev &>> zlib_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'zlib'"
+		$installer install -y libpng-devel &> zlib_install.log #Fedora/CentOS/OpenSUSE
+		$installer install -y zlib-devel &>> zlib_install.log #Fedora/CentOS/OpenSUSE
+	fi
 fi
 
 #pkg-config
-if [[ $distribution =~ "Debian" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	echo -e "Installing 'pkg-config'"
-	$installer install -y pkg-config &> pkg-config_install.log #Debian/Ubuntu/OpenSUSE
-elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	echo -e "Installing 'pkg-config'"
-	$installer install -y pkgconfig &> pkg-config_install.log #Fedora/CentOS
+if [ ! "$(whereis pkg-config | grep /)" ]; then
+	if [[ $distribution =~ "Debian" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'pkg-config'"
+		$installer install -y pkg-config &> pkg-config_install.log #Debian/Ubuntu/OpenSUSE
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'pkg-config'"
+		$installer install -y pkgconfig &> pkg-config_install.log #Fedora/CentOS
+	fi
 fi
 
 #R
 #Comment for Ubuntu/Debian: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
 #Look at the end of this script for an advice how to do that...
 #Newer version (i.e., at least v3.2) should be installed before running this script!
-if [[ $distribution =~ "Debian" ]]; then
-	echo -e "Installing 'R'"
-	$installer install -y r-base-dev &> R_install.log #Debian/Ubuntu
-	$installer install -y gfortran &> gfortran_install.log #Debian/Ubuntu
-elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	echo -e "Installing 'R'"
-	$installer install -y R &> R_install.log #Fedora/CentOS
-	$installer install -y gcc-gfortran &> gfortran_install.log #Fedora/CentOS
-elif [[ $distribution =~ "OpenSUSE" ]]; then
-	echo -e "Installing 'R'"
-	$installer install -y R-base-devel &> R_install.log #OpenSUSE
-	$installer install -y gcc-fortran &> gfortran_install.log #necessary in OpenSUSE for compilation of some R packages
+if ! [ -x "$(command -v R)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'R'"
+		$installer install -y r-base-dev &> R_install.log #Debian/Ubuntu
+		$installer install -y gfortran &> gfortran_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'R'"
+		$installer install -y R &> R_install.log #Fedora/CentOS
+		$installer install -y gcc-gfortran &> gfortran_install.log #Fedora/CentOS
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'R'"
+		$installer install -y R-base-devel &> R_install.log #OpenSUSE
+		$installer install -y gcc-fortran &> gfortran_install.log #necessary in OpenSUSE for compilation of some R packages
+	fi
 fi
 
 #R packages
@@ -263,30 +284,38 @@ if ! [ -x "$(command -v raxmlHPC)" ]; then
 	make -f Makefile.gcc &>> ../raxml_install.log
 	rm *.o
 fi
-if ! [ -x "$(command -v raxmlHPC-SSE3)" ]; then
-	echo -e "Installing 'raxmlHPC-SSE3'"
-	make -f Makefile.SSE3.gcc &>> ../raxml_install.log
-	rm *.o
+if [[ `grep sse3 /proc/cpuinfo` ]]; then
+	if ! [ -x "$(command -v raxmlHPC-SSE3)" ]; then
+		echo -e "Installing 'raxmlHPC-SSE3'"
+		make -f Makefile.SSE3.gcc &>> ../raxml_install.log
+		rm *.o
+	fi
 fi
-if ! [ -x "$(command -v raxmlHPC­AVX)" ]; then
-	echo -e "Installing 'raxmlHPC­AVX'"
-	make -f Makefile.AVX.gcc &>> ../raxml_install.log
-	rm *.o
+if [[ `grep avx /proc/cpuinfo` ]]; then
+	if ! [ -x "$(command -v raxmlHPC­AVX)" ]; then
+		echo -e "Installing 'raxmlHPC­AVX'"
+		make -f Makefile.AVX.gcc &>> ../raxml_install.log
+		rm *.o
+	fi
 fi
-if ! [ -x "$(command -v raxmlHPC-PTHREADS)" ]; then
+	if ! [ -x "$(command -v raxmlHPC-PTHREADS)" ]; then
 	echo -e "Installing 'raxmlHPC-PTHREADS'"
 	make -f Makefile.PTHREADS.gcc &>> ../raxml_install.log
 	rm *.o
 fi
-if ! [ -x "$(command -v raxmlHPC-PTHREADS-SSE3)" ]; then
-	echo -e "Installing 'raxmlHPC-PTHREADS-SSE3'"
-	make -f Makefile.SSE3.PTHREADS.gcc &>> ../raxml_install.log
-	rm *.o
+if [[ `grep sse3 /proc/cpuinfo` ]]; then
+	if ! [ -x "$(command -v raxmlHPC-PTHREADS-SSE3)" ]; then
+		echo -e "Installing 'raxmlHPC-PTHREADS-SSE3'"
+		make -f Makefile.SSE3.PTHREADS.gcc &>> ../raxml_install.log
+		rm *.o
+	fi
 fi
-if ! [ -x "$(command -v raxmlHPC­PTHREADS-AVX)" ]; then
-	echo -e "Installing 'raxmlHPC­PTHREADS-AVX'"
-	make -f Makefile.AVX.PTHREADS.gcc &>> ../raxml_install.log
-	rm *.o
+if [[ `grep avx /proc/cpuinfo` ]]; then
+	if ! [ -x "$(command -v raxmlHPC­PTHREADS-AVX)" ]; then
+		echo -e "Installing 'raxmlHPC­PTHREADS-AVX'"
+		make -f Makefile.AVX.PTHREADS.gcc &>> ../raxml_install.log
+		rm *.o
+	fi
 fi
 cp raxmlHPC* /usr/local/bin
 cd ..
@@ -327,14 +356,14 @@ if ! [ -x "$(command -v nw_reroot)" ]; then
 	if ! [ -x "$(command -v autoreconf)" ]; then
 		$installer install -y dh-autoreconf &> autoreconf_install.log
 	fi
-	git clone https://github.com/tjunier/newick_utils
-	cd newick_utils/
-	autoreconf -fi
-	./configure
-	make
-	make check
-	make install
-	ldconfig
+	git clone https://github.com/tjunier/newick_utils  &> newickutil_install.log
+	cd newick_utils/ &> newickutil_install.log
+	autoreconf -fi &> newickutil_install.log
+	./configure &> newickutil_install.log
+	make &> newickutil_install.log
+	make check &> newickutil_install.log
+	make install &> newickutil_install.log
+	ldconfig &> newickutil_install.log
 	cd ..
 fi
 
@@ -415,28 +444,26 @@ if ! [ -x "$(command -v ococo)" ]; then
 	cd ..
 fi
 
-#kindel (necessary for majority rule consensus building from mapped reads in BAM file)
-#requires v0.1.4 (higher version will not work as they are missing option for threshold!)
-#see https://pypi.python.org/pypi/kindel
-if ! [ -x "$(command -v kindel)" ]; then
-	echo -e "Installing 'kindel'"
-	pip3 install 'kindel==0.1.4' &>> kindel_install.log
-fi
-
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
 #For compilation on Fedora/CentOS/OpenSUSE you need to specify where 'gsl' is installed (in setup.py) - modification of 'setup.py' is included below
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+		pip install numpy &> numpy_install.log
+		#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+		pip install scipy &> scipy_install.log
 		$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
-		$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+		pip install numpy &> numpy_install.log
+		#$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+		pip install scipy &> scipy_install.log
+		#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		$installer install -y numpy &> numpy_install.log #CentOS, Fedora
-		$installer install -y scipy &> scipy_install.log #CentOS, Fedora
+		pip install numpy &> numpy_install.log
+		#$installer install -y numpy &> numpy_install.log #CentOS, Fedora
+		pip install scipy &> scipy_install.log
+		#$installer install -y scipy &> scipy_install.log #CentOS, Fedora
 	fi
 	
 	if [[ $distribution =~ "Debian" ]]; then
@@ -451,8 +478,9 @@ if ! [ -x "$(command -v p4)" ]; then
 		$installer install redhat-rpm-config &> rpm-config_install.log
 	fi
 	#install python module 'future'
-	pip install future &> python-future_install.log
-	
+	if ! [[ `pip show future | grep Version` ]]; then
+		pip install future &> python-future_install.log
+	fi
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
 	#Modify setup.py to be able to find gsl
@@ -467,14 +495,30 @@ if ! [ -x "$(command -v p4)" ]; then
 	cd ..
 fi
 
+#kindel (necessary for majority rule consensus building from mapped reads in BAM file)
+#requires v0.1.4 (higher version will not work as they are missing option for threshold!)
+#see https://pypi.python.org/pypi/kindel
+if ! [ -x "$(command -v kindel)" ]; then
+	echo -e "Installing 'kindel'"
+	pip3 install 'kindel==0.1.4' &>> kindel_install.log
+fi
+
 #other python modules (mainly for PartitionFinder)
 echo -e "Installing 'python modules'"
 if [[ $distribution =~ "Debian" ]]; then
-	$installer install -y python-pandas &> python-pandas_install.log #Debian
-	$installer install -y python-sklearn &> python-sklearn_install.log #Debian
+	if ! [[ `pip show pandas | grep Version` ]]; then
+		$installer install -y python-pandas &> python-pandas_install.log #Debian
+	fi
+	if ! [[ `pip show scikit-learn | grep Version` ]]; then
+		$installer install -y python-sklearn &> python-sklearn_install.log #Debian
+	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	pip install scikit-learn #CentOS, Fedora and OpenSUSE
-	pip install pandas #CentOS, Fedora and OpenSUSE
+	if ! [[ `pip show pandas | grep Version` ]]; then
+		pip install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
+	fi
+	if ! [[ `pip show scikit-learn | grep Version` ]]; then
+		pip install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
+	fi
 fi
 
 #OpenMPI
@@ -513,6 +557,9 @@ fi
 if [[ $instexaml =~ "y" ]]; then
 	if ! [ -x "$(command -v examl)" ]; then
 		echo -e "Installing 'ExaML'"
+		if [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+			module load mpi/openmpi-x86_64
+		fi
 		git clone https://github.com/stamatak/ExaML &> examl_install.log
 		cd ExaML/parser
 		make -f Makefile.SSE3.gcc &> ../../examl_install.log
@@ -552,7 +599,7 @@ for Rpackage in ape seqinr data.table; do
 		echo -e "R package $Rpackage...not found"
 	elif grep -Fq "Error" Rtest; then
 		echo -e "R package $Rpackage...unable to load"
-	elif
+	else
 		echo -e "R package $Rpackage...OK"
 	fi
 done
