@@ -86,10 +86,10 @@ fi
 if ! [ -x "$(command -v pip)" ]; then
 	echo -e "Installing 'pip'"
 	$installer install -y python-pip &> pip_install.log
-	pip install --upgrade pip &> pip_install.log
+	pip2.7 install --upgrade pip &> pip_install.log
 fi
 
-#Pip3 (also required for 'kindel' installation, see below)
+#Pip3 (also required for 'biopython' and 'kindel' installation, see below)
 if ! [ -x "$(command -v pip3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'pip3'"
@@ -450,19 +450,19 @@ fi
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		pip install numpy &> numpy_install.log
+		pip2.7 install numpy &> numpy_install.log
 		#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
-		pip install scipy &> scipy_install.log
+		pip2.7 install scipy &> scipy_install.log
 		$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		pip install numpy &> numpy_install.log
+		pip2.7 install numpy &> numpy_install.log
 		#$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
-		pip install scipy &> scipy_install.log
+		pip2.7 install scipy &> scipy_install.log
 		#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		pip install numpy &> numpy_install.log
+		pip2.7 install numpy &> numpy_install.log
 		#$installer install -y numpy &> numpy_install.log #CentOS, Fedora
-		pip install scipy &> scipy_install.log
+		pip2.7 install scipy &> scipy_install.log
 		#$installer install -y scipy &> scipy_install.log #CentOS, Fedora
 	fi
 	
@@ -479,7 +479,7 @@ if ! [ -x "$(command -v p4)" ]; then
 	fi
 	#install python module 'future'
 	if ! [[ `pip show future | grep Version` ]]; then
-		pip install future &> python-future_install.log
+		pip2.7 install future &> python-future_install.log
 	fi
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
@@ -579,14 +579,14 @@ cd ..
 #Check if everything is installed correctly
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
-rm not.txt
+rm not_installed.txt
 for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
-	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not.txt; }
+	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
 echo -e "\n**************************************************************"
 echo -e "List of software which is not installed:"
-cat not.txt
+cat not_installed.txt
 echo -e "Check particular log file(s) to look for possible solution..."
 echo -e "**************************************************************"
 
@@ -614,7 +614,7 @@ echo -e "Consult appropriate '_install.log' (in case *not found* was reported) t
 echo -e "If there is a problems with R packages, installation of newer R version might solve the problem."
 
 #Clone HybPhyloMaker GitHub repository
-if [[ ! -d HybPhyloMaker]]; then
+if [[ ! -d HybPhyloMaker ]]; then
 	echo -e "\nCloning HybPhyloMaker GitHub repository..."
 	git clone https://github.com/tomas-fer/HybPhyloMaker &> HybPhyloMaker_gitcloning.log
 	cd HybPhyloMaker
