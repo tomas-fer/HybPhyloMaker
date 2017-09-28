@@ -32,29 +32,35 @@ cd install
 
 #Compilation utilities, i.e., gcc, g++, make, autoconf
 if [[ $distribution =~ "Debian" ]]; then
-	for i in gcc g++ make; do
+	for i in gcc g++ make automake; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
 		fi
 	done
 elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	for i in make; do
+	for i in make automake; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
 		fi
 	done
 	if ! [ -x "$(command -v gcc)" ]; then
+		echo -e "Installing 'gcc'"
 		$installer install -y gcc &> gcc_install.log
+	fi
+	if ! [ -x "$(command -v g++)" ]; then
+		echo -e "Installing 'g++'"
 		$installer install -y gcc-c++ &> g++_install.log
 	fi
 fi
 if ! [ -x "$(command -v autoconf)" ]; then
-	echo -e "Installing 'dh-autoreconf'"
-	$installer install -y dh-autoreconf &> dh-autoreconf_install.log
 	echo -e "Installing 'autoconf'"
 	$installer install -y autoconf &> autoconf_install.log
+fi
+if ! [ -x "$(command -v autoreconf)" ]; then
+	echo -e "Installing 'dh-autoreconf'"
+	$installer install -y dh-autoreconf &> dh-autoreconf_install.log
 fi
 
 #Perl
@@ -83,10 +89,18 @@ if ! [ -x "$(command -v python3)" ]; then
 fi
 
 #Pip
-if ! [ -x "$(command -v pip)" ]; then
-	echo -e "Installing 'pip'"
-	$installer install -y python-pip &> pip_install.log
-	pip2.7 install --upgrade pip &> pip_install.log
+if [[ $distribution =~ "Debian" ]]; then
+	if ! [ -x "$(command -v pip)" ]; then
+		echo -e "Installing 'pip'"
+		$installer install -y python-pip &> pip_install.log
+	fi
+	pip install --upgrade pip &>> pip_install.log
+else
+	if ! [ -x "$(command -v pip2.7)" ]; then
+		echo -e "Installing 'pip'"
+		$installer install -y python-pip &> pip_install.log
+	fi
+	pip2.7 install --upgrade pip &>> pip_install.log
 fi
 
 #Pip3 (also required for 'biopython' and 'kindel' installation, see below)
@@ -95,11 +109,20 @@ if ! [ -x "$(command -v pip3)" ]; then
 		echo -e "Installing 'pip3'"
 		$installer install -y python34-devel &>> python3_install.log #Only for CentOS
 		$installer install -y python34-pip &> pip3_install.log #Only for CentOS
-	else
+	elif [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'pip3'"
 		$installer install -y python3-dev &>> python3_install.log #Does not work on CentOS
 		$installer install -y python3-pip &> pip3_install.log #Does not work on CentOS
+	elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]]; then
+		echo -e "Installing 'pip3'"
+		$installer install -y python3-devel &>> python3_install.log #Does not work on CentOS
+		$installer install -y python3-pip &> pip3_install.log #Does not work on CentOS
 	fi
+fi
+if [[ $distribution =~ "Fedora" ]]; then
+	python3 -m pip install --upgrade pip &>> pip3_install.log
+else
+	pip3 install --upgrade pip &>> pip3_install.log
 fi
 
 #Biopython
@@ -112,7 +135,12 @@ fi
 if ! [ -x "$(command -v java)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'java'"
-		$installer install -y openjdk-7-jre &> java_install.log #Debian/Ubuntu
+		debver=$(cat /etc/debian_version | cut -d"." -f1)
+		if [ "$debver" -eq "9" ]; then
+			$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+		else
+			$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'java'"
 		$installer install -y java-1.7.0-openjdk.x86_64 &> java_install.log #Fedora/CentOS
@@ -144,6 +172,12 @@ if [ ! "$(whereis pkg-config | grep /)" ]; then
 		echo -e "Installing 'pkg-config'"
 		$installer install -y pkgconfig &> pkg-config_install.log #Fedora/CentOS
 	fi
+fi
+
+#libtool
+if [ ! "$(whereis libtool | grep /)" ]; then
+	echo -e "Installing 'libtool'"
+	$installer install -y libtool &> libtool_install.log
 fi
 
 #R
@@ -263,7 +297,7 @@ fi
 #EMBOSS
 if ! [ -x "$(command -v transeq)" ]; then
 	echo -e "Installing 'EMBOSS'"
-	wget ftp://emboss.open-bio.org/pub/EMBOSS/emboss-latest.tar.gz &> ../EMBOSS_install.log
+	wget ftp://emboss.open-bio.org/pub/EMBOSS/emboss-latest.tar.gz &> EMBOSS_install.log
 	tar xfz emboss-latest.tar.gz 1>/dev/null
 	rm emboss-latest.tar.gz
 	cd EMBOSS*
@@ -357,13 +391,16 @@ if ! [ -x "$(command -v nw_reroot)" ]; then
 		$installer install -y dh-autoreconf &> autoreconf_install.log
 	fi
 	git clone https://github.com/tjunier/newick_utils  &> newickutil_install.log
-	cd newick_utils/ &> newickutil_install.log
-	autoreconf -fi &> newickutil_install.log
-	./configure &> newickutil_install.log
-	make &> newickutil_install.log
-	make check &> newickutil_install.log
-	make install &> newickutil_install.log
-	ldconfig &> newickutil_install.log
+	cd newick_utils/ &>> newickutil_install.log
+	libtoolize &>> newickutil_install.log
+	aclocal &>> newickutil_install.log
+	autoheader &>> newickutil_install.log
+	autoreconf -fi &>> newickutil_install.log
+	./configure &>> newickutil_install.log
+	make &>> newickutil_install.log
+	make check &>> newickutil_install.log
+	make install &>> newickutil_install.log
+	ldconfig &>> newickutil_install.log
 	cd ..
 fi
 
@@ -450,20 +487,32 @@ fi
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		pip2.7 install numpy &> numpy_install.log
-		#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
-		pip2.7 install scipy &> scipy_install.log
-		$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+		if ! [[ `pip show numpy | grep Version` ]]; then
+			pip install numpy &> numpy_install.log
+			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+		fi
+		if  ! [[ `pip show scipy | grep Version` ]]; then
+			pip install scipy &> scipy_install.log
+			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		pip2.7 install numpy &> numpy_install.log
-		#$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
-		pip2.7 install scipy &> scipy_install.log
-		#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+		if ! [[ `pip2.7 show numpy | grep Version` ]]; then
+			#pip2.7 install numpy &> numpy_install.log
+			$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+		fi
+		if  ! [[ `pip2.7 show scipy | grep Version` ]]; then
+			pip2.7 install scipy &> scipy_install.log
+			#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		pip2.7 install numpy &> numpy_install.log
-		#$installer install -y numpy &> numpy_install.log #CentOS, Fedora
-		pip2.7 install scipy &> scipy_install.log
-		#$installer install -y scipy &> scipy_install.log #CentOS, Fedora
+		if ! [[ `pip2.7 show numpy | grep Version` ]]; then
+			#pip2.7 install numpy &> numpy_install.log
+			$installer install -y numpy &> numpy_install.log #CentOS, Fedora
+		fi
+		if  ! [[ `pip2.7 show scipy | grep Version` ]]; then
+			#pip2.7 install scipy &> scipy_install.log
+			$installer install -y scipy &> scipy_install.log #CentOS, Fedora
+		fi
 	fi
 	
 	if [[ $distribution =~ "Debian" ]]; then
@@ -478,16 +527,22 @@ if ! [ -x "$(command -v p4)" ]; then
 		$installer install redhat-rpm-config &> rpm-config_install.log
 	fi
 	#install python module 'future'
-	if ! [[ `pip show future | grep Version` ]]; then
-		pip2.7 install future &> python-future_install.log
+	if [[ $distribution =~ "Debian" ]]; then
+		if ! [[ `pip show future | grep Version` ]]; then
+			pip install future &> python-future_install.log
+		fi
+	else
+		if ! [[ `pip2.7 show future | grep Version` ]]; then
+			pip2.7 install future &> python-future_install.log
+		fi
 	fi
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
 	#Modify setup.py to be able to find gsl
 	if [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "Fedora" ]]; then
 		replace="my_include_dirs = [\'\/usr\/include\/\']"
-		sed -i.bak "46s/.*/$replace/" setup.py
-		sed -i.bak2 "47s/# //" setup.py
+		#sed -i.bak "46s/.*/$replace/" setup.py
+		#sed -i.bak2 "47s/# //" setup.py
 	fi
 	python setup.py build &>> ../p4_install.log
 	python setup.py install &>> ../p4_install.log
@@ -500,56 +555,73 @@ fi
 #see https://pypi.python.org/pypi/kindel
 if ! [ -x "$(command -v kindel)" ]; then
 	echo -e "Installing 'kindel'"
-	pip3 install 'kindel==0.1.4' &>> kindel_install.log
+	# if [[ $distribution =~ "Debian" ]]; then
+		# $installer install -y python3-dev &> python3-dev_install.log #Debian
+	# elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		# $installer install -y python3-devel &> python3-dev_install.log #CentOS, Fedora and OpenSUSE
+	# fi
+	if [[ $distribution =~ "Fedora" ]]; then
+		python3 -m pip install 'kindel==0.1.4' &>> kindel_install.log
+	else
+		pip3 install 'kindel==0.1.4' &>> kindel_install.log
+	fi
 fi
 
 #other python modules (mainly for PartitionFinder)
-echo -e "Installing 'python modules'"
 if [[ $distribution =~ "Debian" ]]; then
 	if ! [[ `pip show pandas | grep Version` ]]; then
-		$installer install -y python-pandas &> python-pandas_install.log #Debian
+		echo -e "Installing 'pandas for python'"
+		pip install pandas &> python-pandas_install.log
+		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
 	if ! [[ `pip show scikit-learn | grep Version` ]]; then
-		$installer install -y python-sklearn &> python-sklearn_install.log #Debian
+		echo -e "Installing 'scikit-learn for python'"
+		pip install scikit-learn &> python-sklearn_install.log
+		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	if ! [[ `pip show pandas | grep Version` ]]; then
-		pip install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
+	if ! [[ `pip2.7 show pandas | grep Version` ]]; then
+		echo -e "Installing 'pandas for python'"
+		pip2.7 install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
 	fi
-	if ! [[ `pip show scikit-learn | grep Version` ]]; then
-		pip install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
+	if ! [[ `pip2.7 show scikit-learn | grep Version` ]]; then
+		echo -e "Installing 'scikit-learn for python'"
+		pip2.7 install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
 	fi
 fi
 
 #OpenMPI
-if ! [ -x "$(command -v module load mpi/openmpi-x86_64)" ] && [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	echo -e "\nDo you want to install ExaML [y/n]:"
-	read -s -n 1 instexaml
-	if [[ $instexaml =~ "y" ]]; then
-		$installer -y install openmpi openmpi-devel &> openmpi_install.log
-		$installer -y install environment-modules &> openmpi_install.log
-		echo -e "\nPlease logout and login back and run again 'instal_software.sh' in order to complete ExaML installation" && exit 3
+if [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	module load mpi/openmpi-x86_64 2>/dev/null
+	if ! [ -x "$(command -v mpicc)" ]; then
+		echo -e "\nDo you want to install ExaML [y/n]:"
+		read -s -n 1 instexaml
+		if [[ $instexaml =~ "y" ]]; then
+			echo -e "Installing 'OpenMPI'"
+			$installer -y install openmpi openmpi-devel &> openmpi_install.log
+			$installer -y install environment-modules &>> openmpi_install.log
+			echo -e "\nPlease logout and login back and run again 'install_software.sh' in order to complete ExaML installation" && exit 3
+		fi
+	else
+		instexaml=yes
 	fi
-fi
-if ! [ -x "$(command -v mpicc)" ]; then
-	echo -e "Installing 'OpenMPI'"
-	if [[ $distribution =~ "Debian" ]]; then
-		instexaml=yes
-		$installer install mpi-default-dev &> openmpi_install.log
-	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		$installer -y install openmpi openmpi-devel &> openmpi_install.log
-		$installer -y install environment-modules &> openmpi_install.log
-		echo -e "\nPlease"
-	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		instexaml=yes
-		wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.1.tar.gz &> openmpi_install.log
-		tar -xvf openmpi-2.1.1.tar.gz 1>/dev/null
-		cd openmpi-2.1.1/
-		./configure &> openmpi_install.log
-		make &> openmpi_install.log
-		make install &> openmpi_install.log
-		ldconfig &> openmpi_install.log
-		cd ..
+else
+	if ! [ -x "$(command -v mpicc)" ]; then
+		echo -e "Installing 'OpenMPI'"
+		if [[ $distribution =~ "Debian" ]]; then
+			instexaml=yes
+			$installer -y install mpi-default-dev &> openmpi_install.log
+		elif [[ $distribution =~ "OpenSUSE" ]]; then
+			instexaml=yes
+			wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.1.tar.gz &> openmpi_install.log
+			tar -xvf openmpi-2.1.1.tar.gz 1>/dev/null
+			cd openmpi-2.1.1/
+			./configure &>> openmpi_install.log
+			make &>> openmpi_install.log
+			make install &>> openmpi_install.log
+			ldconfig &>> openmpi_install.log
+			cd ..
+		fi
 	fi
 fi
 
@@ -567,8 +639,10 @@ if [[ $instexaml =~ "y" ]]; then
 		cd ../examl
 		make -f Makefile.SSE3.gcc &> ../../examl_install.log
 		cp examl /usr/local/bin
-		make -f Makefile.AVX.gcc &> ../../examl_install.log
-		cp examl-AVX /usr/local/bin
+		if [[ `grep avx /proc/cpuinfo` ]]; then
+			make -f Makefile.AVX.gcc &> ../../examl_install.log
+			cp examl-AVX /usr/local/bin
+		fi
 		cd ../..
 	fi
 fi
@@ -580,13 +654,18 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt
-for i in parallel bowtie2 ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
+sed -i.bak 's/transeq/EMBOSS/' not_installed.txt
+sed -i.bak2 's/nw_reroot//' not_installed.txt
+sed -i.bak4 's/nw_topology/NewickUtilities/' not_installed.txt
+sed -i.bak3 's/parallel/GNUparallel/' not_installed.txt
+rm -f *.bak*
 echo -e "\n**************************************************************"
 echo -e "List of software which is not installed:"
-cat not_installed.txt
+cat not_installed.txt 2>/dev/null
 echo -e "Check particular log file(s) to look for possible solution..."
 echo -e "**************************************************************"
 
