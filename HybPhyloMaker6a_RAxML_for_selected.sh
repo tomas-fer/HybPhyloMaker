@@ -236,7 +236,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '      sed -i "s/$a/$b/" toadd.txt' >> ${group}.sh
 		echo '      cat $file.fas.reduced toadd.txt > tmp && mv tmp $file.fas.reduced' >> ${group}.sh
 		echo '    done' >> ${group}.sh
-		echo '    rm recombine.txt toadd.txt' >> ${group}.sh
+		echo '    rm recombine.txt toadd.txt 2>/dev/null' >> ${group}.sh
 		echo '    #Correct number of samples in the final phylip file' >> ${group}.sh
 		echo '    nrreduced=$(head -1 $file.fas.reduced | cut -d " " -f1)' >> ${group}.sh
 		echo '    num=`expr $nrlines + $nrreduced`' >> ${group}.sh
