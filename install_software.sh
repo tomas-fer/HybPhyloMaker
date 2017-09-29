@@ -135,11 +135,21 @@ fi
 if ! [ -x "$(command -v java)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'java'"
-		debver=$(cat /etc/debian_version | cut -d"." -f1)
-		if [ "$debver" -eq "9" ]; then
-			$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
-		else
-			$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+		distrib=$(cat /etc/*release | grep ^ID= | cut -d'=' -f2)
+		if [[ $distrib =~ "debian" ]]; then
+			debver=$(cat /etc/debian_version | cut -d"." -f1)
+			if [ "$debver" -eq "9" ]; then
+				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+			else
+				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+			fi
+		elif [[ $distrib =~ "ubuntu" ]]; then
+			ubuver=$(lsb_release -r -s | cut -d"." -f1)
+			if [ "$ubuver" -eq "16" ]; then
+				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+			else
+				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+			fi
 		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'java'"
@@ -709,7 +719,9 @@ fi
 echo -e "\nInstalation script finished.\n"
 
 # Successfully tested on
+# - Ubuntu 16.04
 # - Ubuntu 14.04 LTS #Newer R version necessary, see below!!!
+# - Debian 9.0
 # - Debian 8.6 #Newer R version necessary, see below!!!
 # - OpenSUSE 42
 # - CentOS 7.2
