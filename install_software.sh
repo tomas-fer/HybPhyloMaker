@@ -589,6 +589,14 @@ if [[ $distribution =~ "Debian" ]]; then
 		pip install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
+	if ! [[ `pip show tables | grep Version` ]]; then
+		echo -e "Installing 'tables for python'"
+		pip install tables &> python-tables.log
+	fi
+	if ! [[ `pip show parsing | grep Version` ]]; then
+		echo -e "Installing 'parsing for python'"
+		pip install parsing &> python-parsing.log
+	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 	if ! [[ `pip2.7 show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
@@ -597,6 +605,14 @@ elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ 
 	if ! [[ `pip2.7 show scikit-learn | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python'"
 		pip2.7 install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
+	fi
+	if ! [[ `pip show tables | grep Version` ]]; then
+		echo -e "Installing 'tables for python'"
+		pip2.7 install tables &> python-tables.log
+	fi
+	if ! [[ `pip show parsing | grep Version` ]]; then
+		echo -e "Installing 'parsing for python'"
+		pip2.7 install parsing &> python-parsing.log
 	fi
 fi
 

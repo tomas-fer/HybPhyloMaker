@@ -83,14 +83,26 @@ else
 	type="exons"
 fi
 
-if [[ $update =~ "yes" ]]; then
-	echo -e "...and with updated gene selection\n"
+#Settings for (un)corrected reading frame
+if [[ $corrected =~ "yes" ]]; then
+	alnpath=$type/80concatenated_exon_alignments_corrected
+	alnpathselected=$type/81selected_corrected
+	treepath=$type/82trees_corrected
+	echo -en "...with corrected reading frame"
 else
-	echo -e "\n"
+	alnpath=$type/70concatenated_exon_alignments
+	alnpathselected=$type/71selected
+	treepath=$type/72trees
+fi
+
+if [[ $update =~ "yes" ]]; then
+	echo -e "...and with updated gene selection"
+else
+	echo -e ""
 fi
 
 if [[ ! $collapse -eq "0" ]]; then
-	echo -e "...and with trees with branches below ${collapse} BS collapsed\n"
+	echo -e "...and with trees with branches below ${collapse} BS collapsed"
 else
 	if [[ $requisite =~ "no" ]]; then
 		echo -e "\n"
@@ -99,18 +111,8 @@ fi
 
 if [[ $requisite =~ "yes" ]]; then
 	echo -e "...and only with trees with requisite taxa present\n"
-	
-fi
-
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	echo -e "\n"
 fi
 
 #Settings for collapsed and requisite selection

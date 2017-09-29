@@ -76,10 +76,10 @@ else
 fi
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
-	echo -e "Working with cpDNA\n"
+	echo -en "Working with cpDNA"
 	type="cp"
 else
-	echo -e "Working with exons\n"
+	echo -e "Working with exons"
 	type="exons"
 fi
 
@@ -88,10 +88,12 @@ if [[ $corrected =~ "yes" ]]; then
 	alnpath=$type/80concatenated_exon_alignments_corrected
 	alnpathselected=$type/81selected_corrected
 	treepath=$type/82trees_corrected
+	echo -e "...with corrected reading frame\n"
 else
 	alnpath=$type/70concatenated_exon_alignments
 	alnpathselected=$type/71selected
 	treepath=$type/72trees
+	echo -e "\n"
 fi
 
 #Check necessary file

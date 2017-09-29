@@ -22,7 +22,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker-translate is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker4b is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
@@ -39,7 +39,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add perl-5.10.1
 	module add python-3.4.1-gcc
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker-translate is running on Hydra..."
+	echo -e "\nHybPhyloMaker4b is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -53,7 +53,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load bioinformatics/
 else
-	echo -e "\nHybPhyloMaker-translate is running locally..."
+	echo -e "\nHybPhyloMaker4b is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -95,7 +95,7 @@ do
 	echo $mafftfile >> ${mafftfile}_stopcodonnr_overview.txt
 	for i in 1 2 3
 	do
-		transeq fasta::$mafftfile -frame $i stdout | fgrep -o \* | wc -l >> stopcodonnr_${mafftfile}.txt
+		transeq fasta::$mafftfile -frame $i stdout 2>/dev/null | fgrep -o \* | wc -l >> stopcodonnr_${mafftfile}.txt
 	done
 	cat stopcodonnr_${mafftfile}.txt >> ${mafftfile}_stopcodonnr_overview.txt
 	cp ${mafftfile}_stopcodonnr_overview.txt $path/$type/62mafft_translated
@@ -130,7 +130,7 @@ do
 	cp ${mafftfile}.corrframe $path/$type/61mafft_corrected
 	
 	#Translate corrected exon
-	transeq fasta::$mafftfile.corrframe -frame 1 -outseq ${mafftfile}.translated
+	transeq fasta::$mafftfile.corrframe -frame 1 -outseq ${mafftfile}.translated 2>/dev/null
 	#remove line breaks from translated FASTA file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' ${mafftfile}.translated > tmp && mv tmp ${mafftfile}.translated
 	#Add '???' at the end of each protein sequence (add '???' after each line not beginning with '>' - sed command)
@@ -269,7 +269,7 @@ cat fileForLoop.txt | while read -r a b; do
 	#Copy translated concatenated alignments to home
 	cp selectedtranslated/$b.* $path/$type/90concatenated_exon_alignments_translated
 done
-echo "done\n"
+echo -e "done\n"
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
