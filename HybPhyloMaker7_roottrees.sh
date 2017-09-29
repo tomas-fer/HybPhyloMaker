@@ -43,7 +43,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
-	module add newick-utils-1.6
+	module add newick-utils-13042016
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker7 is running on Hydra..."
 	#settings for Hydra
@@ -219,7 +219,7 @@ if [ -z "$OUTGROUP" ]; then
 	echo -e "\nTrees will not be rooted, no outgroup was specified..."
 else
 	echo -e "\nRerooting trees..."
-	nw_reroot trees.newick $OUTGROUP > trees_rooted.newick 2>root_log.txt
+	nw_reroot -s trees.newick $OUTGROUP > trees_rooted.newick 2>root_log.txt
 	nrrooted=$(cat root_log.txt | wc -l)
 	if [ $nrrooted -eq 0 ]; then
 		echo -e "All trees were rooted"
