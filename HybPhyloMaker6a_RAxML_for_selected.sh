@@ -332,6 +332,7 @@ else
 		#2.Test if reduced files were produced
 		if [ -f $file.fas.reduced ]; then
 			echo "Reduced alignment found...using it" >> raxml.log
+			echo "Reduced alignment found...using it"
 			#Put identical sequences back to the alignment (removed by RAxML when producing *.reduced dataset)
 			#i.e., final alignemnt will have undetermined position removed but all samples present)
 			grep "exactly identical" RAxML_info.${file}.check | grep "WARNING" | awk -F "Sequences |and |are " '{print $2 $3}' > recombine.txt
@@ -342,7 +343,7 @@ else
 				sed -i "s/$a/$b/" toadd.txt
 				cat $file.fas.reduced toadd.txt > tmp && mv tmp $file.fas.reduced
 			done
-			rm recombine.txt toadd.txt
+			rm recombine.txt toadd.txt 2>/dev/null
 			#Correct number of samples in the final phylip file
 			nrreduced=$(head -1 $file.fas.reduced | cut -d " " -f1)
 			num=`expr $nrlines + $nrreduced`
@@ -358,6 +359,7 @@ else
 			fi
 		else
 			echo "Reduced alignment not found...using original alignment" >> raxml.log
+			echo "Reduced alignment not found...using original alignment"
 		fi
 		#3.Run RAxML
 		if [[ $genetreepart == "yes" ]]; then
