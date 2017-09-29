@@ -653,20 +653,25 @@ cd ..
 #Check if everything is installed correctly
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
-rm not_installed.txt
+rm not_installed.txt 2>/dev/null
 for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
-sed -i.bak 's/transeq/EMBOSS/' not_installed.txt
-sed -i.bak2 's/nw_reroot//' not_installed.txt
-sed -i.bak4 's/nw_topology/NewickUtilities/' not_installed.txt
-sed -i.bak3 's/parallel/GNUparallel/' not_installed.txt
-rm -f *.bak*
+sed -i.bak 's/transeq/EMBOSS/' not_installed.txt 2>/dev/null
+sed -i.bak2 's/nw_reroot//' not_installed.txt 2>/dev/null
+sed -i.bak4 's/nw_topology/NewickUtilities/' not_installed.txt 2>/dev/null
+sed -i.bak3 's/parallel/GNUparallel/' not_installed.txt 2>/dev/null
+sed -i.bak4 '/^$/d' not_installed.txt 2>/dev/null
+rm -f *.bak* 2>/dev/null
 echo -e "\n**************************************************************"
 echo -e "List of software which is not installed:"
-cat not_installed.txt 2>/dev/null
-echo -e "Check particular log file(s) to look for possible solution..."
+if [ ! -f not_installed.txt ]; then
+	echo -e "ALL NECESSARY SOFTWARE INSTALLED"
+else
+	cat not_installed.txt 2>/dev/null
+	echo -e "Check particular log file(s) to look for possible solution..."
+fi
 echo -e "**************************************************************"
 
 #Check R packages
