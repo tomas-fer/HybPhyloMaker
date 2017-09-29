@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add fasttree-2.1.8
 	module add python-3.4.1-intel
-	module add newick-utils-1.6
+	module add newick-utils-13042016
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8e is running on Hydra..."
 	#settings for Hydra
@@ -206,7 +206,7 @@ sed -i.bak 's/_cpDNA//g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.t
 
 #(Re)root a final concatenated species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
-	nw_reroot concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre $OUTGROUP > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
+	nw_reroot -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre $OUTGROUP > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre
 fi
 
 #Modify labels in concatenated trees
