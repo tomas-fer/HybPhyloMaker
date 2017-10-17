@@ -19,7 +19,8 @@ Uses many additional software that must be installed and put in the PATH prior t
 Also utilizes many scripts developed by others (located in HybSeqSource folder). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
 
 Read manual located in docs folder before running HybPhyloMaker.  
-  
+
+Fér T., Schmickl R. (accepted): HybPhyloMaker: target enrichment data analysis from raw reads to species trees. *Evolutionary Bioinformatics*.  
   
   
 # HybPhyloMaker workflow
