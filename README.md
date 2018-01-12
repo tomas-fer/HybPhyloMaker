@@ -20,7 +20,7 @@ Also utilizes many scripts developed by others (located in HybSeqSource folder).
 
 Read manual located in docs folder before running HybPhyloMaker.  
 
-Fér T., Schmickl R. (accepted): HybPhyloMaker: target enrichment data analysis from raw reads to species trees. *Evolutionary Bioinformatics*.  
+Fér T., Schmickl R. (2018): HybPhyloMaker: target enrichment data analysis from raw reads to species trees. *Evolutionary Bioinformatics* 14: 1-9. doi: 10.1177/1176934317742613  
   
   
 # HybPhyloMaker workflow
