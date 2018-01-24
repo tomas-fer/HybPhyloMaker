@@ -2,7 +2,7 @@
    
    Fér T. & Schmickl R. (2018): [HybPhyloMaker: target enrichment data analysis from raw reads to species trees.](http://journals.sagepub.com/doi/10.1177/1176934317742613) *Evolutionary Bioinformatics* 14: 1-9. doi: 10.1177/1176934317742613  
    
-_Set of bash scripts for analysis of HybSeq data (from raw reads to species trees)._ Consists of several steps:   
+> **Set of bash scripts for analysis of HybSeq data (from raw reads to species trees).** Consists of several steps:   
   
 
 0:  Prepare FASTQ files to folder (optionally download files from Illumina BaseSpace storage)  
