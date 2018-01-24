@@ -1,6 +1,8 @@
 # HybPhyloMaker
    
-Set of bash scripts for analysis of HybSeq data (from raw reads to species trees). Consists of several steps:   
+   Fér T. & Schmickl R. (2018): [HybPhyloMaker: target enrichment data analysis from raw reads to species trees.](http://journals.sagepub.com/doi/10.1177/1176934317742613) *Evolutionary Bioinformatics* 14: 1-9. doi: 10.1177/1176934317742613  
+   
+_Set of bash scripts for analysis of HybSeq data (from raw reads to species trees)._ Consists of several steps:   
   
 
 0:  Prepare FASTQ files to folder (optionally download files from Illumina BaseSpace storage)  
@@ -20,8 +22,5 @@ Also utilizes many scripts developed by others (located in HybSeqSource folder).
 
 Read manual located in docs folder before running HybPhyloMaker.  
 
-Fér T., Schmickl R. (2018): HybPhyloMaker: target enrichment data analysis from raw reads to species trees. *Evolutionary Bioinformatics* 14: 1-9. doi: 10.1177/1176934317742613  
-  
-  
 # HybPhyloMaker workflow
 ![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_workflow.png)
