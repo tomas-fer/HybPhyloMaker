@@ -3,7 +3,7 @@
 #PBS -l walltime=4:0:0
 #PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
-#PBS -N HybPhyloMaker10_requisite_collapse
+#PBS -N HybPhyloMaker_reports
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
@@ -12,8 +12,8 @@
 #$ -l mres=8G,h_data=8G,h_vmem=8G,himem
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker10_requisite_collapse
-#$ -o HybPhyloMaker10_requisite_collapse.log
+#$ -N HybPhyloMaker_reports
+#$ -o HybPhyloMaker_reports.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
@@ -46,7 +46,9 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
-	
+	module add R-3.3.1-intel
+	#Set package library for R
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker-summary is running on Hydra..."
 	#settings for Hydra
@@ -58,7 +60,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdirsummary
 	cd workdirsummary
 	#Add necessary modules
-	
+	module load tools/R/3.2.1
 else
 	echo -e "\nHybPhyloMaker-summary is running locally..."
 	#settings for local run
@@ -106,6 +108,9 @@ else
 	echo -e "\n"
 fi
 
+#Copy R script
+cp $source/HybPhyloMaker_reports.R .
+
 #Copy all tables
 echo "Collecting tables..."
 cp ${path}/20filtered/reads_summary.txt .
@@ -117,8 +122,8 @@ cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/gene_properti
 
 #Change to csv
 echo "Modifying tables..."
-sed "s/\t/,/g" reads_summary.txt > 1-Reads_summary.csv
-sed "s/\t/,/g" mapping_summary.txt > 2-Mapping_summary.csv
+sed "s/\t/,/g" reads_summary.txt > 1-Reads_summary.csv #Change TABs to commas
+sed "s/\t/,/g" mapping_summary.txt > 2-Mapping_summary.csv #Change TABs to commas
 
 #Transpose MissingDataOverview
 awk '
@@ -156,30 +161,92 @@ END {
 }' MissingDataOverview_${MISSINGPERCENT}.txt > tmp && mv tmp MissingDataOverview_${MISSINGPERCENT}.txt
 
 #Change to csv and modify
-sed "s/ /,/g" MissingDataOverview.txt > 3-Missing_data.csv
-sed -i 's/Assembly_//g' 3-Missing_data.csv
-sed -i 's/_/ /g' 3-Missing_data.csv
-sed "s/ /,/g" MissingDataOverview_${MISSINGPERCENT}.txt > 4-Missing_data_${MISSINGPERCENT}.csv
-sed -i 's/Assembly_//g' 4-Missing_data_${MISSINGPERCENT}.csv
-sed -i 's/_/ /g' 4-Missing_data_${MISSINGPERCENT}.csv
+sed "s/ /,/g" MissingDataOverview.txt > 3-Missing_data.csv #Change spaces to commas
+sed -i.bak '1s/-/x/g' 3-Missing_data.csv #Change '-' to 'x' (only on the first line, i.e., in gene names)
+sed -i.bak2 's/Assembly_//g' 3-Missing_data.csv
+sed -i.bak3 's/_/ /g' 3-Missing_data.csv
 
-sed "s/\t/,/g" summaryALL.txt > 5-All_genes.csv
-sed -i 's/Assembly_//g' 5-All_genes.csv
-sed -i 's/\.fasta//g' 5-All_genes.csv
-sed -i 's/_/ /g' 5-All_genes.csv
-sed "s/\t/,/g" gene_properties.txt > 6-Selected_genes.csv
-sed -i 's/\.fas//g' 6-Selected_genes.csv
-sed -i 's/_/ /g' 6-Selected_genes.csv
+sed "s/ /,/g" MissingDataOverview_${MISSINGPERCENT}.txt > 4-Missing_data_${MISSINGPERCENT}.csv #Change spaces to commas
+sed -i.bak '1s/-/x/g' 4-Missing_data_${MISSINGPERCENT}.csv #Change '-' to 'x' (only on the first line, i.e., in gene names)
+sed -i.bak2 's/Assembly_//g' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak3 's/_/ /g' 4-Missing_data_${MISSINGPERCENT}.csv
+
+sed "s/\t/,/g" summaryALL.txt > 5-All_genes.csv #Change TABs to commas
+sed -i.bak 's/Assembly_//g' 5-All_genes.csv
+sed -i.bak2 's/\.fasta//g' 5-All_genes.csv
+sed -i.bak3 's/_/ /g' 5-All_genes.csv
+sed -i.bak4 's/inf,/NA,/g' 5-All_genes.csv #Change 'inf' (introduced by MstatX) to 'NA'
+
+sed "s/\t/,/g" gene_properties.txt > 6-Selected_genes.csv #Change TABs to commas
+sed -i.bak 's/\.fas//g' 6-Selected_genes.csv
+sed -i.bak2 's/_/ /g' 6-Selected_genes.csv
+
+#Modify columns
+#3-Missing_data.csv
+sed -i.bak4 's/average missing data/,,averagemissingdata/' 3-Missing_data.csv
+sed -i.bak5 's/nr assemblies with completely missing data/,,nrassemblieswithcompletelymissingdata/' 3-Missing_data.csv
+sed -i.bak6 's/ /,/g' 3-Missing_data.csv #Change spaces to commas
+sed -i.bak7 's/-/,/g' 3-Missing_data.csv #Change '-' (between genus-species) to commas (in order to make separate column)
+head=$(head -1 3-Missing_data.csv) #First line to $head
+echo "Sample no.,Genus,$head" > head.txt #Modify $head (add two columns)
+sed -i.bak 's/species/Species/' head.txt
+sed -i.bak8 '1d' 3-Missing_data.csv #Delete first line
+cat 3-Missing_data.csv | cut -d"," -f1,2 > b.txt #First and second columns (genus, species)
+cat 3-Missing_data.csv | cut -d"," -f3 > a.txt #Third column (code)
+cat 3-Missing_data.csv | cut -d"," -f4- > c.txt #Fourth and remaining columns (data)
+paste a.txt b.txt c.txt > comb.txt #Combine columns back
+cat head.txt comb.txt > 3-Missing_data.csv #Combine with head
+sed -i.bak9 "s/\t/,/g" 3-Missing_data.csv #Change TABs to commas
+sed -i.bak10 's/averagemissingdata/Average missing data/' 3-Missing_data.csv
+sed -i.bak11 's/nrassemblieswithcompletelymissingdata/Nr. genes with completely missing data/' 3-Missing_data.csv
+rm a.txt b.txt c.txt head.txt comb.txt *.bak*
+
+#4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak4 's/averageMissing/,,averageMissing/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak5 's/percPresentSpecies/percPresentSpecies,,/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak6 's/average missing/averageMissing/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak7 's/total genes/totalgenes/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak8 's/ /,/g' 4-Missing_data_${MISSINGPERCENT}.csv #Change spaces to commas
+tail -1 4-Missing_data_${MISSINGPERCENT}.csv > tail.txt #Last line to tail.txt
+sed -i.bak9 '$ d' 4-Missing_data_${MISSINGPERCENT}.csv #Delete last line
+sed -i.bak10 's/-/,/g' 4-Missing_data_${MISSINGPERCENT}.csv #Change '-' (between genus-species) to commas (in order to make separate column)
+head=$(head -1 4-Missing_data_${MISSINGPERCENT}.csv) #First line to $head
+echo "Sample no.,Genus,$head" > head.txt #Modify $head (add two columns)
+sed -i.bak 's/species/Species/' head.txt
+sed -i.bak11 '1d' 4-Missing_data_${MISSINGPERCENT}.csv #Delete first line
+cat 4-Missing_data_${MISSINGPERCENT}.csv | cut -d"," -f1,2 > b.txt #First and second columns (genus, species)
+cat 4-Missing_data_${MISSINGPERCENT}.csv | cut -d"," -f3 > a.txt #Third column (code)
+cat 4-Missing_data_${MISSINGPERCENT}.csv | cut -d"," -f4- > c.txt #Fourth and remaining columns (data)
+paste a.txt b.txt c.txt > comb.txt #Combine columns back
+cat head.txt comb.txt tail.txt> 4-Missing_data_${MISSINGPERCENT}.csv #Combine with head and tail
+sed -i.bak12 "s/\t/,/g" 4-Missing_data_${MISSINGPERCENT}.csv #Change TABs to commas
+sed -i.bak13 's/averageMissing/Average missing data/g' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak14 's/percPresentSpecies/Species presence (%)/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak15 's/totalgenes/Total nr. of genes/' 4-Missing_data_${MISSINGPERCENT}.csv
+sed -i.bak16 's/N\/A/NA/g' 4-Missing_data_${MISSINGPERCENT}.csv #Change 'N/A' to 'NA' (to be recognized by R as missing data)
+rm a.txt b.txt c.txt head.txt comb.txt tail.txt *.bak*
+
+#Get number of samples, genes and selected genes
+nrsamples=$(cat $path/10rawreads/SamplesFileNames.txt | wc -l)
+if [[ $cp =~ "yes" ]]; then
+	nrgenes=$(ls ${path}/cp/60mafft/*.fasta | wc -l)
+else
+	nrgenes=$(ls ${path}/${alnpath}/*.fasta | wc -l)
+fi
+nrselected=$(cat ${path}/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | wc -l)
 
 #Make XLS file
 echo "Writing XLSX..."
-`python <<END
-from pyexcel.cookbook import merge_all_to_a_book;
-import glob;
-merge_all_to_a_book(glob.glob("*.csv"), "Summary.xlsx");
-END`
+# This requires pyexcel-cli and pyexcel-xlsx (to be installed with pip install)
+# This produces unformated XLSX
+# `python <<END
+# from pyexcel.cookbook import merge_all_to_a_book;
+# import glob;
+# merge_all_to_a_book(glob.glob("*.csv"), "summary.xlsx");
+# END`
+R --slave -f HybPhyloMaker_reports.R $nrsamples $nrgenes $nrselected $MISSINGPERCENT
 
-mv Summary.xlsx ${data}_summary.xlsx
+mv summary.xlsx ${data}_summary.xlsx
 
 #Copy summary to home
 cp ${data}_summary.xlsx ${path}
