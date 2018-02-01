@@ -33,6 +33,8 @@
 # - alignment/tree characteristics for selected genes (gene_properties.txt)
 #Run this after building gene trees with 6 (and calculating properties with 6a2 in case of RAxML)
 
+#Requires 'openxlsx' R package and HybPhyloMaker_reports.R (in 'HybSeqSource' folder)
+
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	echo -e "\nHybPhyloMaker-summary is running on MetaCentrum..."
