@@ -1,7 +1,12 @@
-#MAKE PNG PICTURE WITH HISTOGRAM AND BOXPLOT FOR ALIGNMENT SUMMARIES
-#based on http://rgraphgallery.blogspot.com/2013/04/rg-plotting-boxplot-and-histogram.html
-#modified for HybPhyloMaker by T. Fer, 2016
-#-------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: PNG picture with histogram and boxplot for alignment summaries
+# https://github.com/tomas-fer/HybPhyloMaker
+# Based on http://rgraphgallery.blogspot.com/2013/04/rg-plotting-boxplot-and-histogram.html
+# Modified for HybPhyloMaker
+# v.1.6.0
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
 
 #Read table from 'summaryALL.txt' 
 x <- read.table("summaryALL.txt", header=TRUE, stringsAsFactors=F)

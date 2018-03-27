@@ -1,6 +1,12 @@
-#HybPhyloMaker summary tables as formatted XLSX
-#Called from HybPhyloMaker_reports.sh
-#Tomas Fer, 2018
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: summary tables as formatted XLSX
+# https://github.com/tomas-fer/HybPhyloMaker
+# v.1.6.0
+# Called from HybPhyloMaker_reports.sh
+# Requires 'openxlsx' under R >= 3.3.0
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
 
 #Load library
 library(openxlsx)

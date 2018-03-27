@@ -1,7 +1,12 @@
-#CALCULATE TREE AND ALIGNMENT PROPERTIES
-#Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
-#Modified for HybPhyloMaker
-#--------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: calculating tree and alignment properties
+# https://github.com/tomas-fer/HybPhyloMaker
+# v.1.6.0
+# Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
+# Modified for HybPhyloMaker
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
 
 # disable scientific notation
 options(scipen=999)

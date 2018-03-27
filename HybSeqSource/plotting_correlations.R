@@ -1,7 +1,12 @@
-#VISUALIZE CORRELATIONS AMONG TREE AND ALIGNMENT PROPERTIES
-#Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
-#Modified for HybPhyloMaker
-#--------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: visualize correlations among tree and alignment properties
+# https://github.com/tomas-fer/HybPhyloMaker
+# Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
+# Modified for HybPhyloMaker
+# v.1.6.0
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
 
 # disable scientific notation
 options(scipen=999)

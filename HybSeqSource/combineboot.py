@@ -1,9 +1,15 @@
 #!/usr/bin/python
-#Combine bootstrap support values from two trees into one using p4 (Foster 2004)
-#Modified from http://p4.nhm.ac.uk/tutorial/combine_supports.html
-#modified for HybPhyloMaker by T. Fer, 2016
-#-------------------------------------------------------------
-#Two trees and alignment named 'combined.phylip' must be in the same directory
+#-----------------------------------------------------------------------------------------------
+# HybPhyloMaker: combine bootstrap support values from two trees into one using p4 (Foster 2004)
+# https://github.com/tomas-fer/HybPhyloMaker
+# v.1.6.0
+# Taken from http://p4.nhm.ac.uk/tutorial/combine_supports.html
+# Modified for HybPhyloMaker
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#-----------------------------------------------------------------------------------------------
+
+#Two trees and alignment named 'concatenated.phylip' must be in the same directory
 #Output tree 'combinedSupportsTree.tre' is in Newick format
 #Usage combineboot.py masterTree secondaryTree
 
@@ -56,4 +62,3 @@ for nM in tMaster.iterInternalsNoRoot():
         nM.name = '%s/-' % nM.name
     #print nM.name
 tMaster.writeNewick('combinedSupportsTree.tre')
-

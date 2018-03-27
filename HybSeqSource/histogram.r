@@ -1,3 +1,12 @@
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: histogram from values
+# https://github.com/tomas-fer/HybPhyloMaker
+# v.1.6.0
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
+
+
 #Read arguments from command line
 args <- commandArgs()
 #Fifth argument is species name

@@ -1,7 +1,11 @@
-#MAKE PNG PICTURE WITH HISTOGRAM AND BOXPLOT FOR TREE PROPERTIES
-#based on http://rgraphgallery.blogspot.com/2013/04/rg-plotting-boxplot-and-histogram.html
-#modified for HybPhyloMaker by T. Fer, 2016
-#-------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: make PNG picture with histogram and boxplot for tree properties
+# Based on http://rgraphgallery.blogspot.com/2013/04/rg-plotting-boxplot-and-histogram.html
+# Modified for HybPhyloMaker
+# v.1.6.0
+# Tomas Fer, 2018
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
 
 #Read table from 'tree_stats_table.csv' 
 x <- read.csv("tree_stats_table.csv", header=TRUE, stringsAsFactors=F)
