@@ -380,7 +380,9 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '      fi'  >> ${group}.sh
 		echo '    fi' >> ${group}.sh
 		echo '    cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
-		echo '    cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    if [[ $bootstop == "yes" ]]; then' >> ${group}.sh
+		echo '      cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    fi' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo 'done' >> ${group}.sh
 		echo 'cp raxml'"$group"'.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
@@ -542,8 +544,10 @@ else
 	done
 	#Copy raxml.log to home
 	cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-	#Copy bootstop_summary.txt to home
-	cp bootstop_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+	if [[ $bootstop == "yes" ]]; then
+		#Copy bootstop_summary.txt to home
+		cp bootstop_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+	fi
 fi
 
 #Clean scratch/work directory
