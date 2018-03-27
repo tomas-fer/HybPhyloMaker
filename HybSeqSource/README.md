@@ -6,7 +6,7 @@ Use of these scripts should be properly cited, e.g. as follows:
 _part of HybPhyloMaker_  
 **assembled_exons_to_fastas.py**  
 https://github.com/listonlab/Hyb-Seq_protocol/blob/master/assembled_exons_to_fastas/assembled_exons_to_fastas.py  
-**astral.4.10.10.jar**  
+**astral.5.6.1.jar**  
 https://github.com/smirarab/ASTRAL  
 **catfasta2phyml.pl**  
 https://github.com/nylander/catfasta2phyml  
@@ -19,6 +19,8 @@ http://meta.microbesonline.org/fasttree/treecmp.html
 **fastq2fasta.pl**  
 http://brianknaus.com/software/srtoolbox/fastq2fasta.pl  
 **histogram.r**  
+_part of HybPhyloMaker_ 
+**HybPhyloMaker_reports.R**  
 _part of HybPhyloMaker_  
 **LBscores.R**  
 _part of HybPhyloMaker_ and https://github.com/marekborowiec/metazoan_phylogenomics/blob/master/gene_stats.R  
