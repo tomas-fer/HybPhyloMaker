@@ -20,7 +20,7 @@
 Uses many additional software that must be installed and put in the PATH prior to run scripts (see [Table](docs/HybPhyloMaker_software.pdf) located in docs folder and consider to run [install_software.sh](install_software.sh)).  
 Also utilizes many scripts developed by others (located in [HybSeqSource folder](HybSeqSource)). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
 
-Read [manual](docs/HybPhyloMaker_manual1.5.pdf) located in docs folder before running HybPhyloMaker.  
+Read [manual](docs/HybPhyloMaker_manual1.6.pdf) located in docs folder before running HybPhyloMaker.  
 
 # HybPhyloMaker workflow
 ![HybPhyloMaker workflow](https://github.com/tomas-fer/HybPhyloMaker/blob/master/docs/HybPhyloMaker_workflow.png)
