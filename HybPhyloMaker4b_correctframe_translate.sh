@@ -1,15 +1,28 @@
 #!/bin/bash
+#----------------MetaCentrum----------------
 #PBS -l walltime=8:0:0
 #PBS -l select=1:ncpus=4:mem=4gb:scratch_local=4gb
 #PBS -j oe
 #PBS -N HybPhyloMaker4b_translate
 #PBS -m abe
 
+#-------------------HYDRA-------------------
+#$ -S /bin/bash
+#$ -pe mthread 8
+#$ -q sThC.q
+#$ -l mres=1G
+#$ -cwd
+#$ -j y
+#$ -N HybPhyloMaker4_process_pslx
+#$ -o HybPhyloMaker4_process_pslx.log
+
+
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *       Script 04b - Put exons to correct reading frame and translate          *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 

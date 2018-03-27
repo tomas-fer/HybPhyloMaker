@@ -8,9 +8,10 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.5.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -30,7 +31,7 @@ cp $PBS_O_WORKDIR/settings.cfg .
 . settings.cfg
 . /packages/run/modules-2.0/init/bash
 #Add necessary modules
-module add R-3.3.1-intel
+module add R-3.4.3-gcc
 
 #Get ape 3.5 and other R packages
 echo -e "\nDownloading R packages..."

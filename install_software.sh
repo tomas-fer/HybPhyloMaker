@@ -5,10 +5,10 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2017                                                                                                        #
+# Tomas Fer, 2017, 2018                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.5.0                                                                                                                #
+# v.1.6.0                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -193,7 +193,7 @@ fi
 #R
 #Comment for Ubuntu/Debian: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
 #Look at the end of this script for an advice how to do that...
-#Newer version (i.e., at least v3.2) should be installed before running this script!
+#Newer version (i.e., at least v3.3) should be installed before running this script!
 if ! [ -x "$(command -v R)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'R'"
@@ -211,7 +211,7 @@ if ! [ -x "$(command -v R)" ]; then
 fi
 
 #R packages
-for Rpackage in ape seqinr data.table; do
+for Rpackage in ape seqinr data.table openxlsx; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
 	if grep -Fxq "[1] FALSE" testpackage; then
 		echo -e "Installing '$Rpackage for R'"
@@ -673,6 +673,19 @@ if [[ $instexaml =~ "y" ]]; then
 	fi
 fi
 
+#BUCKy
+if ! [ -x "$(command -v bucky)" ]; then
+	echo -e "Installing 'BUCKy'"
+	wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
+	tar -xzvf bucky-1.4.4.tgz 1>/dev/null
+	rm bucky-1.4.4.tgz
+	cd bucky-1.4.4/src/
+	make &>> ../../bucky_install.log
+	cp mbsum /usr/local/bin
+	cp bucky /usr/local/bin
+	cd ../..
+fi
+
 #Leave 'install' directory
 cd ..
 
@@ -680,7 +693,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4 bucky; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done

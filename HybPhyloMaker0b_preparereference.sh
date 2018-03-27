@@ -17,16 +17,20 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
-# Make pseudo-reference from multifasta file (e.g. Hyb-Seq probes),
-# i.e. make single fasta (one line) with all original sequences separated by number of Ns specified in $nrns
-# $nrns Ns are also added to the beginning and the end of the reference
-# Pseudo-reference (*_with${nrns}Ns_beginend.fas) is saved to HybSeqSource directory
+# Make two files:
+# (1) pseudo-reference from multifasta file (e.g. Hyb-Seq probes),
+#     i.e. make single fasta (one line) with all original sequences separated by number of Ns specified in $nrns
+#     $nrns Ns are also added to the beginning and the end of the reference
+#     Pseudo-reference (*_with${nrns}Ns_beginend.fas) is saved to HybSeqSource directory
+# (2) BED file with starting and ending positions of all exons in pseudoreference file
+#     This file is later used for per exon coverage calculation
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	echo -e "\nHybPhyloMaker0b is running on MetaCentrum...\n"
@@ -61,9 +65,6 @@ else
 	cd workdir00_ref
 fi
 
-# Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
-#name=`ls $source/$probes | cut -d'.' -f 1`
-
 #Check necessary file
 echo -ne "Testing if input data are available..."
 if [[ $cp =~ "yes" ]]; then
@@ -78,6 +79,10 @@ if [[ $cp =~ "yes" ]]; then
 		rm $cpDNACDS
 		if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
 			echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir00_ref/ 2>/dev/null
+			exit
+		elif [ -f "$source/${name}_with${nrns}Ns_beginend_exon_positions.bed" ]; then
+			echo -e "File '${name}_with${nrns}Ns_beginend_exon_positions.bed' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir00_ref/ 2>/dev/null
 			exit
 		else
@@ -96,6 +101,10 @@ else
 		rm $probes
 		if [ -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
 			echo -e "File '${name}_with${nrns}Ns_beginend.fas' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
+			rm -d ../workdir00_ref/ 2>/dev/null
+			exit
+		elif [ -f "$source/${name}_with${nrns}Ns_beginend_exon_positions.bed" ]; then
+			echo -e "File '${name}_with${nrns}Ns_beginend_exon_positions.bed' already exists in '$source'. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir00_ref/ 2>/dev/null
 			exit
 		else
@@ -118,6 +127,7 @@ else
 	cp $source/$probes .
 fi
 
+# 1. Prepare pseudoreference
 # Cut filename before first '.', i.e. remove suffix - does not work if there are other dots in reference file name
 if [[ $cp =~ "yes" ]]; then
 	name=`ls $cpDNACDS | cut -d'.' -f 1`
@@ -144,6 +154,32 @@ fi
 cp ${name}_with${nrns}Ns_beginend.fas $source
 
 echo -e "Pseudoreference named '${name}_with${nrns}Ns_beginend.fas' was prepared and saved to '$source'..."
+
+# 2. Prepare BED file
+# Remove fasta header (if any), i.e., delete all line beginning with '>'
+header=$(grep ">" ${name}_with${nrns}Ns_beginend.fas | sed 's/>//')
+sed '/^>/ d' $probes > reflines.txt
+# cat $probes | sed 's/N\{400\}/Q/g' | tr 'Q' '\n' > reflines.txt
+# Delete empty lines
+sed -i.bak '/^$/d' reflines.txt
+# Count length of each line
+awk '{print length($0)}' reflines.txt > lengths.txt
+# Set $linesum to $nrns + 1 (i.e., starting position of the first exon)
+linesum=`expr $nrns + 1`
+cat lengths.txt | while read line
+do
+	# Print BED file (name and two numbers: 1. start ($linesum) 2. end of the exon ($linesum + length of the exon - 1)
+	echo $header $linesum `expr $linesum + $line - 1` >> ${header}_exon_positions.bed
+	# Increaese $linesum by length of the region and $nrns (so now it is start position of the next exon)
+	linesum=`expr $linesum + $line + $nrns`
+done
+# Replace spaces by tabs
+cat ${header}_exon_positions.bed | tr ' ' '\t' > tmp && mv tmp ${header}_exon_positions.bed
+
+#Copy BED file to home
+cp ${header}_exon_positions.bed $source
+
+echo -e "\nBED file '${header}_exon_positions.bed' was prepared and saved to '$source'..."
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

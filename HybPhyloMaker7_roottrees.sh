@@ -16,19 +16,20 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 07 - Root gene trees                         *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 # Modify and root trees using Newick Utilities
 # (1) root trees with accession specified in variable OUTGROUP
 # (2) remove bootstrap values and branch length information from tree files
-# Take trees starting with RAxML_bipartitions* (i.e., best ML tree with BS values) from /concatenated_exon_alignments/selected${CUT}RAxML/
-# or trees Assembly*.tre from /concatenated_exon_alignments/selected${CUT}FastTree/
-# Run first HybPhyloMaker5_missingdataremoval.sh with the same $CUT value 
-# and HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same $CUT value
+# Take trees starting with RAxML_bipartitions* (i.e., best ML tree with BS values) from, e.g., /72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/
+# or trees Assembly*.tre from, e.g., /72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/
+# Run first HybPhyloMaker5_missingdataremoval.sh with the same combination of ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+# and HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same combination of ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 
 
 if [[ $PBS_O_HOST == *".cz" ]]; then

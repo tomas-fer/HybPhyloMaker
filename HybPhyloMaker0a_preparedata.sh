@@ -18,9 +18,10 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -57,7 +58,7 @@
 #                                                                                                                   #
 #####################################################################################################################
 
-if [[ $PBS_O_HOST == *".cz" ]]; then
+if [[ $PBS_O_HOSTx == *".cz" ]]; then
 	echo -e "\nHybPhyloMaker0a is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
@@ -138,6 +139,20 @@ mkdir -p $path/
 mkdir 10rawreads
 cd 10rawreads
 
+#Copy list for file renaming & make folder structure for samples
+if [[ $location == "1" ]]; then
+	cp /storage/$server/home/$LOGNAME/renamelist.txt .
+else
+	cp ../../renamelist.txt .
+fi
+
+#Add LF at the end of last line in renamelist.txt if missing
+sed -i.bak '$a\' renamelist.txt
+#Delete empty lines from renamelist.txt (if any)
+sed -i.bak2 '/^$/d' renamelist.txt
+#Remove *.bak
+rm renamelist.txt.bak renamelist.txt.bak2
+
 #Download files from BaseSpace
 if [[ $download =~ "yes" ]]; then
 	echo -e "Downloading FASTQ files from BaseSpace started...\n"
@@ -161,22 +176,10 @@ if [[ $download =~ "yes" ]]; then
 else
 	echo -e "Copying FASTQ files from home...\n"
 	#Copy all *fastq.gz files from 'homedir'
-	cp ../../*fastq.gz .
+	cat renamelist.txt | while read -r a b; do
+		cp ../../*${b}* .
+	done
 fi
-
-#Copy list for file renaming & make folder structure for samples
-if [[ $location == "1" ]]; then
-	cp /storage/$server/home/$LOGNAME/renamelist.txt .
-else
-	cp ../../renamelist.txt .
-fi
-
-#Add LF at the end of last line in renamelist.txt if missing
-sed -i.bak '$a\' renamelist.txt
-#Delete empty lines from renamelist.txt (if any)
-sed -i.bak2 '/^$/d' renamelist.txt
-#Remove *.bak
-rm renamelist.txt.bak renamelist.txt.bak2
 
 for i in $(cat renamelist.txt | cut -f1)
 do

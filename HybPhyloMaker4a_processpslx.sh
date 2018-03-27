@@ -3,7 +3,7 @@
 #PBS -l walltime=12:0:0
 #PBS -l select=1:ncpus=14:mem=1gb:scratch_local=8gb
 #PBS -j oe
-#PBS -N HybPhyloMaker4_process_pslx
+#PBS -N HybPhyloMaker4a_process_pslx
 #PBS -m abe
 
 #-------------------HYDRA-------------------
@@ -13,15 +13,16 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker4_process_pslx
-#$ -o HybPhyloMaker4_process_pslx.log
+#$ -N HybPhyloMaker4a_process_pslx
+#$ -o HybPhyloMaker4a_process_pslx.log
 
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
-# *                        Script 04 - Process pslx files                        *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
+# *                        Script 04a - Process pslx files                       *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************
@@ -30,7 +31,7 @@
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "\nHybPhyloMaker4 is running on MetaCentrum..."
+	echo -e "\nHybPhyloMaker4a is running on MetaCentrum..."
 	#settings for MetaCentrum
 	#Move to scratch
 	cd $SCRATCHDIR
@@ -52,7 +53,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#available processors
 	procavail=`expr $TORQUE_RESC_TOTAL_PROCS - 2`
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "\nHybPhyloMaker4 is running on Hydra..."
+	echo -e "\nHybPhyloMaker4a is running on Hydra..."
 	#settings for Hydra
 	#set variables from settings.cfg
 	. settings.cfg
@@ -62,13 +63,13 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	otherpslxpath=../$otherpslx
 	otherpslxcppath=../$otherpslxcp
 	#Make and enter work directory
-	mkdir -p workdir04
-	cd workdir04
+	mkdir -p workdir04a
+	cd workdir04a
 	#Add necessary modules
 	module load bioinformatics/mafft/7.221
 	module load tools/gnuparallel/20160422
 else
-	echo -e "\nHybPhyloMaker4 is running locally..."
+	echo -e "\nHybPhyloMaker4a is running locally..."
 	#settings for local run
 	#set variables from settings.cfg
 	. settings.cfg
@@ -78,8 +79,8 @@ else
 	otherpslxpath=../$otherpslx
 	otherpslxcppath=../$otherpslxcp
 	#Make and enter work directory
-	mkdir -p workdir04
-	cd workdir04
+	mkdir -p workdir04a
+	cd workdir04a
 fi
 
 #Setting for the case when working with cpDNA
@@ -378,7 +379,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	cd ..
-	rm -r workdir04
+	rm -r workdir04a
 fi
 
-echo -e "\nScript HybPhyloMaker4 finished...\n"
+echo -e "\nScript HybPhyloMaker4a finished...\n"

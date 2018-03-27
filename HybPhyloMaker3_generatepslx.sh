@@ -17,15 +17,16 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************
 
-# Input: Consensus sequences from Geneious: must be named consensus.fasta or consensus_cpDNA.fasta 
-# it is multiple fasta file with names,
+# Input: Consensus sequences from HybPhyloMaker2 or Geneious: must be named consensus.fasta or consensus_cpDNA.fasta 
+# it is multiple fasta file with names (in case of Geneious mapping):
 # e.g., Camptandra-latifolia_S4-all-no-dups_assembled_to_Curcuma_exons_reference_400Ns__consensus_sequence)
 # prepared in /storage/$server/home/$LOGNAME/data/30consensus/
 

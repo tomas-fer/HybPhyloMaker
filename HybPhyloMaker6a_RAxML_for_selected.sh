@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=12:0:0
+#PBS -l walltime=1:0:0
 #PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
 #PBS -N HybPhyloMaker6a_RAxML_for_selected_parallel
@@ -16,13 +16,14 @@
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
+# *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.5.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2017 *
+# *                                   v.1.6.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
-# Compute ML gene trees using RAxML (100 rapid bootstrap replicates) for selected genes
+# Compute ML gene trees using RAxML for selected genes
 # Selection is based on maximum missing data per sample allowed ($MISSINGPERCENT) and minimum species percentage presence per assembly ($SPECIESPRESENCE)
 # Edit those two values in settings.cfg
 # Run first HybPhylomaker5_missingdataremoval.sh with the same combination of $MISSINGPERCENT and $SPECIESPRESENCE values
@@ -185,6 +186,10 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'genetreepart='"$genetreepart" >> ${group}.sh
 		echo 'raxmlpthreads='"$raxmlpthreads" >> ${group}.sh
 		echo 'raxmlseq='"$raxmlseq" >> ${group}.sh
+		echo 'bsrep='"$bsrep" >> ${group}.sh
+		echo 'model='"$model" >> ${group}.sh
+		echo 'raxmlboot='"$raxmlboot" >> ${group}.sh
+		echo 'bootstop='"$bootstop" >> ${group}.sh
 		echo 'if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
 		echo '  alnpath=$type/80concatenated_exon_alignments_corrected' >> ${group}.sh
 		echo '  alnpathselected=$type/81selected_corrected' >> ${group}.sh
@@ -221,9 +226,9 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  #1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)' >> ${group}.sh
 		echo '  #  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file' >> ${group}.sh
 		echo '  if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
+		echo '    $raxmlseq -y -m $model -p 12345 -s $file.fas -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  else' >> ${group}.sh
-		echo '    $raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
+		echo '    $raxmlseq -y -m $model -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  #2.Test if reduced files were produced' >> ${group}.sh
 		echo '  if [ -f $file.fas.reduced ]; then' >> ${group}.sh
@@ -256,22 +261,130 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '    echo "Reduced alignment not found...using original alignment" >> raxml'"$group"'.log' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
 		echo '  #3.Run RAxML' >> ${group}.sh
-		echo '  if [[ $location == "1" ]]; then' >> ${group}.sh
-		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
-		echo '    else' >> ${group}.sh
-		echo '      raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
-		echo '    fi'  >> ${group}.sh
-		echo '  elif [[ $location == "2" ]]; then' >> ${group}.sh
-		echo '    if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
-		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
-		echo '    else' >> ${group}.sh
-		echo '      $raxmlpthreads -T $NSLOTS -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100' >> ${group}.sh
-		echo '    fi'  >> ${group}.sh
+		echo '  if [[ $raxmlboot == "standard" ]]; then' >> ${group}.sh
+		echo '    if [[ $location == "1" ]]; then' >> ${group}.sh
+		echo '      if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -B 0.03 -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        fi' >> ${group}.sh
+		echo '      else' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        else'  >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -B 0.03 -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N autoMRE >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '"'"'{ print $2 }'"'"')'  >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt'  >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result'  >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result'  >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      fi'  >> ${group}.sh
+		echo '    elif [[ $location == "2" ]]; then' >> ${group}.sh
+		echo '      if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -B 0.03 -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      else' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result' >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result' >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -B 0.03 -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N autoMRE >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml'"$group"'.log'  >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '"'"'{ print $2 }'"'"')'  >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt'  >> ${group}.sh
+		echo '          mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result'  >> ${group}.sh
+		echo '          mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result'  >> ${group}.sh
+		echo '          cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      fi'  >> ${group}.sh
+		echo '    fi' >> ${group}.sh
+		echo '    cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '  else' >> ${group}.sh
+		echo '    if [[ $location == "1" ]]; then' >> ${group}.sh
+		echo '      if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -B 0.03 -f a -s $file.fas -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      else' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -B 0.03 -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      fi'  >> ${group}.sh
+		echo '    elif [[ $location == "2" ]]; then' >> ${group}.sh
+		echo '      if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f a -s $file.fas -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -B 0.03 -f a -s $file.fas -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      else' >> ${group}.sh
+		echo '        if [[ $bootstop == "no" ]]; then' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml'"$group"'.log' >> ${group}.sh
+		echo '        else' >> ${group}.sh
+		echo '          $raxmlpthreads -T $NSLOTS -B 0.03 -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml'"$group"'.log' >> ${group}.sh
+		echo '          bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '"'"'{ print $2 }'"'"')' >> ${group}.sh
+		echo '          echo -e "$file\t$bstop" >> bootstop_summary_'"$group"'.txt' >> ${group}.sh
+		echo '        fi'  >> ${group}.sh
+		echo '      fi'  >> ${group}.sh
+		echo '    fi' >> ${group}.sh
+		echo '    cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo '  fi' >> ${group}.sh
-		echo '  cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
 		echo 'done' >> ${group}.sh
 		echo 'cp raxml'"$group"'.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
+		echo 'cp bootstop_summary_'"$group"'.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
 		echo '  #delete scratch' >> ${group}.sh
@@ -293,7 +406,11 @@ if [[ $location == "1" || $location == "2" ]]; then
 	done
 else
 	#Run locally, trees are generated serially one by one
-	echo -e "\nGenerating RAxML trees with 100 rapid bootstrap replicates...\n"
+	if [[ $bootstop == "no" ]]; then
+		echo -e "\nGenerating RAxML trees with $bsrep $raxmlboot bootstrap replicates using $model model...\n"
+	else
+		echo -e "\nGenerating RAxML trees with $raxmlboot bootstrap replicates using bootstop approach and $model model...\n"
+	fi
 	# Copy and modify selected FASTA files
 	echo -e "Modifying selected FASTA files...\n"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
@@ -327,9 +444,9 @@ else
 		#1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)
 		#  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file
 		if [[ $genetreepart == "no" ]]; then
-			$raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -n $file.check >> raxml.log
+			$raxmlseq -y -m $model -p 12345 -s $file.fas -n $file.check >> raxml.log
 		else
-			$raxmlseq -y -m GTRCAT -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml.log
+			$raxmlseq -y -m $model -p 12345 -s $file.fas -q $filepart.part -n $file.check >> raxml.log
 		fi
 		#2.Test if reduced files were produced
 		if [ -f $file.fas.reduced ]; then
@@ -364,15 +481,69 @@ else
 			echo "Reduced alignment not found...using original alignment"
 		fi
 		#3.Run RAxML
-		if [[ $genetreepart == "yes" ]]; then
-			$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+		if [[ $raxmlboot == "standard" ]]; then
+			if [[ $genetreepart == "no" ]]; then
+				if [[ $bootstop == "no" ]]; then
+					$raxmlpthreads -T $numbcores -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml.log
+					$raxmlpthreads -T $numbcores -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N $bsrep >> raxml.log
+					$raxmlpthreads -T $numbcores -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml.log
+					mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result
+					mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result
+					cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result
+				else
+					$raxmlpthreads -T $numbcores -s $file.fas -n $file.bestML -m $model -p 12345 >> raxml.log
+					$raxmlpthreads -T $numbcores -B 0.03 -b 12345 -s $file.fas -n $file.boot -m $model -p 12345 -N autoMRE >> raxml.log
+					$raxmlpthreads -T $numbcores -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml.log
+					bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '{ print $2 }')
+					echo -e "$file\t$bstop" >> bootstop_summary.txt
+					mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result
+					mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result
+					cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result
+				fi
+			else
+				if [[ $bootstop == "no" ]]; then
+					$raxmlpthreads -T $numbcores -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml.log
+					$raxmlpthreads -T $numbcores -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N $bsrep >> raxml.log
+					$raxmlpthreads -T $numbcores -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml.log
+					mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result
+					mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result
+					cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result
+				else
+					$raxmlpthreads -T $numbcores -s $file.fas -q $filepart.part -n $file.bestML -m $model -p 12345 >> raxml.log
+					$raxmlpthreads -T $numbcores -B 0.03 -b 12345 -s $file.fas -q $filepart.part -n $file.boot -m $model -p 12345 -N autoMRE >> raxml.log
+					$raxmlpthreads -T $numbcores -f b -t RAxML_bestTree.${file}.bestML -z RAxML_bootstrap.${file}.boot -n $file.result -m $model -p 12345 >> raxml.log
+					bstop=$(grep "bootstrapped trees" RAxML_info.${file}.boot | awk '{ print $2 }')
+					echo -e "$file\t$bstop" >> bootstop_summary.txt
+					mv RAxML_bootstrap.${file}.boot RAxML_bootstrap.${file}.result
+					mv RAxML_bestTree.${file}.bestML RAxML_bestTree.${file}.result
+					cat RAxML_info.${file}.bestML RAxML_info.${file}.boot RAxML_info.${file}.result > tmp && mv tmp RAxML_info.${file}.result
+				fi
+			fi
 		else
-			$raxmlpthreads -T $numbcores -f a -s $file.fas -q $filepart.part -n $file.result -m GTRCAT -p 1234 -x 1234 -N 100 >> raxml.log
+			if [[ $genetreepart == "no" ]]; then
+				if [[ $bootstop == "no" ]]; then
+					$raxmlpthreads -T $numbcores -f a -s $file.fas -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml.log
+				else
+					$raxmlpthreads -T $numbcores -B 0.03 -f a -s $file.fas -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml.log
+					bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '{ print $2 }')
+					echo -e "$file\t$bstop" >> bootstop_summary.txt
+				fi
+			else
+				if [[ $bootstop == "no" ]]; then
+					$raxmlpthreads -T $numbcores -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 1234 -x 1234 -N $bsrep >> raxml.log
+				else
+					$raxmlpthreads -T $numbcores -B 0.03 -f a -s $file.fas -q $filepart.part -n $file.result -m $model -p 12345 -x 12345 -N autoMRE >> raxml.log
+					bstop=$(grep "bootstrapped trees" RAxML_info.${file}.result | awk '{ print $2 }')
+					echo -e "$file\t$bstop" >> bootstop_summary.txt
+				fi
+			fi
 		fi
 		cp *${file}.result $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	done
 	#Copy raxml.log to home
 	cp raxml.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+	#Copy bootstop_summary.txt to home
+	cp bootstop_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
 
 #Clean scratch/work directory
