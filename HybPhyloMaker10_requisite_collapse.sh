@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=4:0:0
+#PBS -l walltime=1:0:0
 #PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
 #PBS -N HybPhyloMaker10_requisite_collapse
@@ -19,19 +19,18 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *  Script 10 - Select trees with requisite taxa, collapse unsupported branches *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
-#Compute species tree using ASTRAL methods from trees saved in single gene tree file (with *.newick suffix)
-#Take trees from 72trees${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted.newick
-#First, branch in trees that have lower support than required are collapsed
-#Run first
-#(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
-#(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
+#Select only gene trees and selected loci containing 'requisite' samples
+#If requested, also collapse unsupported branches in gene trees (according to 'collapse' in settings.cfg) using TreeCollapseCL4.jar
+#Produces
+# - a NEWICK file only with trees containing requisite samples (trees_with_requisite.newick)
+# - a text file with alignment file names containing requisite samples (selected_genes_with_requisite.txt)
+# - a NEWICK file with trees with unsupported branches collapsed (trees_with_requisite_collapsed${collapse}.newick)
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -186,7 +185,35 @@ if [[ $requisite =~ "yes" ]]; then
 	fi
 fi
 
-#Collapse trees
+#Make a list of genes containing requisite taxa in alignment
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "Preparing list of genes containing requisite taxa..."
+	#grep only filenames of alignments (option '-l') containing requisite taxa (sed command extract only filenames without extension from the full path)
+	grep -El "$requisitetaxa" $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*modif* | sed -r "s/.+\/(.+)\..+/\1/" > genes_with_requisite_ALL.txt
+	if [[ $update =~ "yes" ]]; then
+		#Copy list of selected genes
+		cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+		#Add '_' before and after each numbers
+		awk '{ print "_" $0 "_" }' selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt > tmp && mv tmp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt
+		#Take only selected genes with requisite taxa
+		grep -F -f selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt < genes_with_requisite_ALL.txt > selected_genes_with_requisite.txt
+		cut -d'_' -f2 selected_genes_with_requisite.txt > tmp && mv tmp selected_genes_with_requisite.txt
+		cp selected_genes_with_requisite.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite
+	else
+		#Copy list of selected genes
+		cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
+		#Take only numbers of selected genes
+		cut -d'_' -f2 selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt > tmp && mv tmp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
+		#Add '_' before and after each numbers
+		awk '{ print "_" $0 "_" }' selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt > tmp && mv tmp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
+		#Take only selected genes with requisite taxa
+		grep -F -f selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt < genes_with_requisite_ALL.txt > selected_genes_with_requisite.txt
+		cut -d'_' -f2 selected_genes_with_requisite.txt > tmp && mv tmp selected_genes_with_requisite.txt
+		cp selected_genes_with_requisite.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite
+	fi
+fi
+
+#Collapse trees using 'TreeCollapseCL4'
 if [[ ! $collapse -eq "0" ]]; then
 	echo -e "Collapsing tree branches with BS below ${collapse}..."
 	unset i

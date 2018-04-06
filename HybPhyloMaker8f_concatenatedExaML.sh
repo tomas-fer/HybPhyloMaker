@@ -9,7 +9,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -41,7 +41,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add fasttree-2.1.8
-	module add python-3.4.1-intel
+	module add python-3.4.1-gcc
 	module add examl-3.0.15
 	module add raxml-8.2.8
 	module add perl-5.20.1-gcc
@@ -220,6 +220,7 @@ if [[ $runpf =~ "yes" ]]; then
 	fi
 	
 	# Copy and modify selected FASTA files
+	echo "cat 1"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
 		#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
 		cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
@@ -253,21 +254,27 @@ if [[ $runpf =~ "yes" ]]; then
 	#Removes line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta
 	#Calculate length of alignment: 1. get second line and count length, 2. decrease value by one (because previous command also counted LF)
+	echo "cat 2"
 	length=$(cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | head -n 2 | tail -n 1 | wc -c)
 	length=`expr $length - 1`
 	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
+	echo "cat 3"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | sed '/^>/{N; s/\n/ /;}' > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta
 	#Cut first part until space, i.e. header, and remove '>'
+	echo "cat 4"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
 	#Cut only part after the first space, i.e., only sequence, change all missing data (-, ?, N) to 'n', replace all other characters then 'n' by nothing and print percentage of 'n's in each sequence
+	echo "cat 5"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f2 -d" " | sed 's/[?N-]/n/g' | sed 's/[^n]//g' | awk -v val=$length '{ print (length*100)/val }' > missingpercentage.txt
 	paste headers.txt missingpercentage.txt > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
 	#Calculate mean of all values
 	echo -e "MEAN\t$(awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt)" > mean.txt
+	echo "cat 6"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt mean.txt > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
 	rm headers.txt missingpercentage.txt concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta mean.txt
 	
 	#Modify partition file: take 2nd and following parts of each line separated by "_" (remove 'p1_' etc. introduced by AMAS) | add ';' at the end of each line
+	echo "cat 7"
 	cat partitions.txt | cut -d"_" -f2- | awk '{ print $0 ";" }' | sed 's/-/ - /g' | sed 's/=/ = /g' > part.file
 	#Copy concatenated file to home
 	if [[ $update =~ "yes" ]]; then
@@ -298,6 +305,7 @@ if [[ $runpf =~ "yes" ]]; then
 	echo "models = GTR+G;" >> partition_finder.cfg
 	echo "model_selection = AICc;" >> partition_finder.cfg
 	echo "[data_blocks]" >> partition_finder.cfg
+	echo "cat 8"
 	cat partition_finder.cfg part.file > tmp && mv tmp partition_finder.cfg
 	rm part.file
 	echo "[schemes]" >> partition_finder.cfg
@@ -311,16 +319,19 @@ if [[ $runpf =~ "yes" ]]; then
 	#Get the newest version of PartitionFinder (2.0.0 from GitHub)
 	#git clone https://github.com/brettc/partitionfinder
 	#Copy working version of PartitionFinder 2.0.0.
-	wget --no-check-certificate https://github.com/brettc/partitionfinder/archive/v2.1.1.tar.gz
-	tar xfz v2.1.1.tar.gz
+	#wget --no-check-certificate https://github.com/brettc/partitionfinder/archive/v2.1.1.tar.gz
+	#tar xfz v2.1.1.tar.gz
+	cp $source/partitionfinder-2.1.1.tar.gz .
+	tar xfz partitionfinder-2.1.1.tar.gz
 	mv partitionfinder-2.1.1 partitionfinder
 	#cp $source/partitionfinder-2.0.0-pre13.tar.gz .
 	#tar xfz partitionfinder-2.0.0-pre13.tar.gz
 	#mv partitionfinder-2.0.0-pre13 partitionfinder
 	
 	if [[ $PBS_O_HOST == *".cz" ]]; then
-		#Add python modules necessary for PartitionFinder
-		module add python-2.7.10-gcc
+		#Remove python3 module and dd python modules necessary for PartitionFinder
+		module rm python-3.4.1-gcc
+		#module add python-2.7.10-gcc
 		module add python27-modules-gcc
 		module add hdf5-1.8.12-gcc
 	fi
@@ -444,6 +455,7 @@ if [[ $examlboot =~ "yes" ]]; then
 	
 	#Combine all bootstrap trees
 	echo -e "Combining bootstrap trees...\n"
+	echo "cat 9"
 	cat ExaML_result.BINF* > ExaML_bootstrap.tre
 	#Map bootstrap values onto the single best tree
 	echo -e "Mapping bootstrap support values onto bestML tree\n"

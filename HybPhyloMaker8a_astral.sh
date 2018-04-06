@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -31,7 +31,7 @@
 #(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #Works also for trees after update, requisite taxa selection and collapsing (see HybPhyloMaker9_update_trees.sh and HybPhyloMaker10_requisite_collapse.sh)
-#Calculation of multilocus bootstrap does not work for trees after selection and/or collapsing
+#Calculation of multilocus bootstrap does not work for trees after collapsing (but works also for trees with requisite samples only)
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -50,9 +50,9 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Python (and its modules) are added later in the script
 	#module add python-2.7.6-gcc
 	#module add python27-modules-gcc
-	#module add python-3.4.1-intel
+	module add python-3.4.1-gcc
 	module add newick-utils-13042016
-	module add p4
+	#module add p4 #do not load before running 'python3 AMAS.py'
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8a is running on Hydra..."
 	#settings for Hydra
@@ -348,36 +348,60 @@ fi
 sed -i.bak 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 sed -i.bak2 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 
-if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
-	#Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
+if [[ $collapse -eq "0" ]];then
 	if [[ $mlbs =~ "yes" ]]; then
+		#Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
 		if [[ $tree =~ "RAxML" ]]; then
 			#Make dir for for bootstraped trees
 			mkdir boot
 			#Copy RAxML bootstraped trees
 			if [[ $update =~ "yes" ]]; then
-				cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				if [[ $requisite =~ "yes" ]]; then
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite/selected_genes_with_requisite.txt .
+					mv selected_genes_with_requisite.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt
+				else
+					cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				fi
 				for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
 					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_${i}_modif${MISSINGPERCENT}.result boot/
 				done
 			else
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* boot/
+				if [[ $requisite =~ "yes" ]]; then
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite/selected_genes_with_requisite.txt .
+					for i in $(cat selected_genes_with_requisite.txt); do
+						cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap*ssembly_${i}_modif${MISSINGPERCENT}.result boot/
+					done
+				else
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/RAxML_bootstrap* boot/
+				fi
 			fi
-			#Make a list of bootstraped trees
+			#Make a list of bootstrapped trees
 			ls boot/*bootstrap* > bs-files
 		elif [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
-			#Make dir for for bootstraped trees
+			#Make dir for for bootstrapped trees
 			mkdir boot
-			#Copy FastTree bootstraped trees
+			#Copy FastTree bootstrapped trees
 			if [[ $update =~ "yes" ]]; then
-				cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				if [[ $requisite =~ "yes" ]]; then
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite/selected_genes_with_requisite.txt .
+					mv selected_genes_with_requisite.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt
+				else
+					cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
+				fi
 				for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt); do
 					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_${i}_*.boot.fast.trees boot/
 				done
 			else
-				cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
+				if [[ $requisite =~ "yes" ]]; then
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite/selected_genes_with_requisite.txt .
+					for i in $(cat selected_genes_with_requisite.txt); do
+						cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*ssembly_${i}_*.boot.fast.trees boot/
+					done
+				else
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree/*.boot.fast.trees boot/
+				fi
 			fi
-			#Make a list of bootstraped trees
+			#Make a list of bootstrapped trees
 			ls boot/*.boot.fast.trees > bs-files
 		fi
 	fi
@@ -445,7 +469,7 @@ else
 	cp Astral.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
 fi
 
-if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
+if [[ $collapse -eq "0" ]];then
 	if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 		if [[ $mlbs =~ "yes" ]]; then
 			#Run Astral bootstrap
@@ -461,7 +485,7 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 			cat Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | tail -n1 > Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 			#Extract last but one tree (majority rule consensus tree of bootstrap replicate trees)
 			cat Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | tail -n2 | head -n1 > Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
-			#Leave only first 100 trees in *_allbootstraptrees.tree (delete last two treex extracted above)
+			#Leave only bootstrap trees in *_allbootstraptrees.tree (delete last two trees extracted above)
 			tac Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre | sed '1,2d' | tac > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre
 			#(Re)root a final Astral species tree with $OUTGROUP
 			if [ -n "$OUTGROUP" ]; then
@@ -475,7 +499,7 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 			if [[ $combine =~ "yes" ]]; then
 				echo -e "\nCombining support values from main, bootstrap and bootstrap consensus trees to one tree..."
 				#Copy alignment (for sample names) and rename it
-				if [ ! -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip ]; then
+				if [ ! -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip ]; then
 					#Copy list of genes
 					if [[ $update =~ "yes" ]]; then
 						cp $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt .
@@ -495,13 +519,13 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 						sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
 					done
 					#Add python3 module if on MetaCentrum
-					if [[ $PBS_O_HOST == *".cz" ]]; then
-						module add python-3.4.1-intel
-					fi
+					# if [[ $PBS_O_HOST == *".cz" ]]; then
+						# module add python-3.4.1-intel
+					# fi
 					#Prepare concatenated dataset and transform it to phylip format
 					python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
 				else
-					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
+					cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip .
 				fi
 				if [[ $cp =~ "yes" ]]; then
 					#Removing '_cpDNA' from names in alignment
@@ -510,11 +534,12 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 				mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
 				sed -i.bak 's/-/XX/' concatenated.phylip
 				sed -i.bak2 's/_/YY/' concatenated.phylip
-				#Remove python3 module if on MetaCentrum
+				#Remove python3 module and load p4 module if on MetaCentrum
 				if [[ $PBS_O_HOST == *".cz" ]]; then
-					module rm python-3.4.1-intel
-					module add python-2.7.6-gcc
-					module add python27-modules-gcc
+					module rm python-3.4.1-gcc
+					#module add python-2.7.6-gcc
+					#module add python27-modules-gcc
+					module add p4
 				fi
 				#Combine basic Astral tree with bootstrap tree
 				python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
@@ -529,11 +554,11 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 			sed -i.bak6 's/YY/ /g' Astral*.tre
 			#Copy results and log to home
 			if [[ $update =~ "yes" ]]; then
-				cp Astral*boot*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral
-				cp Astral_boot.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral
+				cp Astral*boot*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+				cp Astral_boot.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
 			else
-				cp Astral*boot*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astral
-				cp Astral_boot.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astral
+				cp Astral*boot*.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+				cp Astral_boot.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
 			fi
 		fi
 	fi

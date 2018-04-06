@@ -19,19 +19,19 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08c - MRL species tree                         *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
 #Compute species tree using MRL methods using RAxML from trees saved in single gene tree file (with *.newick suffix)
+#RAxML options: standard/rapid bootstrap (raxmlboot=), number of bootstrap replicates (bsrep=)
 #Run first
 #(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(2) HybPhyloMaker6a_RAxML_for_selected.sh or HybPhyloMaker6b_FastTree_for_selected.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(3) HybPhyloMaker7_roottrees.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #Works also for trees after update, requisite taxa selection and collapsing (see HybPhyloMaker9_update_trees.sh and HybPhyloMaker10_requisite_collapse.sh)
-#Calculation of multilocus bootstrap does not work for trees after selection and/or collapsing
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -249,16 +249,49 @@ else
 	java -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip PHYLIP -randomize
 fi
 
-#Make 100 fast bootstrap ML trees using RAxML
-echo -e "Computing RAxML tree...\n"
-if [[ $location == "1" ]]; then
-	raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N 100
-elif [[ $location == "2" ]]; then
-	raxmlHPC-PTHREADS-SSE3 -T $NSLOTS -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N 100
-elif [[ $numbcores == "1" ]]; then
-	$raxmlseq -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N 100
-else
-	$raxmlpthreads -T $numbcores -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N 100
+#Make bootstrap ML trees using RAxML
+if [[ $raxmlboot == "standard" ]]; then
+	echo -e "Computing $bsrep standard bootstrap replicates using RAxML...\n"
+	if [[ $location == "1" ]]; then
+		raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n bestML -m BINCAT -p 12345
+		raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -b 12345 -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n boot -m BINCAT -p 12345 -N $bsrep
+		raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f b -t RAxML_bestTree.bestML -z RAxML_bootstrap.boot -n MRLresult -m BINCAT -p 12345
+		mv RAxML_bootstrap.boot RAxML_bootstrap.MRLresult
+		mv RAxML_bestTree.bestML RAxML_bestTree.MRLresult
+		cat RAxML_info.bestML RAxML_info.boot RAxML_info.MRLresult > tmp && mv tmp RAxML_info.MRLresult
+	elif [[ $location == "2" ]]; then
+		raxmlHPC-PTHREADS-SSE3 -T $NSLOTS -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n bestML -m BINCAT -p 12345
+		raxmlHPC-PTHREADS-SSE3 -T $NSLOTS -b 12345 -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n boot -m BINCAT -p 12345 -N $bsrep
+		raxmlHPC-PTHREADS-SSE3 -T $NSLOTS -f b -t RAxML_bestTree.bestML -z RAxML_bootstrap.boot -n MRLresult -m BINCAT -p 12345
+		mv RAxML_bootstrap.boot RAxML_bootstrap.MRLresult
+		mv RAxML_bestTree.bestML RAxML_bestTree.MRLresult
+		cat RAxML_info.bestML RAxML_info.boot RAxML_info.MRLresult > tmp && mv tmp RAxML_info.MRLresult
+	elif [[ $numbcores == "1" ]]; then
+		$raxmlseq -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n bestML -m BINCAT -p 12345
+		$raxmlseq -b 12345 -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n boot -m BINCAT -p 12345 -N $bsrep
+		$raxmlseq -f b -t RAxML_bestTree.bestML -z RAxML_bootstrap.boot -n MRLresult -m BINCAT -p 12345
+		mv RAxML_bootstrap.boot RAxML_bootstrap.MRLresult
+		mv RAxML_bestTree.bestML RAxML_bestTree.MRLresult
+		cat RAxML_info.bestML RAxML_info.boot RAxML_info.MRLresult > tmp && mv tmp RAxML_info.MRLresult
+	else
+		$raxmlpthreads -T $numbcores -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n bestML -m BINCAT -p 12345
+		$raxmlpthreads -T $numbcores -b 12345 -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n boot -m BINCAT -p 12345 -N $bsrep
+		$raxmlpthreads -T $numbcores -f b -t RAxML_bestTree.bestML -z RAxML_bootstrap.boot -n MRLresult -m BINCAT -p 12345
+		mv RAxML_bootstrap.boot RAxML_bootstrap.MRLresult
+		mv RAxML_bestTree.bestML RAxML_bestTree.MRLresult
+		cat RAxML_info.bestML RAxML_info.boot RAxML_info.MRLresult > tmp && mv tmp RAxML_info.MRLresult
+	fi
+else #rapid bootstrap
+	echo -e "Computing $bsrep rapid bootstrap replicates using RAxML...\n"
+	if [[ $location == "1" ]]; then
+		raxmlHPC-PTHREADS -T $TORQUE_RESC_TOTAL_PROCS -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N $bsrep
+	elif [[ $location == "2" ]]; then
+		raxmlHPC-PTHREADS-SSE3 -T $NSLOTS -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N $bsrep
+	elif [[ $numbcores == "1" ]]; then
+		$raxmlseq -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N $bsrep
+	else
+		$raxmlpthreads -T $numbcores -f a -s MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip -n MRLresult -m BINCAT -p 1234 -x 1234 -N $bsrep
+	fi
 fi
 
 #Modify labels in RAxML bipartitions (XX and YY to ' ')
