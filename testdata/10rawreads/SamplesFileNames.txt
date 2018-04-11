@@ -1,6 +1,6 @@
-Siphonochilus-aethiopicus_S130
-Globba-candida_S209
-Cornukaempferia-longipetiolata_S212
-Renealmia-polypus_S370
-Curcuma-parviflora_S159
 Amomum-subulatum_S51
+Cornukaempferia-longipetiolata_S212
+Curcuma-parviflora_S159
+Globba-candida_S209
+Renealmia-polypus_S370
+Siphonochilus-aethiopicus_S130
