@@ -1,12 +1,14 @@
 # HybPhyloMaker support files and scripts
 
 **Support files**  
+---
 **curcuma_HybSeqProbes_test.fa**  
 _test reference containing 100 nuclear exons_  
 **Curcuma-roscoeana_plastomeCDS_test.fa**  
 _test reference with 11 plastid genes_  
 
 **Scripts**  
+---
 These scripts are called by main HybPhyloMaker bash scripts.  
 Use of these scripts should be properly cited, e.g. as follows:  
   
