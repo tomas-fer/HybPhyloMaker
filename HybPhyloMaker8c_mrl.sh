@@ -7,9 +7,9 @@
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 12
+#$ -pe mthread 8
 #$ -q sThC.q
-#$ -l mres=1G
+#$ -l mres=4G,h_data=4G,h_vmem=4G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker8c_MRL
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08c - MRL species tree                         *
-# *                                   v.1.6.1                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -61,8 +61,8 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir08c
 	#Add necessary modules
 	module load java/1.7
-	module load bioinformatics/raxml/8.2.7
-	module load bioinformatics/newickutilities/0.0
+	module load bioinformatics/raxml/8.2.11
+	module load bioinformatics/anaconda3/5.1 #NewickUtilities
 else
 	echo -e "\nHybPhyloMaker8c is running locally..."
 	#settings for local run
@@ -244,7 +244,7 @@ echo -e "Preparing MRL matrix...\n"
 #java -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRPmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex NEXUS
 #Make MRL matrix
 if [[ $location == "2" ]]; then
-	java -d64 -server -XX:MaxHeapSize=10g -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip PHYLIP -randomize
+	java -d64 -server -XX:MaxHeapSize=4g -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip PHYLIP -randomize
 else
 	java -jar mrp.jar trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick MRLmatrix_${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip PHYLIP -randomize
 fi

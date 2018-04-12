@@ -7,9 +7,8 @@
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 2
-#$ -q sThM.q
-#$ -l mres=1G,h_data=1G,h_vmem=1G,himem
+#$ -q sThC.q
+#$ -l mres=1G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker_reports
@@ -19,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *          Additional script - combine summary tables into single XLS          *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -63,7 +62,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdirsummary
 	cd workdirsummary
 	#Add necessary modules
-	module load tools/R/3.3.1
+	module load tools/R/3.4.1
 else
 	echo -e "\nHybPhyloMaker-summary is running locally..."
 	#settings for local run
@@ -121,7 +120,12 @@ cp ${path}/${type}/21mapped_${mappingmethod}/mapping_summary.txt .
 cp ${path}/${alnpathselected}${MISSINGPERCENT}/MissingDataOverview.txt .
 cp ${path}/${alnpathselected}${MISSINGPERCENT}/MissingDataOverview_${MISSINGPERCENT}.txt .
 cp ${path}/${alnpathselected}${MISSINGPERCENT}/summaryALL.txt .
-cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/gene_properties.txt .
+if [[ $update =~ "yes" ]]; then
+	cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/gene_properties_update.txt .
+	mv gene_properties_update.txt gene_properties.txt
+else
+	cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/gene_properties.txt .
+fi
 
 #Change to csv
 echo "Modifying tables..."

@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.6.1                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -65,9 +65,9 @@ elif [[ $HOSTNAME == *local* ]]; then
 	mkdir -p workdir08b
 	cd workdir08b
 	#Add necessary modules
-	module load bioinformatics/anaconda3/2.3.0
-	module load bioinformatics/newickutilities/0.0
-	module load bioinformatics/p4/ #???
+	module load bioinformatics/anaconda3/5.1 #python3 and NewickUtilities
+	module load bioinformatics/astrid/1.4
+	#module load bioinformatics/p4/ #???
 else
 	echo -e "\nHybPhyloMaker8b is running locally..."
 	#settings for local run
@@ -427,7 +427,11 @@ if [[ $collapse -eq "0" ]];then
 		if [[ $mlbs =~ "yes" ]]; then
 			#Run Astrid bootstrap
 			echo -e "Computing ASTRID multilocus bootstrap..."
-			./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
+			if [[ $location == "2" ]]; then
+				ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
+			else
+				./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
+			fi
 			#Remove "'" from resulting trees
 			sed -i.bak4 "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}*
 			#Rename resulting trees
@@ -477,12 +481,15 @@ if [[ $collapse -eq "0" ]];then
 				mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip concatenated.phylip
 				sed -i.bak 's/-/XX/' concatenated.phylip
 				sed -i.bak2 's/_/YY/' concatenated.phylip
-				#Remove python3 module and load p4 module if on MetaCentrum
+				#Remove python3 module and load p4 module if on MetaCentrum or Hydra
 				if [[ $PBS_O_HOST == *".cz" ]]; then
 					module rm python-3.4.1-gcc
 					#module add python-2.7.6-gcc
 					#module add python27-modules-gcc
 					module add p4
+				elif [[ $HOSTNAME == compute-*-*.local ]]; then
+					module unload bioinformatics/anaconda3
+					#module load bioinformatics/p4?
 				fi
 				#Combine bootstrap with consensus tree
 				python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
@@ -490,7 +497,11 @@ if [[ $collapse -eq "0" ]];then
 				echo
 			fi
 		else
-			./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre > Astrid.log
+			if [[ $location == "2" ]]; then
+				ASTRID -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE} > Astrid_boot.log
+			else
+				./$astridbin -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre > Astrid.log
+			fi
 			#Remove "'" from resulting trees
 			sed -i.bak "s/'//g" Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 		fi

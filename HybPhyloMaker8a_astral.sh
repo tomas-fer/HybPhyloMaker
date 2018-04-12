@@ -7,9 +7,9 @@
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 2
+#$ -pe mthread 4
 #$ -q sThM.q
-#$ -l mres=8G,h_data=8G,h_vmem=8G,himem
+#$ -l mres=4G,h_data=4G,h_vmem=4G,himem
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker8a_Astral
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.6.1                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -65,9 +65,9 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir08a
 	#Add necessary modules
 	module load java/1.7
-	module load bioinformatics/anaconda3/2.3.0
-	module load bioinformatics/newickutilities/0.0
-	module load bioinformatics/p4/ #???
+	module load bioinformatics/anaconda3/5.1 #python3 and NewickUtilities
+	#module load bioinformatics/newickutilities/0.0
+	#module load bioinformatics/p4/ #???
 else
 	echo -e "\nHybPhyloMaker8a is running locally..."
 	#settings for local run
@@ -426,7 +426,7 @@ echo -e "Computing ASTRAL tree..."
 if [[ $location == "1" ]]; then
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
 elif [[ $location == "2" ]]; then
-	java -d64 -server -XX:MaxHeapSize=7g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
 else
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
 fi
@@ -477,7 +477,7 @@ if [[ $collapse -eq "0" ]];then
 			if [[ $location == "1" ]]; then
 				java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
 			elif [[ $location == "2" ]]; then
-				java -d64 -server -XX:MaxHeapSize=14g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
+				java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
 			else
 				java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
 			fi
@@ -540,6 +540,9 @@ if [[ $collapse -eq "0" ]];then
 					#module add python-2.7.6-gcc
 					#module add python27-modules-gcc
 					module add p4
+				elif [[ $HOSTNAME == compute-*-*.local ]]; then
+					module unload bioinformatics/anaconda3
+					#module load bioinformatics/p4?
 				fi
 				#Combine basic Astral tree with bootstrap tree
 				python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre

@@ -1,14 +1,13 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=1:0:0
-#PBS -l select=4:ncpus=6:mem=4gb:scratch_local=80gb
+#PBS -l select=1:ncpus=1:mem=2gb:scratch_local=80gb
 #PBS -j oe
 #PBS -N HybPhyloMaker0a_datadownloadprepare
 #PBS -m abe
 
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 24
 #$ -q sThC.q
 #$ -l mres=1G
 #$ -cwd
@@ -20,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -49,7 +48,7 @@
 # https://basespace.illumina.com/sample/28555179/files/tree/Z001_S1_L001_R1_001.fastq.gz?id=2016978377              #
 # desired ID is the last number                                                                                     #
 # 4. prepare file renamelist.txt with two columns (desired sample name and 'Sample_Name' from BaseSpace)            #
-#   (Sample_Name is first part of file name at BaseSpace), e.g.                                                     #
+#   (Sample_Name is first unique part of file name at BaseSpace), e.g.                                              #
 # genus1-species1_S001	Z001                                                                                        #
 # genus1-species2_S002	Z002                                                                                        #
 # etc.                                                                                                              #
@@ -58,7 +57,7 @@
 #                                                                                                                   #
 #####################################################################################################################
 
-if [[ $PBS_O_HOSTx == *".cz" ]]; then
+if [[ $PBS_O_HOST == *".cz" ]]; then
 	echo -e "\nHybPhyloMaker0a is running on MetaCentrum...\n"
 	#settings for MetaCentrum
 	#Move to scratch
@@ -68,6 +67,7 @@ if [[ $PBS_O_HOSTx == *".cz" ]]; then
 	. settings.cfg
 	. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
+	homedir=/storage/$server/home/$LOGNAME
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add parallel
@@ -77,6 +77,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
+	homedir=..
 	source=../HybSeqSource
 	#Make and enter work directory
 	mkdir -p workdir00_dataprep
@@ -89,6 +90,7 @@ else
 	#set variables from settings.cfg
 	. settings.cfg
 	path=../$data
+	homedir=..
 	source=../HybSeqSource
 	#Make and enter work directory
 	mkdir -p workdir00_dataprep
@@ -102,9 +104,9 @@ if [ -d "$path/10rawreads" ]; then
 	rm -d ../workdir00_dataprep/ 2>/dev/null
 	exit 3
 else
-	if [ -f "../renamelist.txt" ]; then
+	if [ -f "$homedir/renamelist.txt" ]; then
 		if [[ $download =~ "yes" ]]; then
-			if [ -f "../token_header.txt" ]; then
+			if [ -f "$homedir/token_header.txt" ]; then
 				echo -e "OK\n"
 			else
 				echo -e "'token_header.txt' is missing in 'homedir'. Exiting...\n"
@@ -112,7 +114,7 @@ else
 				exit 3
 			fi
 		else
-			if [ 0 -lt $(ls ../*fastq.gz 2>/dev/null | wc -w) ]; then
+			if [ 0 -lt $(ls $homedir/*fastq.gz 2>/dev/null | wc -w) ]; then
 				echo -e "OK\n"
 			else
 				echo -e "No *.fastq.gz files in 'homedir'. Exiting...\n"
@@ -177,7 +179,11 @@ else
 	echo -e "Copying FASTQ files from home...\n"
 	#Copy all *fastq.gz files from 'homedir'
 	cat renamelist.txt | while read -r a b; do
-		cp ../../*${b}* .
+		if [[ $location == "1" ]]; then
+			cp $homedir/*${b}* .
+		else
+			cp ../../*${b}* .
+		fi
 	done
 fi
 

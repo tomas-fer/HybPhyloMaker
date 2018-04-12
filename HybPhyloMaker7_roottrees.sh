@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 07 - Root gene trees                         *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -56,7 +56,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir07
 	cd workdir07
 	#Add necessary modules
-	module load bioinformatics/newickutilities/0.0
+	module load bioinformatics/anaconda3/5.1 #adds NewickUtilities
 else
 	echo -e "\nHybPhyloMaker7 is running locally..."
 	#settings for local run

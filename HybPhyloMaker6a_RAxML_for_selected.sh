@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.6.1                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -54,6 +54,11 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Make and enter work directory
 	mkdir -p workdir06a
 	cd workdir06a
+	#Remove possible previously generated file for jobs
+	rm -f ../submitRAxMLjobs.sh
+	#Create new 'submitRAxMLjobs.sh' and make it executable
+	touch ../submitRAxMLjobs.sh
+	chmod +x ../submitRAxMLjobs.sh
 else
 	echo -e "\nHybPhyloMaker6a is running locally..."
 	#settings for local run
@@ -172,7 +177,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  cd $SCRATCHDIR' >> ${group}.sh
 		echo 'else' >> ${group}.sh
 		echo '  #Add necessary modules' >> ${group}.sh
-		echo '  module load bioinformatics/raxml/8.2.7' >> ${group}.sh
+		echo '  module load bioinformatics/raxml/8.2.11' >> ${group}.sh
 		echo '  mkdir workdir06_'"${group}" >> ${group}.sh
 		echo '  cd workdir06_'"${group}" >> ${group}.sh
 		echo 'fi' >> ${group}.sh
@@ -222,7 +227,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  #modify name for partition file (remove '_modif${MISSINGPERCENT}')' >> ${group}.sh
 		echo '  filepart=$(sed "s/_modif${MISSINGPERCENT}//" <<< $file)' >> ${group}.sh
 		echo '  echo "Analysing $filepart" >> raxml'"$group"'.log' >> ${group}.sh
-		echo '  #RAxML with 100 rapid bootstrap' >> ${group}.sh
+		echo '  #RAxML with bootstrap' >> ${group}.sh
 		echo '  #1.Check if there are completely undetermined columns in alignment (RAxML -y will produced .reduced alignment and partition files)' >> ${group}.sh
 		echo '  #  Compute parsimony tree only and produce reduced alignment and appropriate reduced partition file' >> ${group}.sh
 		echo '  if [[ $genetreepart == "no" ]]; then' >> ${group}.sh

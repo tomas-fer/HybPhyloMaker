@@ -8,20 +8,20 @@
 
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 8
+#$ -pe mthread 4
 #$ -q sThC.q
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker4_process_pslx
-#$ -o HybPhyloMaker4_process_pslx.log
+#$ -N HybPhyloMaker4b_translate
+#$ -o HybPhyloMaker4b_translate.log
 
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *       Script 04b - Put exons to correct reading frame and translate          *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -64,7 +64,8 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir04b
 	cd workdir04b
 	#Add necessary modules
-	module load bioinformatics/
+	module load bioinformatics/emboss/6.6.0
+	module load bioinformatics/anaconda3/2.3.0 #for python3
 else
 	echo -e "\nHybPhyloMaker4b is running locally..."
 	#settings for local run

@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -55,7 +55,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir06a2
 	cd workdir06a2
 	#Add necessary modules
-	module load tools/R/3.2.1
+	module load tools/R/3.4.1
 else
 	echo -e "\nHybPhyloMaker6a2 is running locally..."
 	#settings for local run

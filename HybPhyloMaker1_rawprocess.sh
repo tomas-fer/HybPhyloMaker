@@ -8,8 +8,9 @@
 
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 12
-#$ -q sThC.q
+#$ -pe mthread 2
+#$ -q mThC.q
+#$ -l mres=4G,h_data=4G,h_vmem=4G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker1_rawprocess
@@ -19,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -56,12 +57,12 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir01
 	cd workdir01
 	#Add necessary modules
-	module load bioinformatics/bam2fastq/1.1.0
-	module load bioinformatics/bowtie2/2.2.6
-	module load bioinformatics/fastuniq/ #???
+	module load bioinformatics/bowtie2/2.2.9
 	module load bioinformatics/samtools/1.3
-	module load java/1.7
+	module load bioinformatics/bam2fastq/1.1.0
 	#module load bioinformatics/trimmomatic/0.33
+	module load bioinformatics/fastuniq/1.1
+	module load java/1.7
 else
 	echo -e "\nHybPhyloMaker1 is running locally...\n"
 	#settings for local run
@@ -183,7 +184,7 @@ do
 		java -jar /software/trimmomatic-0.32/dist/jar/trimmomatic-0.32.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 		#trimmomatic PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../NEBNext-PE.fa:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	elif [[ $location == "2" ]]; then
-		java -d64 -server -XX:MaxHeapSize=10g -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
+		java -d64 -server -XX:MaxHeapSize=4g -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	else
 		java -jar ../trimmomatic-0.33.jar PE -phred33 $file-noPhiX_1.fq.gz $file-noPhiX_2.fq.gz $file-1P $file-1U $file-2P $file-2U ILLUMINACLIP:../${adapterfile}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:5:20 MINLEN:36 >Trimmomatic.log 2>&1
 	fi

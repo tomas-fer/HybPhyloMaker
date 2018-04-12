@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -61,9 +61,9 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir06b
 	#Add necessary modules
 	module load bioinformatics/fasttree/2.1.8
-	module load bioinformatics/raxml/8.2.7
-	module load tools/R/3.2.1
-	module load bioinformatics/anaconda3/2.3.0
+	module load bioinformatics/raxml/8.2.11
+	module load tools/R/3.4.1
+	module load bioinformatics/anaconda3/5.1 #for python3
 else
 	echo -e "\nHybPhyloMaker6b is running locally..."
 	#settings for local run

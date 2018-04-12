@@ -7,9 +7,8 @@
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 2
-#$ -q sThM.q
-#$ -l mres=8G,h_data=8G,h_vmem=8G,himem
+#$ -q sThC.q
+#$ -l mres=1G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker10_requisite_collapse
@@ -19,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *  Script 10 - Select trees with requisite taxa, collapse unsupported branches *
-# *                                   v.1.6.1                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -46,7 +45,6 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add jdk-1.6.0
-	module add newick-utils-1.6
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker10_requisite_collapse is running on Hydra..."
 	#settings for Hydra
@@ -59,9 +57,6 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir10
 	#Add necessary modules
 	module load java/1.7
-	module load bioinformatics/anaconda3/2.3.0
-	module load bioinformatics/newickutilities/0.0
-	module load bioinformatics/p4/ #???
 else
 	echo -e "\nHybPhyloMaker10_requisite_collapse is running locally..."
 	#settings for local run
@@ -223,7 +218,11 @@ if [[ ! $collapse -eq "0" ]]; then
 		for x in $(<trees_rooted_with_requisite.newick); do
 			echo "$x" > trees/tree$((++i)).tre
 		done
-		java -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		if [[ $location == "2" ]]; then
+			java -d64 -server -XX:MaxHeapSize=1g -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		else
+			java -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		fi
 		cat trees/*coll* > trees_with_requisite_collapsed${collapse}.newick
 		if [[ $update =~ "yes" ]]; then
 			mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite/collapsed${collapse}
@@ -236,7 +235,11 @@ if [[ ! $collapse -eq "0" ]]; then
 		for x in $(<trees_rooted.newick); do
 			echo "$x" > trees/tree$((++i)).tre
 		done
-		java -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		if [[ $location == "2" ]]; then
+			java -d64 -server -XX:MaxHeapSize=1g -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		else
+			java -jar TreeCollapseCL4.jar -b ${collapse} -d trees/ 1>/dev/null
+		fi
 		cat trees/*coll* > trees_collapsed${collapse}.newick
 		if [[ $update =~ "yes" ]]; then
 			mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/collapsed${collapse}

@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=12:0:0
-#PBS -l select=1:ncpus=14:mem=1gb:scratch_local=8gb
+#PBS -l select=1:ncpus=8:mem=1gb:scratch_local=8gb
 #PBS -j oe
 #PBS -N HybPhyloMaker4a_process_pslx
 #PBS -m abe
@@ -9,7 +9,7 @@
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -pe mthread 8
-#$ -q sThC.q
+#$ -q mThC.q
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 04a - Process pslx files                       *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -101,17 +101,17 @@ if [[ $cp =~ "yes" ]]; then
 				echo -e "OK\n"
 			else
 				echo -e "'$otherpslxcppath' is empty. Move desired *.pslx files into it.\nExiting...\n"
-				rm -d ../workdir04/ 2>/dev/null
+				rm -d ../workdir04a/ 2>/dev/null
 				exit 3
 			fi
 		else
 			echo -e "'$otherpslxcppath' does not exists. Create this directory and move desired *.pslx files into it.\nExiting...\n"
-			rm -d ../workdir04/ 2>/dev/null
+			rm -d ../workdir04a/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
-		rm -d ../workdir04/ 2>/dev/null
+		rm -d ../workdir04a/ 2>/dev/null
 		exit 3
 	fi
 else
@@ -121,17 +121,17 @@ else
 				echo -e "OK\n"
 			else
 				echo -e "'$otherpslxpath' is empty. Move desired *.pslx files into it.\nExiting...\n"
-				rm -d ../workdir04/ 2>/dev/null
+				rm -d ../workdir04a/ 2>/dev/null
 				exit 3
 			fi
 		else
 			echo -e "'$otherpslxpath' does not exists. Create this directory and move desired *.pslx files into it.\nExiting...\n"
-			rm -d ../workdir04/ 2>/dev/null
+			rm -d ../workdir04a/ 2>/dev/null
 			exit 3
 		fi
 	else
 		echo -e "'$probes' is missing in 'HybSeqSource'. Exiting...\n"
-		rm -d ../workdir04/ 2>/dev/null
+		rm -d ../workdir04a/ 2>/dev/null
 		exit 3
 	fi
 fi
@@ -139,18 +139,18 @@ fi
 #Test if folder for results exits
 if [ -d "$path/$type/60mafft" ]; then
 	echo -e "Directory '$path/$type/60mafft' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir04/ 2>/dev/null
+	rm -d ../workdir04a/ 2>/dev/null
 	exit 3
 else
 	if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
 		echo -e "Directory '$path/$type/70concatenated_exon_alignments' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir04/ 2>/dev/null
+		rm -d ../workdir04a/ 2>/dev/null
 		exit 3
 	else
 		if [[ ! $location == "1" ]]; then
-			if [ "$(ls -A ../workdir04)" ]; then
-				echo -e "Directory 'workdir04' already exists. Delete it or rename before running this script again. Exiting...\n"
-				rm -d ../workdir04/ 2>/dev/null
+			if [ "$(ls -A ../workdir04a)" ]; then
+				echo -e "Directory 'workdir04a' already exists. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir04a/ 2>/dev/null
 				exit 3
 			fi
 		fi
@@ -344,6 +344,12 @@ if [[ $cp =~ "no" ]]; then
 		#module add perl-5.10.1
 		#Make a new folder for results
 		mkdir $path/$type/70concatenated_exon_alignments
+	elif [[ $location == "2" ]]; then
+		#Add necessary module
+		module unload bioinformatics/anaconda3 #unload possible previously loaded python3
+		module load bioinformatics/anaconda3/2.3.0 #python3
+		#Make a new folder for results
+		mkdir ../$path/$type/70concatenated_exon_alignments
 	else
 		mkdir ../$path/$type/70concatenated_exon_alignments
 	fi

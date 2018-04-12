@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -59,8 +59,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir08e
 	#Add necessary modules
 	module load bioinformatics/fasttree/2.1.8
-	module load bioinformatics/anaconda3/2.3.0
-	module load bioinformatics/newickutilities/0.0
+	module load bioinformatics/anaconda3/5.1 #python3 and NewickUtilities
 else
 	echo -e "\nHybPhyloMaker8e is running locally..."
 	#settings for local run
@@ -95,7 +94,7 @@ else
 fi
 
 #Check necessary file
-echo -ne "Testing if input data are available..."
+echo -ne "\nTesting if input data are available..."
 if [[ $update =~ "yes" ]]; then
 	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
 		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then

@@ -7,9 +7,8 @@
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 8
 #$ -q mThC.q
-#$ -l mres=3G,h_data=3G,h_vmem=3G
+#$ -l mres=6G,h_data=6G,h_vmem=6G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker8g_BUCKy
@@ -19,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08g - BUCKY concordant analysis                    *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -59,10 +58,8 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir08g
 	cd workdir08g
 	#Add necessary modules
-	module load bioinformatics/bucky
-	module load tools/R/3.2.1
-	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+	module load bioinformatics/bucky/1.4.4
+	module load tools/R/3.4.1
 else
 	echo -e "\nHybPhyloMaker8g is running locally..."
 	#settings for local run
@@ -240,22 +237,35 @@ bucky -i bucky_input.txt -o $datamodif -a $alpha -n $nrbucky -k $nrruns -c $nrch
 echo -e "#NEXUS\nbegin trees;" > tree.tre
 #Copy 'translate' block everything from 'translate' to ';'
 sed -n '/translate/,/;/p' ${datamodif}.concordance >> tree.tre
-cat tree.tre > BUCKy_popultree.tre
-cat tree.tre > BUCKy_popultreeBL.tre
-cat tree.tre > BUCKy_conctree.tre
-cat tree.tre > BUCKy_conctreeCF.tre
+cat tree.tre > BUCKy_popultree.newick
+cat tree.tre > BUCKy_popultreeBL.newick
+cat tree.tre > BUCKy_conctree.newick
+cat tree.tre > BUCKy_conctreeCF.newick
+
 #Extract 'Population Tree' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
-grep -a1 "^Population Tree:" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree:/tree PopulationTree =/' >> BUCKy_popultree.tre
-echo "END;" >> BUCKy_popultree.tre
+grep -a1 "^Population Tree:" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree:/tree PopulationTree =/' >> BUCKy_popultree.newick
+echo "END;" >> BUCKy_popultree.newick
+#Modify to NEWICK
+R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_popultree.tre\")" BUCKy_popultree.newick > /dev/null
+
 #Extract 'Population Tree, With Branch Lengths' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
-grep -a1 "^Population Tree, With Branch Lengths" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree, With Branch Lengths In Estimated Coalescent Units:/tree PopulationTreeWithBranchLengthsInEstimatedCoalescentUnits =/' >> BUCKy_popultreeBL.tre
-echo "END;" >> BUCKy_popultreeBL.tre
+grep -a1 "^Population Tree, With Branch Lengths" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree, With Branch Lengths In Estimated Coalescent Units:/tree PopulationTreeWithBranchLengthsInEstimatedCoalescentUnits =/' >> BUCKy_popultreeBL.newick
+echo "END;" >> BUCKy_popultreeBL.newick
+#Modify to NEWICK
+R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_popultreeBL.tre\")" BUCKy_popultreeBL.newick > /dev/null
+
 #Extract 'Primary Concordance Tree Topology' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
-grep -a1 "^Primary Concordance Tree Topology" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree Topology:/tree PrimaryConcordanceTreeTopology =/' >> BUCKy_conctree.tre
-echo "END;" >> BUCKy_conctree.tre
+grep -a1 "^Primary Concordance Tree Topology" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree Topology:/tree PrimaryConcordanceTreeTopology =/' >> BUCKy_conctree.newick
+echo "END;" >> BUCKy_conctree.newick
+#Modify to NEWICK
+R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_conctree.tre\")" BUCKy_conctree.newick > /dev/null
+
 #Extract 'Primary Concordance Tree with' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
-grep -a1 "^Primary Concordance Tree with" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree with Sample Concordance Factors:/tree PrimaryConcordanceTreewithSampleConcordanceFactors =/' >> BUCKy_conctreeCF.tre
-echo "END;" >> BUCKy_conctreeCF.tre
+grep -a1 "^Primary Concordance Tree with" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree with Sample Concordance Factors:/tree PrimaryConcordanceTreewithSampleConcordanceFactors =/' >> BUCKy_conctreeCF.newick
+echo "END;" >> BUCKy_conctreeCF.newick
+#Modify to NEWICK
+R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_conctreeCF.tre\")" BUCKy_conctreeCF.newick > /dev/null
+
 rm tree.tre
 
 # Copy results to home

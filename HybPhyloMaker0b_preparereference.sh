@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -158,7 +158,11 @@ echo -e "Pseudoreference named '${name}_with${nrns}Ns_beginend.fas' was prepared
 # 2. Prepare BED file
 # Remove fasta header (if any), i.e., delete all line beginning with '>'
 header=$(grep ">" ${name}_with${nrns}Ns_beginend.fas | sed 's/>//')
-sed '/^>/ d' $probes > reflines.txt
+if [[ $cp =~ "yes" ]]; then
+	sed '/^>/ d' $cpDNACDS > reflines.txt
+else
+	sed '/^>/ d' $probes > reflines.txt
+fi
 # cat $probes | sed 's/N\{400\}/Q/g' | tr 'Q' '\n' > reflines.txt
 # Delete empty lines
 sed -i.bak '/^$/d' reflines.txt

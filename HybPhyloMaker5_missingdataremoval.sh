@@ -1,15 +1,15 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=24:0:0
-#PBS -l select=1:ncpus=4:mem=12gb:scratch_local=4gb
+#PBS -l select=1:ncpus=4:mem=2gb:scratch_local=4gb
 #PBS -j oe
 #PBS -N HybPhyloMaker5_missingdata_handling
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
 #$ -pe mthread 4
-#$ -q sThC.q
-#$ -l mres=3G,h_data=3G,h_vmem=3G
+#$ -q mThC.q
+#$ -l mres=2G,h_data=2G,h_vmem=2G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker5_missingdata_handling
@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -53,7 +53,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-3.4.1-gcc
 	module add trimal-1.4
 	module add mstatx
-	module add R-3.2.3-intel
+	module add R-3.4.3-gcc
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
@@ -67,10 +67,10 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir05
 	cd workdir05
 	#Add necessary modules
-	module load bioinformatics/anaconda3/2.3.0
-	module load bioinformatics/trimal
-	module load bioinformatics/mstatx
-	module load tools/R/3.2.1
+	module load bioinformatics/anaconda3/2.3.0 #for python3
+	module load bioinformatics/trimal/1.4
+	module load bioinformatics/mstatx/1.0
+	module load tools/R/3.4.1
 else
 	echo -e "\nHybPhyloMaker5 is running locally..."
 	#settings for local run

@@ -8,8 +8,9 @@
 
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
-#$ -pe mthread 12
-#$ -q sThC.q
+#$ -pe mthread 4
+#$ -q mThC.q
+#$ -l mres=4G,h_data=4G,h_vmem=4G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker2_readmapping
@@ -19,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.6.0                                    *
+# *                                   v.1.6.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -56,10 +57,12 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	mkdir -p workdir02
 	cd workdir02
 	#Add necessary modules
-	module load bioinformatics/bowtie2/2.2.6
-	module load bioinformatics/bwa
+	module load bioinformatics/bowtie2/2.2.9
+	module load bioinformatics/bwa/0.7.12
 	module load bioinformatics/samtools/1.3
-	module load bioinformatics/ococo/ #???
+	module load bioinformatics/anaconda3/5.1 #adds also kindel
+	module load bioinformatics/fastuniq/1.1
+	#module load bioinformatics/ococo/ #???
 else
 	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
