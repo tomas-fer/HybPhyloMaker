@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.2                                                                                                                #
+# v.1.6.4                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -276,16 +276,42 @@ if ! [ -x "$(command -v parallel)" ]; then
 	cd ..
 fi
 
-#Samtools
+#SAMtools
 if ! [ -x "$(command -v samtools)" ]; then
 	echo -e "Installing 'samtools'"
-	wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 &> samtools_install.log
-	tar xjvf samtools-1.3.1.tar.bz2 1>/dev/null
-	rm samtools-1.3.1.tar.bz2
-	cd samtools-1.3.1
+	wget https://github.com/samtools/samtools/releases/download/1.8/samtools-1.8.tar.bz2 &> samtools_install.log
+	tar xjvf samtools-1.8.tar.bz2 1>/dev/null
+	rm samtools-1.8.tar.bz2
+	cd samtools-1.8
+	autoheader &>> ../samtools_install.log
+	autoconf -Wno-syntax &>> ../samtools_install.log
 	./configure --without-curses &>> ../samtools_install.log
-	make &>> ../samtools_install.log
-	make install &>> ../samtools_install.log
+	make all all-htslib &>> ../samtools_install.log
+	make install all-htslib &>> ../samtools_install.log
+	cd ..
+fi
+# if ! [ -x "$(command -v samtools)" ]; then
+	# echo -e "Installing 'samtools'"
+	# wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 &> samtools_install.log
+	# tar xjvf samtools-1.3.1.tar.bz2 1>/dev/null
+	# rm samtools-1.3.1.tar.bz2
+	# cd samtools-1.3.1
+	# ./configure --without-curses &>> ../samtools_install.log
+	# make &>> ../samtools_install.log
+	# make install &>> ../samtools_install.log
+	# cd ..
+# fi
+
+#BCFtools
+if ! [ -x "$(command -v bcftools)" ]; then
+	echo -e "Installing 'bcftools'"
+	wget https://github.com/samtools/bcftools/releases/download/1.8/bcftools-1.8.tar.bz2 &> bcftools_install.log
+	tar xjvf bcftools-1.8.tar.bz2 1>/dev/null
+	rm bcftools-1.8.tar.bz2
+	cd bcftools-1.8
+	./configure --without-curses &>> ../bcftools_install.log
+	make all all-htslib &>> ../bcftools_install.log
+	make install all-htslib &>> ../bcftools_install.log
 	cd ..
 fi
 
@@ -693,7 +719,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4 bucky; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4 bucky bcftools; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
@@ -716,7 +742,7 @@ echo -e "**************************************************************"
 #Check R packages
 echo -e "\n**************************************************************"
 echo -e "Checking R packages"
-for Rpackage in ape seqinr data.table; do
+for Rpackage in ape seqinr data.table openxlsx; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
