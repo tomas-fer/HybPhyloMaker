@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.6.2                                    *
+# *                                   v.1.6.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -228,6 +228,35 @@ do
 		blat -t=DNA -q=DNA -out=pslx -minIdentity=$minident $cpDNACDS $contigfile ${contigfile}.pslx
 	else
 		blat -t=DNA -q=DNA -out=pslx -minIdentity=$minident $probes $contigfile ${contigfile}.pslx
+		#Modify PSLX if the consensus was called using 'ConsensusFixer'
+		#BLAT change all ambiguous bases to 'n', following lines put ambiguities back
+		if [[ $conscall =~ "consensusfixer" ]]; then
+			echo -e "Modifying PSLX..."
+			head -5 ${contigfile}.pslx > pslx_header.txt #get first 5 lines as a header
+			sed -i '1,5d' ${contigfile}.pslx #delete header (first 5 linees)
+			cut -f22 < ${contigfile}.pslx > pslx_sequences.txt #extract column 22, i.e. column with samples-specific sequences
+			sed -i "s/,$/\n/" pslx_sequences.txt #replace ',' at thee end of line by EOL (separate lines by empty line)
+			sed -i "s/,/\n/g" pslx_sequences.txt #replace each ',' by EOL (put each fragment to a separate line)
+			sed -i 's/n/\[ACGTRYSWKMBDHVN\]/g' pslx_sequences.txt #replace any 'n' by every possible DNA letter incl. ambiguities (as regex)
+			cat pslx_sequences.txt | while read line; do
+				if [ ! -z "$line" ]; then
+					grep -io -m 1 $line $contigfile | head -1 >> pslx_sequences_ambig.txt
+				else
+					echo >> pslx_sequences_ambig.txt
+				fi
+			done
+			#convert output to lowercase
+			tr A-Z a-z < pslx_sequences_ambig.txt > pslx_sequences_ambigLower.txt
+			#format back to conform PSLX standards
+			sed -i '/^$/!s/$/,/' pslx_sequences_ambigLower.txt #add ',' on non-empty lines
+			tr '\n' 'Q' < pslx_sequences_ambigLower.txt | sed "s/,QQ/,\n/g" | sed 's/Q//g' > pslx_sequences_ambigLowerModif.txt
+			#combine with original PSLX
+			cat ${contigfile}.pslx | cut -f 1-21 > first.txt #extract first 21 columns
+			cat ${contigfile}.pslx | cut -f 23 > second.txt #extract 23rd column
+			paste first.txt pslx_sequences_ambigLowerModif.txt second.txt > final.txt #add the modified 22nd column
+			cat pslx_header.txt final.txt > ${contigfile}.pslx #add original header
+			rm pslx_header.txt pslx_sequences.txt pslx_sequences_ambig.txt pslx_sequences_ambigLower.txt pslx_sequences_ambigLowerModif.txt first.txt second.txt final.txt
+		fi
 	fi
 	cp $contigfile.pslx $path/$type/50pslx
 done
