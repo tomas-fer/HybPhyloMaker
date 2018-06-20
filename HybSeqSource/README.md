@@ -22,6 +22,8 @@ https://github.com/smirarab/ASTRAL
 https://github.com/nylander/catfasta2phyml  
 **combineboot.py**  
 _part of HybPhyloMaker_ based on http://p4.nhm.ac.uk/tutorial/combine_supports.html  
+**ConsensusFixer.jar**  
+https://github.com/cbg-ethz/ConsensusFixer  
 **CompareToBootstrap.pl**  
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **CompareTree.pl**  
