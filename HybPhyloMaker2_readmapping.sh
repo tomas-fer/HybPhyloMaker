@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.6.2                                    *
+# *                                   v.1.6.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -46,6 +46,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add gcc-4.8.4
 	module add python34-modules-gcc #adds also kindel
 	module add ococo-2016-11
+	module add jdk-7
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
 	#settings for Hydra
@@ -63,6 +64,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/anaconda3/5.1 #adds also kindel
 	module load bioinformatics/fastuniq/1.1
 	#module load bioinformatics/ococo/ #???
+	module load java/1.7
 else
 	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
@@ -182,6 +184,11 @@ echo -e "OK for running HybPhyloMaker2\n"
 #Make a new folder for results
 mkdir -p $path/$type
 
+#Copy programs
+if [[ $conscall =~ "consensusfixer" ]]; then
+	cp $source/ConsensusFixer.jar .
+fi
+
 #Copy pseudoreference
 if [[ $cp =~ "yes" ]]; then
 	probes=$cpDNACDS
@@ -286,18 +293,41 @@ for file in $(cat SamplesFileNames.txt); do
 		species=$(cut -d'_' -f1 <<< $file | cut -d'-' -f2)
 		#adding data to table
 		echo -e "$number\t$genus\t$species\t$nrall\t$nr1P\t$nr1U\t$nr2U\t$nrmapped\t$percmapped" >> mapping_summary.txt
+		#sort and index
+		echo "Sorting and indexing BAM..."
+		samtools sort ${file}.bam -o ${file}_sorted.bam
+		rm ${file}.bam
+		mv ${file}_sorted.bam ${file}.bam
+		samtools index ${file}.bam
 		#copy results to home
 		cp ${file}.bam $path/$type/21mapped_${mappingmethod}
+		cp ${file}.bam.bai $path/$type/21mapped_${mappingmethod}
 		cp ${file}_${mappingmethod}_out.txt $path/$type/21mapped_${mappingmethod}
 		cp mapping_summary.txt $path/$type/21mapped_${mappingmethod}
 	else
 		echo "Copying BAM..."
 		cp $path/$type/21mapped_${mappingmethod}/${file}.bam .
+		cp $path/$type/21mapped_${mappingmethod}/${file}.bam.bai .
 	fi
-	#CONSENSUS USING KINDEL/OCOCO
+	#CONSENSUS USING KINDEL/OCOCO/ConsensusFixer
 	if [[ $conscall =~ "ococo" ]]; then
 		echo "Making consensus with OCOCO..."
 		ococo -i ${file}.bam -x ococo64 -c $mincov -F ${file}.fasta 2>/dev/null
+	elif [[ $conscall =~ "consensusfixer" ]]; then
+		echo "Making consensus with ConsensusFixer..."
+		if [ ! -f "${file}.bam.bai" ]; then
+			samtools sort ${file}.bam -o ${file}_sorted.bam
+			rm ${file}.bam
+			mv ${file}_sorted.bam ${file}.bam
+			samtools index ${file}.bam
+		fi
+		#call consensus with ambiguous bases with ConsensusFixer
+		java -jar ConsensusFixer.jar -i ${file}.bam -r ${probes}_with${nrns}Ns_beginend.fas -plurality $plurality -mcc $mincov -dash
+		#add EOL at the end of the file
+		sed -i '$a\' consensus.fasta
+		#change '-' (introduce by ConsensusFixer when coverage is low) by 'N'
+		sed -i 's/-/N/g' consensus.fasta
+		mv consensus.fasta ${file}.fasta
 	else
 		echo "Making consensus with kindel..."
 		kindel -m $mincov -t $majthres ${file}.bam > ${file}.fasta
@@ -318,6 +348,7 @@ for file in $(cat SamplesFileNames.txt); do
 	cp ${file}.fasta $path/$type/21mapped_${mappingmethod}
 	#delete BAM
 	rm ${file}.bam
+	rm ${file}.bam.bai
 done
 
 #Combine all fasta file into one
