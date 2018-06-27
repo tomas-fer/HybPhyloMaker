@@ -9,7 +9,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -339,9 +339,9 @@ if [[ $runpf =~ "yes" ]]; then
 	# Run PartitionFinder
 	#python partitionfinder/PartitionFinder.py PartitionFinder --raxml --rcluster-max 1000 --rcluster-percent 10
 	if [[ $PBS_O_HOST == *".cz" ]]; then
-		python partitionfinder/PartitionFinder.py -p $TORQUE_RESC_TOTAL_PROCS PartitionFinder --raxml
+		python partitionfinder/PartitionFinder.py -p $TORQUE_RESC_TOTAL_PROCS PartitionFinder --raxml --no-ml-tree
 	else
-		python partitionfinder/PartitionFinder.py -p $numbcores PartitionFinder --raxml
+		python partitionfinder/PartitionFinder.py -p $numbcores PartitionFinder --raxml --no-ml-tree
 	fi
 	#Prepare RAxML (ExaML) partition file from PartitionFinder results
 	grep "DNA, Subset" PartitionFinder/analysis/best_scheme.txt > RAxMLpartitions.txt
