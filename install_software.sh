@@ -144,7 +144,7 @@ if ! [ -x "$(command -v java)" ]; then
 				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
 			fi
 		elif [[ $distrib =~ "ubuntu" ]]; then
-			ubuver=$(lsb_release -r -s | cut -d"." -f1)
+			ubuver=$(grep -Po '(?<=VERSION_ID=")\d+' /etc/os-release)
 			if [ "$ubuver" -eq "16" ]; then
 				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
 			else
@@ -336,7 +336,7 @@ if ! [ -x "$(command -v transeq)" ]; then
 	wget ftp://emboss.open-bio.org/pub/EMBOSS/emboss-latest.tar.gz &> EMBOSS_install.log
 	tar xfz emboss-latest.tar.gz 1>/dev/null
 	rm emboss-latest.tar.gz
-	cd EMBOSS*
+	cd EMBOSS-*
 	./configure --without-x &>> ../EMBOSS_install.log
 	make &>> ../EMBOSS_install.log
 	ldconfig
