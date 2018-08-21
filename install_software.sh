@@ -145,7 +145,7 @@ if ! [ -x "$(command -v java)" ]; then
 			fi
 		elif [[ $distrib =~ "ubuntu" ]]; then
 			ubuver=$(grep -Po '(?<=VERSION_ID=")\d+' /etc/os-release)
-			if [ "$ubuver" -eq "16" ]; then
+			if [ "$ubuver" -ge "16" ]; then
 				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
 			else
 				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
@@ -362,8 +362,8 @@ if [[ `grep sse3 /proc/cpuinfo` ]]; then
 	fi
 fi
 if [[ `grep avx /proc/cpuinfo` ]]; then
-	if ! [ -x "$(command -v raxmlHPC­AVX)" ]; then
-		echo -e "Installing 'raxmlHPC­AVX'"
+	if ! [ -x "$(command -v raxmlHPC-AVX)" ]; then
+		echo -e "Installing 'raxmlHPC-AVX'"
 		make -f Makefile.AVX.gcc &>> ../raxml_install.log
 		rm *.o
 	fi
