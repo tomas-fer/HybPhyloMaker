@@ -69,10 +69,10 @@ if ! [ -x "$(command -v perl)" ]; then
 	$installer install -y perl &> perl_install.log
 fi
 
-#Python
-if ! [ -x "$(command -v python)" ]; then
-	echo -e "Installing 'python'"
-	$installer install -y python &> python_install.log
+#Python2
+if ! [ -x "$(command -v python2)" ]; then
+	echo -e "Installing 'python2'"
+	$installer install -y python2 &> python_install.log
 fi
 
 #Python3
@@ -90,11 +90,11 @@ fi
 
 #Pip
 if [[ $distribution =~ "Debian" ]]; then
-	if ! [ -x "$(command -v pip)" ]; then
-		echo -e "Installing 'pip'"
+	if ! [ -x "$(command -v pip2)" ]; then
+		echo -e "Installing 'pip2'"
 		$installer install -y python-pip &> pip_install.log
 	fi
-	pip install --upgrade pip &>> pip_install.log
+	echo "pip2 install --upgrade pip" &>> pip_install.log
 else
 	if ! [ -x "$(command -v pip2.7)" ]; then
 		echo -e "Installing 'pip'"
@@ -122,7 +122,7 @@ fi
 if [[ $distribution =~ "Fedora" ]]; then
 	python3 -m pip install --upgrade pip &>> pip3_install.log
 else
-	pip3 install --upgrade pip &>> pip3_install.log
+	echo "pip3 install --upgrade pip" &>> pip3_install.log
 fi
 
 #Biopython
@@ -523,12 +523,12 @@ fi
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip show numpy | grep Version` ]]; then
-			pip install numpy &> numpy_install.log
+		if ! [[ `pip2 show numpy | grep Version` ]]; then
+			pip2 install numpy &> numpy_install.log
 			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip show scipy | grep Version` ]]; then
-			pip install scipy &> scipy_install.log
+		if  ! [[ `pip2 show scipy | grep Version` ]]; then
+			pip2 install scipy &> scipy_install.log
 			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
@@ -564,8 +564,8 @@ if ! [ -x "$(command -v p4)" ]; then
 	fi
 	#install python module 'future'
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip show future | grep Version` ]]; then
-			pip install future &> python-future_install.log
+		if ! [[ `pip2 show future | grep Version` ]]; then
+			pip2 install future &> python-future_install.log
 		fi
 	else
 		if ! [[ `pip2.7 show future | grep Version` ]]; then
@@ -580,9 +580,9 @@ if ! [ -x "$(command -v p4)" ]; then
 		#sed -i.bak "46s/.*/$replace/" setup.py
 		#sed -i.bak2 "47s/# //" setup.py
 	fi
-	python setup.py build &>> ../p4_install.log
-	python setup.py install &>> ../p4_install.log
-	python setup.py build_ext -i &>> ../p4_install.log
+	python2 setup.py build &>> ../p4_install.log
+	python2 setup.py install &>> ../p4_install.log
+	python2 setup.py build_ext -i &>> ../p4_install.log
 	cd ..
 fi
 
@@ -605,23 +605,23 @@ fi
 
 #other python modules (mainly for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
-	if ! [[ `pip show pandas | grep Version` ]]; then
+	if ! [[ `pip2 show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
-		pip install pandas &> python-pandas_install.log
+		pip2 install pandas &> python-pandas_install.log
 		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
-	if ! [[ `pip show scikit-learn | grep Version` ]]; then
+	if ! [[ `pip2 show scikit-learn | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python'"
-		pip install scikit-learn &> python-sklearn_install.log
+		pip2 install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
-	if ! [[ `pip show tables | grep Version` ]]; then
+	if ! [[ `pip2 show tables | grep Version` ]]; then
 		echo -e "Installing 'tables for python'"
-		pip install tables &> python-tables.log
+		pip2 install tables &> python-tables.log
 	fi
-	if ! [[ `pip show parsing | grep Version` ]]; then
+	if ! [[ `pip2 show parsing | grep Version` ]]; then
 		echo -e "Installing 'parsing for python'"
-		pip install parsing &> python-parsing.log
+		pip2 install parsing &> python-parsing.log
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 	if ! [[ `pip2.7 show pandas | grep Version` ]]; then
@@ -719,7 +719,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4 bucky bcftools; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R p4 bucky bcftools; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
