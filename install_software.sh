@@ -94,7 +94,7 @@ if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'pip2'"
 		$installer install -y python-pip &> pip_install.log
 	fi
-	echo "pip2 install --upgrade pip" &>> pip_install.log
+	pip2 install --upgrade pip &>> pip_install.log
 else
 	if ! [ -x "$(command -v pip2.7)" ]; then
 		echo -e "Installing 'pip'"
@@ -122,7 +122,7 @@ fi
 if [[ $distribution =~ "Fedora" ]]; then
 	python3 -m pip install --upgrade pip &>> pip3_install.log
 else
-	echo "pip3 install --upgrade pip" &>> pip3_install.log
+	pip3 install --upgrade pip &>> pip3_install.log
 fi
 
 #Biopython
