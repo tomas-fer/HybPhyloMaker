@@ -72,7 +72,7 @@ fi
 #Python2
 if ! [ -x "$(command -v python2)" ]; then
 	echo -e "Installing 'python2'"
-	$installer install -y python2 &> python_install.log
+	$installer install -y python &> python_install.log
 fi
 
 #Python3
