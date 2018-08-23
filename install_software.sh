@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5b                                                                                                               #
+# v.1.6.5c                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -386,8 +386,8 @@ if [[ `grep sse3 /proc/cpuinfo` ]]; then
 	fi
 fi
 if [[ `grep avx /proc/cpuinfo` ]]; then
-	if ! [ -x "$(command -v raxmlHPC­PTHREADS-AVX)" ]; then
-		echo -e "Installing 'raxmlHPC­PTHREADS-AVX'"
+	if ! [ -x "$(command -v raxmlHPC-PTHREADS-AVX)" ]; then
+		echo -e "Installing 'raxmlHPC-PTHREADS-AVX'"
 		make -f Makefile.AVX.PTHREADS.gcc &>> ../raxml_install.log
 		rm *.o
 	fi
