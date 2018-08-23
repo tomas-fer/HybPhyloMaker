@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5a                                                                                                               #
+# v.1.6.5b                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -94,13 +94,15 @@ if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'pip2'"
 		$installer install -y python-pip &> pip_install.log
 	fi
-	pip2 install --upgrade pip &>> pip_install.log
+	#pip2 install --upgrade pip &>> pip_install.log #the upgrade makes troubles on Debian/Ubuntu
+	echo >/dev/null
 else
 	if ! [ -x "$(command -v pip2.7)" ]; then
 		echo -e "Installing 'pip2'"
 		$installer install -y python-pip &> pip_install.log
 	fi
-	pip2.7 install --upgrade pip &>> pip_install.log
+	#pip2.7 install --upgrade pip &>> pip_install.log #the upgrade makes troubles on Debian/Ubuntu
+	echo >/dev/null
 fi
 
 #Pip3 (also required for 'biopython' and 'kindel' installation, see below)
@@ -120,9 +122,11 @@ if ! [ -x "$(command -v pip3)" ]; then
 	fi
 fi
 if [[ $distribution =~ "Fedora" ]]; then
-	python3 -m pip install --upgrade pip &>> pip3_install.log
+	#python3 -m pip install --upgrade pip &>> pip3_install.log #the upgrade makes troubles on Debian/Ubuntu
+	echo >/dev/null
 else
-	pip3 install --upgrade pip &>> pip3_install.log
+	#pip3 install --upgrade pip &>> pip3_install.log #the upgrade makes troubles on Debian/Ubuntu
+	echo >/dev/null
 fi
 
 #Biopython
