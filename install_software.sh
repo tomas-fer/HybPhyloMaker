@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5                                                                                                                #
+# v.1.6.5a                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -88,7 +88,7 @@ if ! [ -x "$(command -v python3)" ]; then
 	fi
 fi
 
-#Pip
+#Pip2
 if [[ $distribution =~ "Debian" ]]; then
 	if ! [ -x "$(command -v pip2)" ]; then
 		echo -e "Installing 'pip2'"
@@ -97,7 +97,7 @@ if [[ $distribution =~ "Debian" ]]; then
 	pip2 install --upgrade pip &>> pip_install.log
 else
 	if ! [ -x "$(command -v pip2.7)" ]; then
-		echo -e "Installing 'pip'"
+		echo -e "Installing 'pip2'"
 		$installer install -y python-pip &> pip_install.log
 	fi
 	pip2.7 install --upgrade pip &>> pip_install.log
@@ -144,6 +144,7 @@ if ! [ -x "$(command -v java)" ]; then
 				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
 			fi
 		elif [[ $distrib =~ "ubuntu" ]]; then
+			#ubuver=$(lsb_release -r -s | cut -d"." -f1)
 			ubuver=$(grep -Po '(?<=VERSION_ID=")\d+' /etc/os-release)
 			if [ "$ubuver" -ge "16" ]; then
 				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
@@ -362,8 +363,8 @@ if [[ `grep sse3 /proc/cpuinfo` ]]; then
 	fi
 fi
 if [[ `grep avx /proc/cpuinfo` ]]; then
-	if ! [ -x "$(command -v raxmlHPC-AVX)" ]; then
-		echo -e "Installing 'raxmlHPC-AVX'"
+	if ! [ -x "$(command -v raxmlHPC­AVX)" ]; then
+		echo -e "Installing 'raxmlHPC­AVX'"
 		make -f Makefile.AVX.gcc &>> ../raxml_install.log
 		rm *.o
 	fi
@@ -517,6 +518,20 @@ if ! [ -x "$(command -v ococo)" ]; then
 	cd ..
 fi
 
+#BUCKy
+if ! [ -x "$(command -v bucky)" ]; then
+	echo -e "Installing 'BUCKy'"
+	wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
+	tar -xzvf bucky-1.4.4.tgz 1>/dev/null
+	rm bucky-1.4.4.tgz
+	cd bucky-1.4.4/src/
+	make &>> ../../bucky_install.log
+	cp mbsum /usr/local/bin
+	cp bucky /usr/local/bin
+	cd ../..
+fi
+
+
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
 #For compilation on Fedora/CentOS/OpenSUSE you need to specify where 'gsl' is installed (in setup.py) - modification of 'setup.py' is included below
@@ -554,22 +569,30 @@ if ! [ -x "$(command -v p4)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		$installer install -y libgsl0-dev &> libgsl_install.log #Debian
 		$installer install -y python-dev &> python-dev_install.log #Debian
+		$installer install -y python-setuptools &> python-setuptools_install.log
 	elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		$installer install -y gsl-devel &> libgsl_install.log #CentOS, Fedora and OpenSUSE
 		$installer install -y python-devel &> python-dev_install.log #CentOS, Fedora and OpenSUSE
+		$installer install -y python-setuptools &> python-setuptools_install.log
 	fi
 	
 	if [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		$installer install redhat-rpm-config &> rpm-config_install.log
 	fi
-	#install python module 'future'
+	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
 		if ! [[ `pip2 show future | grep Version` ]]; then
 			pip2 install future &> python-future_install.log
 		fi
+		if ! [[ `pip2 show bitarray | grep Version` ]]; then
+			pip2 install bitarray &> python-bitarray_install.log
+		fi
 	else
 		if ! [[ `pip2.7 show future | grep Version` ]]; then
 			pip2.7 install future &> python-future_install.log
+		fi
+		if ! [[ `pip2.7 show bitarray | grep Version` ]]; then
+			pip2.7 install bitarray &> python-bitarray_install.log
 		fi
 	fi
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
@@ -697,19 +720,6 @@ if [[ $instexaml =~ "y" ]]; then
 		fi
 		cd ../..
 	fi
-fi
-
-#BUCKy
-if ! [ -x "$(command -v bucky)" ]; then
-	echo -e "Installing 'BUCKy'"
-	wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
-	tar -xzvf bucky-1.4.4.tgz 1>/dev/null
-	rm bucky-1.4.4.tgz
-	cd bucky-1.4.4/src/
-	make &>> ../../bucky_install.log
-	cp mbsum /usr/local/bin
-	cp bucky /usr/local/bin
-	cd ../..
 fi
 
 #Leave 'install' directory
