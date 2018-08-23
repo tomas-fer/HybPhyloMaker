@@ -363,8 +363,8 @@ if [[ `grep sse3 /proc/cpuinfo` ]]; then
 	fi
 fi
 if [[ `grep avx /proc/cpuinfo` ]]; then
-	if ! [ -x "$(command -v raxmlHPC­AVX)" ]; then
-		echo -e "Installing 'raxmlHPC­AVX'"
+	if ! [ -x "$(command -v raxmlHPC-AVX)" ]; then
+		echo -e "Installing 'raxmlHPC-AVX'"
 		make -f Makefile.AVX.gcc &>> ../raxml_install.log
 		rm *.o
 	fi
