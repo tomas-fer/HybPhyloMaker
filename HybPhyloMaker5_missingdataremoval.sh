@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -54,6 +54,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add trimal-1.4
 	module add mstatx
 	module add R-3.4.3-gcc
+	module add debian8-compat
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
@@ -397,7 +398,7 @@ python3 AMAS.py summary -f fasta -d dna -i *.fasta
 echo -e "\nCalculating alignment entropy for all genes using MstatX..."
 for file in $(ls *.fasta); do
 	echo $file
-	mstatx -i $file -g > /dev/null
+	mstatx -i $file -g > /dev/null 2>&1
 	line=$(cat output.txt)
 	echo -e "$file\t$line" >> mstatx.txt
 done
@@ -457,7 +458,7 @@ python3 AMAS.py summary -f fasta -d dna -i AMASselected/*.fas
 echo -e "\nCalculating alignment entropy for selected genes using MstatX..."
 for file in $(ls AMASselected/*.fas); do
 	echo $file
-	mstatx -i $file -g  > /dev/null
+	mstatx -i $file -g  > /dev/null 2>&1
 	line=$(cat output.txt)
 	echo -e "$file\t$line" >> mstatx.txt
 done
