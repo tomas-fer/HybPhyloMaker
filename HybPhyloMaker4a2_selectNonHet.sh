@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 04a2 - Select low-heterozygosity exons                *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -55,6 +55,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add bwa-0.7.15
 	module add samtools-1.3
 	module add bcftools-1.3.1
+	module add debian8-compat
 	#available processors
 	procavail=`expr $TORQUE_RESC_TOTAL_PROCS - 2`
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
