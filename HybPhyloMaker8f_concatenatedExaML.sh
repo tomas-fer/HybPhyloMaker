@@ -9,7 +9,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.7                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -45,6 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add examl-3.0.15
 	module add raxml-8.2.8
 	module add perl-5.20.1-gcc
+	module add debian8-compat
 else
 	echo -e "\nHybPhyloMaker8f is running locally..."
 	#settings for local run
