@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.6a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -53,6 +53,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-3.4.1-gcc
 	module add trimal-1.4
 	module add mstatx
+	module add seqtk-1.0
 	module add R-3.4.3-gcc
 	module add debian8-compat
 	#Set package library for R
