@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.6a                                   *
+# *                                   v.1.6.6b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -222,7 +222,7 @@ do
 	#make table with length, number and percentage of missing data
 	seqtk comp ${file}_modif.fasta | awk '{print $1,$3/$2*100}' > ${file}_${MISSINGPERCENT}percN.fas
 	#make a list of sequences to keep (i.e., with missing data below the threshold)
-	awk -v val=$MISSINGPERCENT '$4<=val {print $1}' ${file}_${MISSINGPERCENT}percN.fas > keep.txt
+	awk -v val=$MISSINGPERCENT '$2<=val {print $1}' ${file}_${MISSINGPERCENT}percN.fas > keep.txt
 	#add header to the file with missing percent
 	sed -i.bak "1s/^/species $file\n/" ${file}_${MISSINGPERCENT}percN.fas
 	#change separator from ' ' to TABs
