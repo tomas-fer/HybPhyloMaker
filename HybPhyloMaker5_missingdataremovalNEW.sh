@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7                                    *
+# *                                   v.1.6.7a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -380,7 +380,7 @@ cat amas.header amas.sum > summary.txt
 
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for all genes using MstatX..."
-for file in $(ls *.fasta); do
+for file in *.fasta; do
 	echo $file
 	mstatx -i $file -g > /dev/null 2>&1
 	line=$(cat output.txt)
