@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7a                                   *
+# *                                   v.1.6.7b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -400,7 +400,7 @@ find -name "*fasta" -print0 | xargs -0 sed -i.bak 's/\?/n/g' #to avoid 'Argument
 find -name "*fasta" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to avoid 'Argument list too long' error
 #Calculate alignment conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for all genes using trimAl..."
-for file in $(ls *.fasta); do
+for file in *.fasta; do
 	echo $file
 	#Calculate sct using trimal | delete first three lines (header) | replace double TABs by single | replace ' ' by nothing | calculate weighted mean by
 	#multiplying first column value (number of residues, i.e. positions) by fifth column (similarity value), sum up all values and divide by the length of the gene
@@ -450,7 +450,7 @@ cat amasSel.header amasSel.sum > summary.txt
 
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for selected genes using MstatX..."
-for file in $(ls AMASselected/*.fas); do
+for file in AMASselected/*.fas; do
 	echo $file
 	mstatx -i $file -g  > /dev/null 2>&1
 	line=$(cat output.txt)
@@ -468,7 +468,7 @@ find AMASselected/ -name "*fas" -print0 | xargs -0 sed -i.bak 's/\?/n/g' #to avo
 find AMASselected/ -name "*fas" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to avoid 'Argument list too long' error
 #Calculate conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for selected genes using trimAl..."
-for file in $(ls AMASselected/*.fas); do
+for file in AMASselected/*.fas; do
 	echo $file
 	#Calculate sct using trimal | delete first three lines (header) | replace double TABs by single | replace ' ' by nothing | calculate weighted mean by
 	#multiplying first column value (number of residues, i.e. positions) by fifth column (similarity value), sum up all values and divide by the length of the gene
