@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.6b                                   *
+# *                                   v.1.6.7                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -195,12 +195,14 @@ if [[ $cp =~ "yes" ]]; then
 		# mv "$file" "${file%.fasta.mafft}.fasta"
 	# done
 else
-	cp $path/$alnpath/*.fasta .
+	#cp $path/$alnpath/*.fasta .
+	find $path/$alnpath -maxdepth 1 -name "*.fasta" -exec cp -t . {} + #to avoid 'Argument list too long' error
 fi
 
 #-----------PREPARE ALIGNMENTS WITH SPECIES WITH MAXIMUM SPECIFIED MISSING DATA ONLY----------------------
 #Make a list of all fasta files
-ls *.fasta | cut -d"." -f1 > fileForDeletePercentage.txt
+#ls *.fasta | cut -d"." -f1 > fileForDeletePercentage.txt
+find -name "*.fasta" | sed 's/\.\///' | sed 's/\.fasta//g' > fileForDeletePercentage.txt #to avoid 'Argument list too long' error
 #Make new dir for results
 mkdir $path/${alnpathselected}${MISSINGPERCENT}
 mkdir $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}
@@ -247,7 +249,8 @@ file=$(cat fileForDeletePercentage.txt | head -n 1)
 cat $file.fasta | sed '/^>/{N; s/\n/ /;}' | cut -f1 -d" " | sed 's/>//' | sed 's/_contigs//' | sed 's/.fas//' > headers.txt
 
 #Make a table with percentages of N in each accession and file
-awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' *percN.fas > missing_percentage_overview.txt
+#awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' *percN.fas > missing_percentage_overview.txt
+find -name "*percN.fas" -print0 | xargs -0 awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' > missing_percentage_overview.txt #to avoid 'Argument list too long' error
 #Add word 'species' as a 1st line in file headers.txt
 sed -i.bak '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
@@ -366,7 +369,15 @@ cp $source/alignmentSummary.R .
 # 1. For all genes
 #Calculate alignment summary using AMAS
 echo -e "\nCalculating alignment characteristics for all genes using AMAS..."
-python3 AMAS.py summary -f fasta -d dna -i *.fasta
+#This is a faster solution but with really many genes generate 'Argument list too long' error
+#python3 AMAS.py summary -f fasta -d dna -i *.fasta
+
+#Much slower solution but works also in case of many genes
+for f in *.fasta ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
+find -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amas.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
+head -n1 `find -name "*.summary" -print -quit` > amas.header #make header (take first line from the first match to *.summary)
+cat amas.header amas.sum > summary.txt
+
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for all genes using MstatX..."
 for file in $(ls *.fasta); do
@@ -383,8 +394,10 @@ cat mstatx.header mstatx.txt > tmp && mv tmp mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n' and all 'n' by 'N'
-sed -i.bak 's/\?/n/g' *.fasta
-sed -i.bak '/^>/!s/n/N/g' *.fasta
+#sed -i.bak 's/\?/n/g' *.fasta
+find -name "*fasta" -print0 | xargs -0 sed -i.bak 's/\?/n/g' #to avoid 'Argument list too long' error
+#sed -i.bak '/^>/!s/n/N/g' *.fasta
+find -name "*fasta" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to avoid 'Argument list too long' error
 #Calculate alignment conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for all genes using trimAl..."
 for file in $(ls *.fasta); do
@@ -426,7 +439,15 @@ do
 done
 #Calculate summary statistic for selected Assemblies using AMAS
 echo -e "\nCalculating alignment characteristics for selected genes using AMAS..."
-python3 AMAS.py summary -f fasta -d dna -i AMASselected/*.fas
+#This is a faster solution but with really many genes generate 'Argument list too long' error
+#python3 AMAS.py summary -f fasta -d dna -i AMASselected/*.fas
+
+#Much slower solution but works also in case of many genes
+for f in AMASselected/*.fas ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
+find AMASselected/ -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amasSel.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
+head -n1 `find AMASselected/ -name "*.summary" -print -quit` > amasSel.header #make header (take first line from the first match to *.summary)
+cat amasSel.header amasSel.sum > summary.txt
+
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for selected genes using MstatX..."
 for file in $(ls AMASselected/*.fas); do
@@ -441,8 +462,10 @@ sed -i.bak -e "1iLocus\tMstatX_entropy" mstatx.txt
 #Take only 2nd column with MstatX results (omitting alignment name)
 awk '{ print $2 }' mstatx.txt > tmp && mv tmp mstatx.txt
 #Replace '?' by 'n'
-sed -i.bak 's/\?/n/g' AMASselected/*.fas
-sed -i.bak 's/n/N/g' AMASselected/*.fas
+#sed -i.bak 's/\?/n/g' AMASselected/*.fas
+find AMASselected/ -name "*fas" -print0 | xargs -0 sed -i.bak 's/\?/n/g' #to avoid 'Argument list too long' error
+#sed -i.bak 's/n/N/g' AMASselected/*.fas
+find AMASselected/ -name "*fas" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to avoid 'Argument list too long' error
 #Calculate conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for selected genes using trimAl..."
 for file in $(ls AMASselected/*.fas); do
