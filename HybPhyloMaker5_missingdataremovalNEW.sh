@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7b                                   *
+# *                                   v.1.6.7c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -251,6 +251,9 @@ cat $file.fasta | sed '/^>/{N; s/\n/ /;}' | cut -f1 -d" " | sed 's/>//' | sed 's
 #Make a table with percentages of N in each accession and file
 #awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' *percN.fas > missing_percentage_overview.txt
 find -name "*percN.fas" -print0 | xargs -0 awk '{_[FNR]=(_[FNR] OFS $2)}END{for (i=1; i<=FNR; i++) {sub(/^ /,"",_[i]); print _[i]}}' > missing_percentage_overview.txt #to avoid 'Argument list too long' error
+#split the file if truncated (this happens with more than ca. 5,000 genes)
+awk '/Assembly/{filename=NR".comb"}; {print >filename}' missing_percentage_overview.txt
+paste *.comb | tr "\t" " " > missing_percentage_overview.txt
 #Add word 'species' as a 1st line in file headers.txt
 sed -i.bak '1s/^/species\n/' headers.txt
 #Combine headers and table with missing data
