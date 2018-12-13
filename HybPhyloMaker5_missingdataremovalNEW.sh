@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7c                                   *
+# *                                   v.1.6.7d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -72,6 +72,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/anaconda3/2.3.0 #for python3
 	module load bioinformatics/trimal/1.4
 	module load bioinformatics/mstatx/1.0
+	module load bioinformatics/seqtk
 	module load tools/R/3.4.1
 else
 	echo -e "\nHybPhyloMaker5 is running locally..."
