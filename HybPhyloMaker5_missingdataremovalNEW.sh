@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7d                                   *
+# *                                   v.1.6.7e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -244,6 +244,20 @@ echo -e "\nDeleting samples with more than ${MISSINGPERCENT}% missing data finis
 echo -e "Modified alignments saved in $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}"
 
 #-----------MAKE A TABLE WITH % OF MISSING DATA IN EACH SPECIES AND ASSEMBLY----------------------
+#Delete files with less than 4 taxa
+#table with number of samples per gene
+for i in *modif*; do
+	echo -ne "$i\t" >> nrtaxa.txt
+	grep ">" $i | wc -l >> nrtaxa.txt
+done
+#delete all assemblies with less than 4 samples
+awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | xargs rm
+#delete all files with percentage of missing data for assemblies with less than 4 samples
+awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | cut -d"_" -f 1,2 | sed "s/$/_${MISSINGPERCENT}percN.fas/" | xargs rm
+#count assemblies with less than 4 samples
+nrfew=$(awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | wc -l)
+echo -e "\n$nrfew alignments with less than 4 samples deleted..."
+
 #Prepare header file
 echo -e "\nPreparing summary table..."
 file=$(cat fileForDeletePercentage.txt | head -n 1)
