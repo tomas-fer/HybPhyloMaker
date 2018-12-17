@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: calculating tree and alignment properties
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.6.0
+# v.1.6.5
 # Taken from M. Borowiec GitHub (https://github.com/marekborowiec/good_genes)
 # Modified for HybPhyloMaker
 # Tomas Fer, 2018
@@ -166,7 +166,7 @@ Saturation <- function(seq, tree, locus_no) {
   # perform simple linear regression
   regress <- lm(p_dist ~ branch_dist)
   # get slope
-  slope <- coef(regress)[2]
+  slope <- as.numeric(coef(regress)[2])
   # get r-squared
   Rsquared <- summary(regress)$r.squared
   
