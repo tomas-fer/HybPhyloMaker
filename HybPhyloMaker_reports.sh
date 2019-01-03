@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *          Additional script - combine summary tables into single XLS          *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -236,9 +236,11 @@ rm a.txt b.txt c.txt head.txt comb.txt tail.txt *.bak*
 #Get number of samples, genes and selected genes
 nrsamples=$(cat $path/10rawreads/SamplesFileNames.txt | wc -l)
 if [[ $cp =~ "yes" ]]; then
-	nrgenes=$(ls ${path}/cp/60mafft/*.fasta | wc -l)
+	#nrgenes=$(ls ${path}/cp/60mafft/*.fasta | wc -l)
+	nrgenes=$(find ${path}/cp/60mafft -maxdepth 1 -name "*.fasta" -exec ls {} + | wc -l) #to avoid 'Argument list too long' error
 else
-	nrgenes=$(ls ${path}/${alnpath}/*.fasta | wc -l)
+	#nrgenes=$(ls ${path}/${alnpath}/*.fasta | wc -l)
+	nrgenes=$(find ${path}/${alnpath} -maxdepth 1 -name "*.fasta" -exec ls {} + | wc -l) #to avoid 'Argument list too long' error
 fi
 nrselected=$(cat ${path}/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | wc -l)
 
