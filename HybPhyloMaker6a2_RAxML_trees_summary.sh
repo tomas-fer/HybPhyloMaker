@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.6.5                                    *
+# *                                   v.1.6.6                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -151,7 +151,8 @@ for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt); do
 	cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/${i}_modif${MISSINGPERCENT}.fas alignments/
 done
 #Copy all RAxML tree files (*.tre) with bootstrap values to subfolder 'trees'
-cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bipartitions.*Assembly* trees/
+#cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/*bipartitions.*Assembly* trees/
+find $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML -maxdepth 1 -name "*bipartitions.*Assembly*" -exec cp -t trees {} + #to avoid 'Argument list too long' error
 #Rename RAxML trees
 cd trees
 for i in *; do
