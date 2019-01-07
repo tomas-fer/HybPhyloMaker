@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.6.5                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.6.6a                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2019 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -98,7 +98,8 @@ fi
 echo -ne "\nTesting if input data are available..."
 if [[ $update =~ "yes" ]]; then
 	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+		#if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+		if [ 0 -lt $(find $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT} -maxdepth 1 -name "*ssembly_*_modif${MISSINGPERCENT}.fas" -exec ls {} + 2>/dev/null | wc -w) ]; then #to avoid 'Argument list too long' error
 			echo -e "OK\n"
 		else
 			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
@@ -112,7 +113,8 @@ if [[ $update =~ "yes" ]]; then
 	fi
 else
 	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
-		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+		#if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+		if [ 0 -lt $(find $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT} -maxdepth 1 -name "*ssembly_*_modif${MISSINGPERCENT}.fas" -exec ls {} + 2>/dev/null | wc -w) ]; then #to avoid 'Argument list too long' error
 			echo -e "OK\n"
 		else
 			echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
@@ -168,21 +170,47 @@ else
 fi
 
 # Copy and modify selected FASTA files
+echo -e "Copying and modifying FASTA files...\n"
 for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
 	#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
-	cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
+	#cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
+	find $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT} -maxdepth 1 -name "*ssembly_${i}_modif${MISSINGPERCENT}.fas" -exec cp -t . {} + #to avoid 'Argument list too long' error
 	#Substitute '(' by '_' and ')' by nothing ('(' and ')' not allowed in RAxML/FastTree)
-	sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-	sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	#sed -i.bak 's/(/_/g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	find . -maxdepth 1 -name "*ssembly_${i}_modif${MISSINGPERCENT}.fas" | xargs sed -i.bak 's/(/_/g' #to avoid 'Argument list too long' error
+	#sed -i.bak 's/)//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	find . -maxdepth 1 -name "*ssembly_${i}_modif${MISSINGPERCENT}.fas" | xargs sed -i.bak 's/)//g' #to avoid 'Argument list too long' error
 	#Delete '_contigs' and '.fas' from labels (i.e., keep only genus-species_nr)
-	sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
-	sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	#sed -i.bak 's/_contigs//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	find . -maxdepth 1 -name "*ssembly_${i}_modif${MISSINGPERCENT}.fas" | xargs sed -i.bak 's/_contigs//g' #to avoid 'Argument list too long' error
+	#sed -i.bak 's/.fas//g' *ssembly_${i}_modif${MISSINGPERCENT}.fas
+	find . -maxdepth 1 -name "*ssembly_${i}_modif${MISSINGPERCENT}.fas" | xargs sed -i.bak 's/.fas//g' #to avoid 'Argument list too long' error
 done
 
 #Prepare concatenated dataset and transform it to phylip format
 echo -e "Concatenating...\n"
-python3 AMAS.py concat -i *.fas -f fasta -d dna -u fasta -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta >/dev/null
-python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
+if [[ $AMAS =~ "slow" ]]; then
+	#Much slower option but works also in case of many genes
+	xx=0
+	for f in *.fas ; do
+		echo $f
+		if [ $xx -eq 0 ]; then
+			cp $f concatenated.workfasta
+			xx=$((xx + 1))
+		else
+			python3 AMAS.py concat -i concatenated.workfasta $f -f fasta -d dna -u fasta -t concatenated.workfasta2 >/dev/null
+			mv concatenated.workfasta2 concatenated.workfasta
+			xx=$((xx + 1))
+		fi
+	done
+	mv concatenated.workfasta concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta
+	python3 AMAS.py convert -d dna -f fasta -i concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta -u phylip >/dev/null
+	mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta-out.phy concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
+else
+	#Faster solution but with really many genes generate 'Argument list too long' error
+	python3 AMAS.py concat -i *.fas -f fasta -d dna -u fasta -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta >/dev/null
+	python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
+fi
 #Copy concatenated file to home
 if [[ $update =~ "yes" ]]; then
 	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated
