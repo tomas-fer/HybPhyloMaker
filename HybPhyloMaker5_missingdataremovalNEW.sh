@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7e                                   *
+# *                                   v.1.6.7f                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -387,14 +387,16 @@ cp $source/alignmentSummary.R .
 # 1. For all genes
 #Calculate alignment summary using AMAS
 echo -e "\nCalculating alignment characteristics for all genes using AMAS..."
-#This is a faster solution but with really many genes generate 'Argument list too long' error
-#python3 AMAS.py summary -f fasta -d dna -i *.fasta
-
-#Much slower solution but works also in case of many genes
-for f in *.fasta ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
-find -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amas.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
-head -n1 `find -name "*.summary" -print -quit` > amas.header #make header (take first line from the first match to *.summary)
-cat amas.header amas.sum > summary.txt
+if [[ $AMAS =~ "slow" ]]; then
+	#Much slower solution but works also in case of many genes
+	for f in *.fasta ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
+	find -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amas.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
+	head -n1 `find -name "*.summary" -print -quit` > amas.header #make header (take first line from the first match to *.summary)
+	cat amas.header amas.sum > summary.txt
+else
+	#This is a faster solution but with really many genes generate 'Argument list too long' error
+	python3 AMAS.py summary -f fasta -d dna -i *.fasta
+fi
 
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for all genes using MstatX..."
@@ -457,14 +459,16 @@ do
 done
 #Calculate summary statistic for selected Assemblies using AMAS
 echo -e "\nCalculating alignment characteristics for selected genes using AMAS..."
-#This is a faster solution but with really many genes generate 'Argument list too long' error
-#python3 AMAS.py summary -f fasta -d dna -i AMASselected/*.fas
-
-#Much slower solution but works also in case of many genes
-for f in AMASselected/*.fas ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
-find AMASselected/ -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amasSel.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
-head -n1 `find AMASselected/ -name "*.summary" -print -quit` > amasSel.header #make header (take first line from the first match to *.summary)
-cat amasSel.header amasSel.sum > summary.txt
+if [[ $AMAS =~ "slow" ]]; then
+	#Much slower solution but works also in case of many genes
+	for f in AMASselected/*.fas ; do python3 AMAS.py summary -f fasta -d dna -i $f -o ${f}.summary; done #one summary per gene
+	find AMASselected/ -name "*.summary" -print0 | xargs -0 awk 'FNR==2' > amasSel.sum #combine all *.summary (take 2nd line, i.e. the data, from each summary by AMAS)
+	head -n1 `find AMASselected/ -name "*.summary" -print -quit` > amasSel.header #make header (take first line from the first match to *.summary)
+	cat amasSel.header amasSel.sum > summary.txt
+else
+	#This is a faster solution but with really many genes generate 'Argument list too long' error
+	python3 AMAS.py summary -f fasta -d dna -i AMASselected/*.fas
+fi
 
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for selected genes using MstatX..."
