@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0b - Prepare pseudoreference                      *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -120,11 +120,13 @@ if [[ ! $location == "1" ]]; then
 		exit 3
 	fi
 fi
-#Copy probe sequence file
+#Copy probe sequence file and remove 'CR' characters
 if [[ $cp =~ "yes" ]]; then
 	cp $source/$cpDNACDS .
+	sed -i 's/\x0D$//' $cpDNACDS
 else
 	cp $source/$probes .
+	sed -i 's/\x0D$//' $probes
 fi
 
 # 1. Prepare pseudoreference
