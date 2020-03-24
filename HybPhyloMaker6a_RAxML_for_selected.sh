@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -142,6 +142,9 @@ fi
 cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}
 mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
+#Create new 'submitRAxMLjobs.sh' and make it executable
+touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
+chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
 
 if [[ $location == "1" || $location == "2" ]]; then
 	echo -e "\nGenerating multiple jobs with $raxmlperjob alignments per job..."
@@ -345,7 +348,9 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '      fi'  >> ${group}.sh
 		echo '    fi' >> ${group}.sh
 		echo '    cp *$file.result '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
-		echo '    cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    if [[ $bootstop == "yes" ]]; then' >> ${group}.sh
+		echo '      cp bootstop_summary_'"$group"'.txt '"${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}"'/RAxML' >> ${group}.sh
+		echo '    fi' >> ${group}.sh
 		echo '  else' >> ${group}.sh
 		echo '    if [[ $location == "1" ]]; then' >> ${group}.sh
 		echo '      if [[ $genetreepart == "no" ]]; then' >> ${group}.sh
@@ -404,7 +409,8 @@ if [[ $location == "1" || $location == "2" ]]; then
 		chmod +x ${group}.sh
 		if [[ $location == "1" ]]; then
 			cp ${group}.sh $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-			qsub ${group}.sh
+			#qsub ${group}.sh
+			echo 'qsub '"${group}"'.sh' >> $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
 		else
 			cp ${group}.sh $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 			cp ${group}.sh ..
@@ -570,6 +576,8 @@ echo -e "\nHybPhyloMaker 6a finished..."
 if [[ $location == "2" ]]; then
 	echo -e "\nGo to homedir and run submitRAxMLjobs.sh..."
 elif [[ $location == "1" ]]; then
+	echo -e "\nGo to $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML and run submitRAxMLjobs.sh..."
+	echo -e "This starts parallel computation of gene trees."
 	echo -e "\nAfter all jobs finish run script HybPhyloMaker6a2 in order to calculate tree properties..."
 elif [[ $location == "0" ]]; then
 	echo -e "\nRun script HybPhyloMaker6a2 in order to calculate tree properties..."
