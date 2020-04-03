@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.7                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -136,6 +136,20 @@ else
 			exit 3
 		fi
 	fi
+fi
+
+#----------------Checking number of alignments and trees (and stop if not identical)----------------
+echo -e "Checking number of alignments and RAxML trees..."
+nralignments=$(wc -l < $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt)
+nrtrees=$(find $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML -maxdepth 1 -name "*bipartitions.*Assembly*" -exec ls {} + | wc -l)
+echo -e "Number of selected alignments: $nralignments"
+echo -e "Number of RAxML trees: $nrtrees"
+if [ "$nralignments" -eq "$nrtrees" ]; then
+	echo -e "Number of alignments and trees is the same. Continue with summary calculations...\n"
+else
+	echo -e "Number of alignments and trees does not match. Exiting...\n"
+	rm -d ../workdir06a2/ 2>/dev/null
+	exit 3
 fi
 
 #----------------Make a summary table with statistical properties for trees using R----------------
