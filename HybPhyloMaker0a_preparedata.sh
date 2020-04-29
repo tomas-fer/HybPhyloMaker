@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.7.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -27,22 +27,22 @@
 
 # Download fastq files from BaseSpace (optional), rename them and move to sample folders
 # i.e., prepare raw reads for running HybPhyloMaker
-# Works for PE reads (i.e., 2 fastq files per sample) in the following format:
+# Works for PE reads only (i.e., 2 fastq files per sample) in the following format:
 # samplename_sampleID_L001_R1_001.fastq.gz
 # samplename_sampleID_L001_R2_001.fastq.gz
 #
-# Needs two files (token_header.txt, renamelist.txt) to be in the home folder (at desired data server if running on cluster)
-# Download from BaseSpace is parallelized
+# Needs two files (token_header.txt - only when downloading from BaseSpace, and renamelist.txt) to be in the home folder
+# (at desired data server if running on cluster)
+# Download from BaseSpace is parallelized (via GNU parallel)
 
 #####################################################################################################################
-# Usage (only if you require download from BaseSpace, otherwise continue with step 4:                               #
+# Usage (only if you require download from BaseSpace, otherwise continue with step 4):                              #
 # 1. You must obtain 'token' from Illumina BaseSpace (how to do this see steps 1-5 at                               #
-# https://support.basespace.illumina.com/knowledgebase/articles/403618-python-run-downloader                        #
+# https://support.basespace.illumina.com/knowledgebase/articles/403618-python-run-downloader )                      #
 # 2. Save this token to text file (token_header.txt) with one line text:                                            #
 # header = "x-access-token: <your-token-here>                                                                       #
-# 3. Login to BaseSpace via web browser and get IDs for                                                             #
-# - forward read (R1) of the first sample in a run                                                                  #
-# - reverse read (R2) of the last sample in a run                                                                   #
+# 3. Login to BaseSpace via web browser and get ID for the project                                                  #
+# (all fastq.gz files from the project will be downloaded)                                                          #
 # How to do this: go to (via clicking) Projects -> <project-name> -> Samples -> <sample-name> -> <file>.fastq.gz    #
 # Look at the address which should looks like                                                                       #
 # https://basespace.illumina.com/sample/28555179/files/tree/Z001_S1_L001_R1_001.fastq.gz?id=2016978377              #
@@ -65,7 +65,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	homedir=/storage/$server/home/$LOGNAME
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
@@ -157,24 +157,116 @@ rm renamelist.txt.bak renamelist.txt.bak2
 
 #Download files from BaseSpace
 if [[ $download =~ "yes" ]]; then
-	echo -e "Downloading FASTQ files from BaseSpace started...\n"
+	echo -e "Downloading FASTQ files from BaseSpace requested...\n"
+	#Get token
 	if [[ $location == "1" ]]; then
 		cp /storage/$server/home/$LOGNAME/token_header.txt .
 	else
 		cp ../../token_header.txt .
 	fi
-	for (( i=$first; i<=$last; i++ )); do
-		echo $i >> downloadlist.txt
-	done
-	if [[ $location == "1" ]]; then
-		cat downloadlist.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
-	elif [[ $location == "2" ]]; then
-		cat downloadlist.txt | parallel --max-procs $NSLOTS 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
-	elif [[ $location == "0" ]]; then
-		cat downloadlist.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+	
+	#Get info about samples
+	echo -e "Getting info about samples in the project with ID: ${projectID}..."
+	curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/projects/${projectID}/samples?Limit=1000 2>/dev/null > JSONproject.txt
+	#Test if there is permit to access the project
+	if [ ! -z "$(grep Error JSONproject.txt)" ]; then
+		echo -e "You probably does not have access rights to the project. Exiting...\n"
+		rm -d ../workdir00_dataprep/ 2>/dev/null
+		exit 3
 	fi
-	rm token_header.txt downloadlist.txt
-	echo -e "\nDownloading FASTQ files from BaseSpace finished...\n"
+	#Extract sample numbers
+	grep -Po '"Href":.*?[^\\]",' JSONproject.txt | grep "/samples" | awk -F\" '{print $4}'| awk -F\/ '{print $3}' > samplesList.txt
+	grep -Po '"SampleId":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $4}' > sampleID.txt
+	grep -Po '"LibraryName":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $4}' > libName.txt
+	grep -Po '"TotalReadsPF":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' > readsPF.txt
+	expName=$(grep -Po '"ExperimentName":.*?[^\\]"' JSONproject.txt | awk -F\" '{print $4}' | head -n1)
+	echo "There are" `cat samplesList.txt | wc -l` "samples in the project '$expName'"
+	#Make samples table
+	echo -e "SampleID\tName\tReadsPF\tBaseSpaceID" > sampleTable.txt
+	paste sampleID.txt libName.txt readsPF.txt samplesList.txt >> sampleTable.txt
+	rm sampleID.txt libName.txt readsPF.txt
+	#Get file IDs
+	echo -e "\nGetting info about files in the project ${projectID}..."
+	for i in $(cat samplesList.txt); do
+		#download information about files for particular sample
+		curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/samples/${i}/files?Extensions=gz 2>/dev/null > JSONsamples.txt
+		#get 'Id', display only them and add it to the IDs list
+		grep -Po '"Id":.*?[^\\]",' JSONsamples.txt | awk -F\" '{print $4}' >> filesList.txt
+		#get sizes
+		grep -Po '"Size":.*?[^\\]"' JSONsamples.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> filesSize.txt
+		#get file names
+		grep -Po '"Path":.*?[^\\]"' JSONsamples.txt | awk -F\" '{print $4}' >> filesNames.txt
+	done
+	echo "There are" `cat filesList.txt | wc -l` "files"
+	#Make table
+	echo -e "FileName\tSize\tBaseSpaceID" > fileTable.txt
+	paste filesNames.txt filesSize.txt filesList.txt >> fileTable.txt
+	rm filesNames.txt filesSize.txt
+	#Download individual files using parallel
+	echo -e "\nDownloading fastq.gz files...\n"
+	if [[ $location == "1" ]]; then
+		cat filesList.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+	elif [[ $location == "2" ]]; then
+		cat filesList.txt | parallel --max-procs $NSLOTS 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+	elif [[ $location == "0" ]]; then
+		cat filesList.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+	fi
+	#Check file sizes of downloaded files (if they match sizes stated by BaseSpace)
+	#Download incorrectly downloaded files
+	echo -e "\nChecking whether file sizes are correct..."
+	cat fileTable.txt | sed '1d' | while read line; do
+		fileName=$(awk '{ print $1 }' <<< $line) #file name
+		fileSizeDown=$(stat -c %s `awk '{ print $1 }' <<< $line`) #file size of the downloaded file
+		fileSizeBS=$(awk '{ print $2 }' <<< $line) #file size extracted from BaseSpace JSON
+		fileBS=$(awk '{ print $3 }' <<< $line) #file BaseSpace ID
+		if [[ ${fileSizeDown} -eq ${fileSizeBS} ]]; then
+			echo ${fileName} size OK
+		else
+			echo -e "${fileName} size incorrect. Downloading again...\n"
+			mv ${fileName} ${fileName}.bak 2>/dev/null #make a backup of the wrongly downloaded file
+			until [[ $(stat -c %s `awk '{ print $1 }' <<< $line` 2>/dev/null) -eq ${fileSizeBS} ]]; do
+				curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/${fileBS}/content -O
+				echo
+			done
+		fi
+	done
+	echo -e "\nDownloading of FASTQ files from BaseSpace finished...\n"
+	rm token_header.txt
+	#Copy results home
+	mkdir -p $path/00downloadinfo
+	cp JSON*.txt $path/00downloadinfo
+	cp sampleTable.txt $path/00downloadinfo
+	cp fileTable.txt $path/00downloadinfo
+	rm filesList.txt fileTable.txt JSON*.txt samplesList.txt sampleTable.txt
+	
+	#Download informations about the run (only if runID is set)
+	if [ ! -z $runID ]; then
+		#Run details (total yield, number of clusters, total reads, total reads PF...)
+		echo "Getting info about run ${runID}"
+		#Get info about the run
+		curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/runs/${runID} 2>/dev/null > JSONrun.txt
+		#Test if there is permit to access the project
+		if [ ! -z "$(grep Error JSONrun.txt)" ]; then
+			echo -e "You probably does not have access rights to the run. Skiping run statistics...\n"
+		else
+			grep -Po '"ExperimentName":.*?[^\\]"' JSONrun.txt | head -n1 | awk -F\" '{print $4}' | sed 's/[:,]//g' > rundata.txt
+			grep -Po '"PlatformName":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $4}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"YieldTotal":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"PercentPf":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"Clusters":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"ClustersPf":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,}]//g' >> rundata.txt
+			grep -Po '"PercentGtQ30":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"PercentGtQ30R1":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			grep -Po '"PercentGtQ30R2":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
+			#make a table
+			echo -e "ExperimentName\nPlatformName\nTotalYield[Gbp]\nClusters\nClustersPF\nPercentPF\nPercentGtQ30\nPercentGtQ30R1\nPercentGtQ30R2" > runHeader.txt
+			paste runHeader.txt rundata.txt > runTable.txt
+			echo -e "Summary of the run $runID is in 'runTable.txt'\n"
+			cp runTable.txt $path/00downloadinfo
+			cp JSONrun.txt $path/00downloadinfo
+			rm rundata.txt runHeader.txt JSONrun.txt runTable.txt
+		fi
+	fi
 else
 	echo -e "Copying FASTQ files from home...\n"
 	#Copy all *fastq.gz files from 'homedir'
