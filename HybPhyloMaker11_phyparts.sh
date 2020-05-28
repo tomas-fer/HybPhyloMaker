@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.7.0                                    *
+# *                                   v.1.7.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -236,18 +236,18 @@ fi
 #Calculate number of gene trees
 nrgenetrees=$(ls trees/tree_* | wc -l)
 
-#Statisctics
-echo -e "\nSpecies tree: ${sptree}.tre" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
-echo -e "Gene tree file: ${treefile}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
-echo -e "Nr. gene trees: ${nrgenetreesorig}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
-echo -e "Nr. gene trees rooted with $OUTGROUP: ${nrgenetreesrooted}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
-echo -e "Using $nrpptrees gene trees" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
-
 #Set to 0.5 if $phypartsbs is empty
 if [ -z "$phypartsbs" ]; then #test whether $phypartsbs is empty
 	echo -e "\n'phypartsbs' is not set to any value, using 0.5..."
 	phypartsbs=0.5
 fi
+
+#Statisctics
+echo -e "\nSpecies tree: ${sptree}.tre" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
+echo -e "Gene tree file: ${treefile}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
+echo -e "Nr. gene trees: ${nrgenetreesorig}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
+echo -e "Nr. gene trees rooted with '$OUTGROUP': ${nrgenetreesrooted}" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
+echo -e "Using $nrpptrees gene trees" | tee -a phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt
 
 #Make dir for results
 if [[ $update =~ "yes" ]]; then
