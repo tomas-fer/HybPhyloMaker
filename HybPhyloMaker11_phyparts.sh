@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.7.1                                    *
+# *                                   v.1.7.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -286,15 +286,21 @@ else
 	#python /software/phyparts/0.0.1/target/phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
 fi
 
+#Convert SVG to PDF
+module add python36-modules-gcc #adds also cairosvg
+cairosvg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf
+
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
 	cp phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}
+	cp phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}
 	cp phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}
 	cp trees_res.*node* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 	cp trees_res.*hist* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 	cp phyparts.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 else
 	cp phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}
+	cp phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}
 	cp phypartsinfo_BS${phypartsbs}_${nrpptrees}trees.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}
 	cp trees_res.*node* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 	cp trees_res.*hist* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
