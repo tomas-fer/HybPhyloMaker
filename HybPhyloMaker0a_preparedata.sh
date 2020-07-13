@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.7.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.7.1                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -175,16 +175,20 @@ if [[ $download =~ "yes" ]]; then
 		exit 3
 	fi
 	#Extract sample numbers
+	grep -Po '"Status":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $4}' > statusList.txt #whether Aborted or Complete
 	grep -Po '"Href":.*?[^\\]",' JSONproject.txt | grep "/samples" | awk -F\" '{print $4}'| awk -F\/ '{print $3}' > samplesList.txt
 	grep -Po '"SampleId":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $4}' > sampleID.txt
 	grep -Po '"LibraryName":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $4}' > libName.txt
 	grep -Po '"TotalReadsPF":.*?[^\\]",' JSONproject.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' > readsPF.txt
 	expName=$(grep -Po '"ExperimentName":.*?[^\\]"' JSONproject.txt | awk -F\" '{print $4}' | head -n1)
-	echo "There are" `cat samplesList.txt | wc -l` "samples in the project '$expName'"
 	#Make samples table
-	echo -e "SampleID\tName\tReadsPF\tBaseSpaceID" > sampleTable.txt
-	paste sampleID.txt libName.txt readsPF.txt samplesList.txt >> sampleTable.txt
-	rm sampleID.txt libName.txt readsPF.txt
+	echo -e "Status\tSampleID\tName\tReadsPF\tBaseSpaceID" > sampleTable.txt
+	paste statusList.txt sampleID.txt libName.txt readsPF.txt samplesList.txt | grep Complete >> sampleTable.txt #remove aborted samples
+	#Make samplesList without aborted
+	paste statusList.txt samplesList.txt | grep Complete | awk '{ print $2 }' > tmp
+	mv tmp samplesList.txt
+	rm statusList.txt sampleID.txt libName.txt readsPF.txt
+	echo "There are" `cat samplesList.txt | wc -l` "samples in the project '$expName'"
 	#Get file IDs
 	echo -e "\nGetting info about files in the project ${projectID}..."
 	for i in $(cat samplesList.txt); do
