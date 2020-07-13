@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.7.1                                    *
+# *                                   v.1.7.2                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -169,7 +169,7 @@ if [[ $download =~ "yes" ]]; then
 	echo -e "Getting info about samples in the project with ID: ${projectID}..."
 	curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/projects/${projectID}/samples?Limit=1000 2>/dev/null > JSONproject.txt
 	#Test if there is permit to access the project
-	if [ ! -z "$(grep Error JSONproject.txt)" ]; then
+	if [ ! -z "$(grep ErrorCode JSONproject.txt)" ]; then
 		echo -e "You probably does not have access rights to the project. Exiting...\n"
 		rm -d ../workdir00_dataprep/ 2>/dev/null
 		exit 3
