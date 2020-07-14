@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.7.2                                    *
+# *                                   v.1.7.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -250,15 +250,15 @@ if [[ $download =~ "yes" ]]; then
 		#Get info about the run
 		curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/runs/${runID} 2>/dev/null > JSONrun.txt
 		#Test if there is permit to access the project
-		if [ ! -z "$(grep Error JSONrun.txt)" ]; then
+		if [ ! -z "$(grep ErrorCode JSONrun.txt)" ]; then
 			echo -e "You probably does not have access rights to the run. Skiping run statistics...\n"
 		else
 			grep -Po '"ExperimentName":.*?[^\\]"' JSONrun.txt | head -n1 | awk -F\" '{print $4}' | sed 's/[:,]//g' > rundata.txt
 			grep -Po '"PlatformName":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $4}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"YieldTotal":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
-			grep -Po '"PercentPf":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"Clusters":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"ClustersPf":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,}]//g' >> rundata.txt
+			grep -Po '"PercentPf":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"PercentGtQ30":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"PercentGtQ30R1":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
 			grep -Po '"PercentGtQ30R2":.*?[^\\]"' JSONrun.txt | awk -F\" '{print $3}' | sed 's/[:,]//g' >> rundata.txt
