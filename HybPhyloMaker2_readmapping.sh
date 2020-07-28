@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.6.4                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.7.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -288,7 +288,7 @@ for file in $(cat SamplesFileNames.txt); do
 		#calculate percentage of mapped reads
 		percmapped=$(echo -e "scale=5;100 * ($nrmapped / $nrall)" | bc)
 		#extracting header data
-		number=$(cut -d'_' -f2 <<< $file | sed 's/S//')
+		number=$(cut -d'_' -f2 <<< $file)
 		genus=$(cut -d'-' -f1 <<< $file)
 		species=$(cut -d'_' -f1 <<< $file | cut -d'-' -f2)
 		#adding data to table
@@ -361,6 +361,48 @@ if [[ $cp =~ "yes" ]]; then
 	cp consensus_cpDNA.fasta $path/$type/30consensus
 else
 	cp consensus.fasta $path/$type/30consensus
+fi
+
+#Calculate ambiguous bases (number and percentage) if ConsensusFixer was used
+if [[ $conscall =~ "consensusfixer" ]]; then
+	#print length of sequences (i.e., print line length if the first character on line is not '>')
+	awk '{ if (substr($1,1,1) !~ /^>/ ) print length($0) }' consensus.fasta > totallength.txt
+	#Remove '?'s (introduced when N in reference), only in sequences (i.e., not on lines starting with '>')
+	sed -i '/>/!s/\?//g' consensus.fasta
+	#print length of sequences without '?'
+	awk '{ if (substr($1,1,1) !~ /^>/ ) print length($0) }' consensus.fasta > totallengthNoQ.txt
+	#Remove 'N's (introduced when too low coverage), only in sequences (i.e., not on lines starting with '>')
+	sed -i '/>/!s/N//g' consensus.fasta
+	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
+	cat consensus.fasta | sed '/^>/{N; s/\n/ /;}' > consensus.modif.fasta
+	#Cut first part until space, i.e. header, and remove '>'
+	cat consensus.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
+	#Calculate sequence length for each line
+	cat consensus.modif.fasta | cut -f2 -d" " | awk '{ print length}' > lengths.txt
+	#Cut only part after the first space, i.e., only sequence, modify to big letters only, change all ambiguities (RYSWKMBDHV) to 'x', replace all other characters then 'x' by nothing
+	cat consensus.modif.fasta | cut -f2 -d" " | tr [a-z] [A-Z] | sed 's/[RYSWKMBDHV]/x/g' | sed 's/[^x]//g' > x.txt
+	#Combine lengths.txt (sequence lengths) and x.txt (number of ambiguities) and print number and percentage of 'x's (i.e., ambiguities) in each sequence
+	paste totallength.txt totallengthNoQ.txt lengths.txt x.txt | awk '{ print $1 "\t" $2 "\t" $3 "\t" length($4) "\t" (length($4)*100)/$3 }' > ambigpercentage.txt
+	
+	#Calculate number and percentage of each ambiguous base
+	for base in R Y S W K M B D H V; do
+		echo -e "Nr. $base\tPerc $base" > ${base}_percentage.txt
+		cat consensus.modif.fasta | cut -f2 -d" " | sed "s/$base/x/g" | sed 's/[^x]//g' > ${base}x.txt
+		paste lengths.txt ${base}x.txt | awk '{ print length($2) "\t" (length($2)*100)/$1 }' >> ${base}_percentage.txt
+	done
+	sed '1 i sample' headers.txt > headers2.txt
+	paste headers2.txt *_percentage.txt > ambigbaseperc.txt
+	
+	paste headers.txt ambigpercentage.txt > ambigperc.txt
+	#Calculate mean of all values
+	echo -e "Sample\tTotalLength\tLengthWithout?\tCalledBases\tNrAmbig\tPercAmbig" > first.txt
+	echo -e "MEAN\t$(awk '{ sum += $2; sum2 += $3; sum3 += $4; sum4 += $5; sum5 += $6; n++ } END { if (n > 0) print sum / n "\t" sum2 / n "\t" sum3 / n "\t" sum4 / n "\t" sum5 / n}' ambigperc.txt)" > mean.txt
+	cat first.txt ambigperc.txt mean.txt > tmp && mv tmp ambigperc.txt
+	rm consensus.modif.fasta headers.txt headers2.txt ambigpercentage.txt mean.txt *_percentage.txt lengths.txt *x.txt totallength.txt totallengthNoQ.txt first.txt
+	#extract text after last '/' in $data (whole $data in no '/')
+	data1=$(echo $data | rev | cut -d"/" -f1 | rev)
+	cp ambigperc.txt $path/$type/30consensus/${data1}_ambigperc.txt
+	cp ambigbaseperc.txt $path/$type/30consensus/${data1}_ambigbaseperc.txt
 fi
 
 #Clean scratch/work directory
