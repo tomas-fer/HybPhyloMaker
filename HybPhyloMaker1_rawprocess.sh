@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 01 - Raw data processing                       *
-# *                                   v.1.6.5                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.7.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************
@@ -277,7 +277,7 @@ echo -e "Sample no.\tGenus\tSpecies\tNr. of pairs\tNr. of reads\tNr. of reads wi
 cat SamplesFileNames.txt | while read line
 do
 	echo "Processing $line"
-	number=$(cut -d'_' -f2 <<< $line | sed 's/S//')
+	number=$(cut -d'_' -f2 <<< $line)
 	genus=$(cut -d'-' -f1 <<< $line)
 	species=$(cut -d'_' -f1 <<< $line | cut -d'-' -f2)
 	cd $line
