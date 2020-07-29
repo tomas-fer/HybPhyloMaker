@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1:0:0
-#PBS -l select=1:ncpus=1:mem=2gb:scratch_local=80gb
+#PBS -l walltime=2:0:0
+#PBS -l select=1:ncpus=12:mem=16gb:scratch_local=400gb
 #PBS -j oe
 #PBS -N HybPhyloMaker0a_datadownloadprepare
 #PBS -m abe
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.7.3                                    *
+# *                                   v.1.7.4                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -235,7 +235,6 @@ if [[ $download =~ "yes" ]]; then
 		fi
 	done
 	echo -e "\nDownloading of FASTQ files from BaseSpace finished...\n"
-	rm token_header.txt
 	#Copy results home
 	mkdir -p $path/00downloadinfo
 	cp JSON*.txt $path/00downloadinfo
@@ -283,6 +282,9 @@ else
 	done
 fi
 
+#Remove token
+rm token_header.txt
+
 for i in $(cat renamelist.txt | cut -f1)
 do
 	mkdir $i
@@ -298,6 +300,7 @@ done
 
 # Prepare samples list
 cat renamelist.txt | cut -f1 > SamplesFileNames.txt
+cp renamelist.txt $path/00downloadinfo
 rm renamelist.txt 
 cd ..
 cp -r 10rawreads $path
