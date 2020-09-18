@@ -5,10 +5,10 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2017, 2018                                                                                                  #
+# Tomas Fer, 2017, 2018, 2019, 2020                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5d                                                                                                               #
+# v.1.6.5f                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -165,15 +165,24 @@ if ! [ -x "$(command -v java)" ]; then
 	fi
 fi
 
+#libpng library
+if [ ! "$(whereis libpng | grep /)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'libpng'"
+		$installer install -y libpng-dev &> libpng_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'libpng'"
+		$installer install -y libpng-devel &> libpng_install.log #Fedora/CentOS/OpenSUSE
+	fi
+fi
+
 #zlib library
 if [ ! "$(whereis zlib | grep /)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'zlib'"
-		$installer install -y libpng-dev &> zlib_install.log #Debian/Ubuntu
 		$installer install -y zlib1g-dev &>> zlib_install.log #Debian/Ubuntu
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
 		echo -e "Installing 'zlib'"
-		$installer install -y libpng-devel &> zlib_install.log #Fedora/CentOS/OpenSUSE
 		$installer install -y zlib-devel &>> zlib_install.log #Fedora/CentOS/OpenSUSE
 	fi
 fi
@@ -194,6 +203,13 @@ if [ ! "$(whereis libtool | grep /)" ]; then
 	echo -e "Installing 'libtool'"
 	$installer install -y libtool &> libtool_install.log
 fi
+
+#unzip
+if [ ! "$(whereis unzip | grep /)" ]; then
+	echo -e "Installing 'unzip'"
+	$installer install -y unzip &> unzip_install.log
+fi
+
 
 #R
 #Comment for Ubuntu/Debian: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
@@ -518,7 +534,7 @@ if ! [ -x "$(command -v ococo)" ]; then
 	git clone --recursive https://github.com/karel-brinda/ococo &>> ococo_install.log
 	cd ococo
 	make -j &>> ../ococo_install.log
-	make install  &>> ../ococo_install.log
+	make install &>> ../ococo_install.log
 	cd ..
 fi
 
@@ -536,24 +552,27 @@ if ! [ -x "$(command -v bucky)" ]; then
 fi
 
 #seqtk
-git clone https://github.com/lh3/seqtk.git
-cd seqtk
-make
-make install
-cd ..
+if ! [ -x "$(command -v seqtk)" ]; then
+	git clone https://github.com/lh3/seqtk.git &>> seqtk_install.log
+	cd seqtk
+	make &>> ../seqtk_install.log
+	make install &>> ../seqtk_install.log
+	cd ..
+fi
 
 #p4 (only necessary for combining bootstrap support in Astral and Astrid trees)
 #see http://p4.nhm.ac.uk/installation.html
+#now with python3
 #For compilation on Fedora/CentOS/OpenSUSE you need to specify where 'gsl' is installed (in setup.py) - modification of 'setup.py' is included below
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip2 show numpy | grep Version` ]]; then
-			pip2 install numpy &> numpy_install.log
+		if ! [[ `pip3 show numpy | grep Version` ]]; then
+			pip3 install numpy &> numpy_install.log
 			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip2 show scipy | grep Version` ]]; then
-			pip2 install scipy &> scipy_install.log
+		if  ! [[ `pip3 show scipy | grep Version` ]]; then
+			pip3 install scipy &> scipy_install.log
 			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
@@ -591,11 +610,11 @@ if ! [ -x "$(command -v p4)" ]; then
 	fi
 	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip2 show future | grep Version` ]]; then
-			pip2 install future &> python-future_install.log
+		if ! [[ `pip3 show future | grep Version` ]]; then
+			pip3 install future &> python-future_install.log
 		fi
-		if ! [[ `pip2 show bitarray | grep Version` ]]; then
-			pip2 install bitarray &> python-bitarray_install.log
+		if ! [[ `pip3 show bitarray | grep Version` ]]; then
+			pip3 install bitarray &> python-bitarray_install.log
 		fi
 	else
 		if ! [[ `pip2.7 show future | grep Version` ]]; then
@@ -605,6 +624,8 @@ if ! [ -x "$(command -v p4)" ]; then
 			pip2.7 install bitarray &> python-bitarray_install.log
 		fi
 	fi
+	#install NLopt
+	$installer install -y install libnlopt-dev &> libnlopt_install.log
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
 	#Modify setup.py to be able to find gsl
@@ -613,9 +634,11 @@ if ! [ -x "$(command -v p4)" ]; then
 		#sed -i.bak "46s/.*/$replace/" setup.py
 		#sed -i.bak2 "47s/# //" setup.py
 	fi
-	python2 setup.py build &>> ../p4_install.log
-	python2 setup.py install &>> ../p4_install.log
-	python2 setup.py build_ext -i &>> ../p4_install.log
+	python3 setup.py build &>> ../p4_install.log
+	python3 setup.py install &>> ../p4_install.log
+	#python2 setup.py build_ext -i &>> ../p4_install.log
+	chmod +x make_pf.sh
+	./make_pf.sh &>> ../p4_install.log
 	cd ..
 fi
 
