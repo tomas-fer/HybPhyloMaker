@@ -5,7 +5,7 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2017, 2018, 2019, 2020                                                                                                  #
+# Tomas Fer, 2017, 2018, 2019, 2020                                                                                      #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
 # v.1.6.5g                                                                                                               #
