@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.6.7                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.6.7a                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -239,7 +239,7 @@ if [[ $FastTreeBoot =~ "yes" ]]; then
 		rm -f RAxML_info.BS
 		rm ${file}.BS*.fast.tre
 		#Map bootstrap support values onto the original tree
-		perl ./CompareToBootstrap.pl -tree *${file}.fast.tre -boot ${file}.boot.fast.trees > ${file}.boot.fast.tre
+		perl -I . ./CompareToBootstrap.pl -tree *${file}.fast.tre -boot ${file}.boot.fast.trees > ${file}.boot.fast.tre
 		#Copy bootstrap trees and final tree with bootstrap values to home
 		cp ${file}.boot.fast.trees $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 		cp ${file}.boot.fast.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
