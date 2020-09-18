@@ -8,13 +8,13 @@
 # Tomas Fer, 2017, 2018, 2019, 2020                                                                                                  #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5f                                                                                                               #
+# v.1.6.5g                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
 distribution=Debian #one of: Debian (also for Ubuntu), OpenSUSE, Fedora, CentOS (also for Scientific Linux)
 #Change name of your default package management tool (apt-get on Debian/Ubuntu, zypper on OpenSUSE, yum on Fedora/CentOS/Scientific/RHEL)
-installer=apt-get #one of apt-get, zypper, yum
+installer=apt-get #one of: apt-get, zypper, yum
 
 echo -e "\n************************************************"
 echo -e "Installation script for HybPhyloMaker is running"
@@ -276,40 +276,46 @@ done
 if ! [ -x "$(command -v mafft)" ]; then
 	echo -e "Installing 'mafft'"
 	wget http://mafft.cbrc.jp/alignment/software/mafft-7.305-without-extensions-src.tgz &> mafft_install.log
-	tar -xvf mafft-7.305-without-extensions-src.tgz 1>/dev/null
-	rm mafft-7.305-without-extensions-src.tgz
-	cd mafft-7.305-without-extensions/core
-	make &>> ../../mafft_install.log
-	make install &>> ../../mafft_install.log
-	cd ../..
+	if [ -f mafft-7.305-without-extensions-src.tgz ]; then
+		tar -xvf mafft-7.305-without-extensions-src.tgz 1>/dev/null
+		rm mafft-7.305-without-extensions-src.tgz
+		cd mafft-7.305-without-extensions/core
+		make &>> ../../mafft_install.log
+		make install &>> ../../mafft_install.log
+		cd ../..
+	fi
 fi
 
 #GNU parallel
 if ! [ -x "$(command -v parallel)" ]; then
 	echo -e "Installing 'GNU parallel'"
 	wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2 &> GNUparallel_install.log
-	tar xjvf parallel-latest.tar.bz2 1>/dev/null
-	rm parallel-latest.tar.bz2
-	cd parallel*
-	./configure &>> ../GNUparallel_install.log
-	make &>> ../GNUparallel_install.log
-	make install &>> ../GNUparallel_install.log
-	cd ..
+	if [ -f parallel-latest.tar.bz2 ]; then
+		tar xjvf parallel-latest.tar.bz2 1>/dev/null
+		rm parallel-latest.tar.bz2
+		cd parallel*
+		./configure &>> ../GNUparallel_install.log
+		make &>> ../GNUparallel_install.log
+		make install &>> ../GNUparallel_install.log
+		cd ..
+	fi
 fi
 
 #SAMtools
 if ! [ -x "$(command -v samtools)" ]; then
 	echo -e "Installing 'samtools'"
 	wget https://github.com/samtools/samtools/releases/download/1.8/samtools-1.8.tar.bz2 &> samtools_install.log
-	tar xjvf samtools-1.8.tar.bz2 1>/dev/null
-	rm samtools-1.8.tar.bz2
-	cd samtools-1.8
-	autoheader &>> ../samtools_install.log
-	autoconf -Wno-syntax &>> ../samtools_install.log
-	./configure --without-curses &>> ../samtools_install.log
-	make all all-htslib &>> ../samtools_install.log
-	make install all-htslib &>> ../samtools_install.log
-	cd ..
+	if [ -f samtools-1.8.tar.bz2 ]; then
+		tar xjvf samtools-1.8.tar.bz2 1>/dev/null
+		rm samtools-1.8.tar.bz2
+		cd samtools-1.8
+		autoheader &>> ../samtools_install.log
+		autoconf -Wno-syntax &>> ../samtools_install.log
+		./configure --without-curses &>> ../samtools_install.log
+		make all all-htslib &>> ../samtools_install.log
+		make install all-htslib &>> ../samtools_install.log
+		cd ..
+	fi
 fi
 # if ! [ -x "$(command -v samtools)" ]; then
 	# echo -e "Installing 'samtools'"
@@ -327,13 +333,15 @@ fi
 if ! [ -x "$(command -v bcftools)" ]; then
 	echo -e "Installing 'bcftools'"
 	wget https://github.com/samtools/bcftools/releases/download/1.8/bcftools-1.8.tar.bz2 &> bcftools_install.log
-	tar xjvf bcftools-1.8.tar.bz2 1>/dev/null
-	rm bcftools-1.8.tar.bz2
-	cd bcftools-1.8
-	./configure --without-curses &>> ../bcftools_install.log
-	make all all-htslib &>> ../bcftools_install.log
-	make install all-htslib &>> ../bcftools_install.log
-	cd ..
+	if [ -f bcftools-1.8.tar.bz2 ]; then
+		tar xjvf bcftools-1.8.tar.bz2 1>/dev/null
+		rm bcftools-1.8.tar.bz2
+		cd bcftools-1.8
+		./configure --without-curses &>> ../bcftools_install.log
+		make all all-htslib &>> ../bcftools_install.log
+		make install all-htslib &>> ../bcftools_install.log
+		cd ..
+	fi
 fi
 
 #FastTree
@@ -342,12 +350,16 @@ if ! [ -x "$(command -v FastTree)" ]; then
 	mkdir FastTree
 	cd FastTree
 	wget http://www.microbesonline.org/fasttree/FastTree &> ../fasttree_install.log
-	chmod +x FastTree
-	cp FastTree /usr/local/bin
-	wget http://www.microbesonline.org/fasttree/FastTree.c &>> ../fasttree_install.log
-	gcc -DOPENMP -fopenmp -O3 -finline-functions -funroll-loops -Wall -o FastTreeMP FastTree.c -lm &>> ../fasttree_install.log
-	chmod +x FastTreeMP
-	cp FastTreeMP /usr/local/bin
+	if [ -f FastTree ]; then
+		chmod +x FastTree
+		cp FastTree /usr/local/bin
+		wget http://www.microbesonline.org/fasttree/FastTree.c &>> ../fasttree_install.log
+		if [ -f FastTree.c ]; then
+			gcc -DOPENMP -fopenmp -O3 -finline-functions -funroll-loops -Wall -o FastTreeMP FastTree.c -lm &>> ../fasttree_install.log
+			chmod +x FastTreeMP
+			cp FastTreeMP /usr/local/bin
+		fi
+	fi
 	cd ..
 fi
 
@@ -355,16 +367,18 @@ fi
 if ! [ -x "$(command -v transeq)" ]; then
 	echo -e "Installing 'EMBOSS'"
 	wget ftp://emboss.open-bio.org/pub/EMBOSS/emboss-latest.tar.gz &> EMBOSS_install.log
-	tar xfz emboss-latest.tar.gz 1>/dev/null
-	rm emboss-latest.tar.gz
-	cd EMBOSS-*
-	./configure --without-x &>> ../EMBOSS_install.log
-	make &>> ../EMBOSS_install.log
-	ldconfig
-	make install &>> ../EMBOSS_install.log
-	ldconfig
-	make install &>> ../EMBOSS_install.log
-	cd ..
+	if [ -f emboss-latest.tar.gz ]; then
+		tar xfz emboss-latest.tar.gz 1>/dev/null
+		rm emboss-latest.tar.gz
+		cd EMBOSS-*
+		./configure --without-x &>> ../EMBOSS_install.log
+		make &>> ../EMBOSS_install.log
+		ldconfig
+		make install &>> ../EMBOSS_install.log
+		ldconfig
+		make install &>> ../EMBOSS_install.log
+		cd ..
+	fi
 fi
 
 #RAxML
@@ -447,7 +461,7 @@ if ! [ -x "$(command -v nw_reroot)" ]; then
 	if ! [ -x "$(command -v autoreconf)" ]; then
 		$installer install -y dh-autoreconf &> autoreconf_install.log
 	fi
-	git clone https://github.com/tjunier/newick_utils  &> newickutil_install.log
+	git clone https://github.com/tjunier/newick_utils &> newickutil_install.log
 	cd newick_utils/ &>> newickutil_install.log
 	libtoolize &>> newickutil_install.log
 	aclocal &>> newickutil_install.log
@@ -465,12 +479,14 @@ fi
 if ! [ -x "$(command -v bam2fastq)" ]; then
 	echo -e "Installing 'bam2fastq'"
 	wget https://gsl.hudsonalpha.org/static/software/bam2fastq-1.1.0.tgz &> bam2fastq_install.log
-	tar xfz bam2fastq-1.1.0.tgz 1>/dev/null
-	rm bam2fastq-1.1.0.tgz
-	cd bam2fastq-1.1.0
-	make &>> ../bam2fastq_install.log
-	cp bam2fastq /usr/local/bin
-	cd ..
+	if [ -f bam2fastq-1.1.0.tgz ]; then
+		tar xfz bam2fastq-1.1.0.tgz 1>/dev/null
+		rm bam2fastq-1.1.0.tgz
+		cd bam2fastq-1.1.0
+		make &>> ../bam2fastq_install.log
+		cp bam2fastq /usr/local/bin
+		cd ..
+	fi
 fi
 
 #BLAT
@@ -478,53 +494,61 @@ fi
 if ! [ -x "$(command -v blat)" ]; then
 	echo -e "Installing 'BLAT'"
 	wget https://users.soe.ucsc.edu/~kent/src/blatSrc35.zip &> blat_install.log
-	unzip blatSrc35.zip 1>/dev/null
-	rm blatSrc35.zip
-	cd blatSrc
-	#echo $MACHTYPE #if you get x86_64-pc-linux-gnu continue with next line, if something else write appropriate short name
-	MACHTYPE=x86_64
-	export MACHTYPE
-	mkdir -p lib/$MACHTYPE
-	mkdir -p ~/bin/$MACHTYPE
-	make &>> ../blat_install.log
-	cp ~/bin/$MACHTYPE/blat /usr/local/bin
-	cd ..
+	if [ -f blatSrc35.zip ]; then
+		unzip blatSrc35.zip 1>/dev/null
+		rm blatSrc35.zip
+		cd blatSrc
+		#echo $MACHTYPE #if you get x86_64-pc-linux-gnu continue with next line, if something else write appropriate short name
+		MACHTYPE=x86_64
+		export MACHTYPE
+		mkdir -p lib/$MACHTYPE
+		mkdir -p ~/bin/$MACHTYPE
+		make &>> ../blat_install.log
+		cp ~/bin/$MACHTYPE/blat /usr/local/bin
+		cd ..
+	fi
 fi
 
 #FastUniq
 if ! [ -x "$(command -v fastuniq)" ]; then
 	echo -e "Installing 'FastUniq'"
 	wget https://sourceforge.net/projects/fastuniq/files/FastUniq-1.1.tar.gz &> fastuniq_install.log
-	tar xfz FastUniq-1.1.tar.gz 1>/dev/null
-	rm FastUniq-1.1.tar.gz
-	cd FastUniq/source
-	make &>> ../fastuniq_install.log
-	cp fastuniq /usr/local/bin
-	cd ../..
+	if [ -f FastUniq-1.1.tar.gz ]; then
+		tar xfz FastUniq-1.1.tar.gz 1>/dev/null
+		rm FastUniq-1.1.tar.gz
+		cd FastUniq/source
+		make &>> ../fastuniq_install.log
+		cp fastuniq /usr/local/bin
+		cd ../..
+	fi
 fi
 
 #Bowtie2
 if ! [ -x "$(command -v bowtie2)" ]; then
 	echo -e "Installing 'Bowtie2'"
 	wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.2.9/bowtie2-2.2.9-source.zip &> bowtie2_install.log
-	unzip bowtie2-2.2.9-source.zip 1>/dev/null
-	rm bowtie2-2.2.9-source.zip
-	cd bowtie2-2.2.9
-	make &>> ../bowtie2_install.log
-	cp bowtie2* /usr/local/bin
-	cd ..
+	if [ -f bowtie2-2.2.9-source.zip ]; then
+		unzip bowtie2-2.2.9-source.zip 1>/dev/null
+		rm bowtie2-2.2.9-source.zip
+		cd bowtie2-2.2.9
+		make &>> ../bowtie2_install.log
+		cp bowtie2* /usr/local/bin
+		cd ..
+	fi
 fi
 
 #bwa
 if ! [ -x "$(command -v bwa)" ]; then
 	echo -e "Installing 'bwa'"
 	wget https://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.16a.tar.bz2 &> bwa_install.log
-	tar jxf bwa-0.7.16a.tar.bz2 1>/dev/null
-	rm bwa-0.7.16a.tar.bz2
-	cd bwa-0.7.16a
-	make &>> ../bwa_install.log
-	cp bwa /usr/local/bin
-	cd ..
+	if [ -f bwa-0.7.16a.tar.bz2 ]; then
+		tar jxf bwa-0.7.16a.tar.bz2 1>/dev/null
+		rm bwa-0.7.16a.tar.bz2
+		cd bwa-0.7.16a
+		make &>> ../bwa_install.log
+		cp bwa /usr/local/bin
+		cd ..
+	fi
 fi
 
 #ococo (necessary for majority rule consensus building from mapped reads in BAM file)
@@ -542,13 +566,15 @@ fi
 if ! [ -x "$(command -v bucky)" ]; then
 	echo -e "Installing 'BUCKy'"
 	wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
-	tar -xzvf bucky-1.4.4.tgz 1>/dev/null
-	rm bucky-1.4.4.tgz
-	cd bucky-1.4.4/src/
-	make &>> ../../bucky_install.log
-	cp mbsum /usr/local/bin
-	cp bucky /usr/local/bin
-	cd ../..
+	if [ -f bucky-1.4.4.tgz ]; then
+		tar -xzvf bucky-1.4.4.tgz 1>/dev/null
+		rm bucky-1.4.4.tgz
+		cd bucky-1.4.4/src/
+		make &>> ../../bucky_install.log
+		cp mbsum /usr/local/bin
+		cp bucky /usr/local/bin
+		cd ../..
+	fi
 fi
 
 #seqtk
@@ -625,7 +651,14 @@ if ! [ -x "$(command -v p4)" ]; then
 		fi
 	fi
 	#install NLopt
-	$installer install -y install libnlopt-dev &> libnlopt_install.log
+	if [[ $distribution =~ "Debian" ]]; then
+		$installer install -y libnlopt-dev &> libnlopt_install.log
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		$installer install -y NLopt &> libnlopt_install.log
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		$installer install -y nlopt-devel &> libnlopt_install.log
+	fi
+	
 	git clone https://github.com/pgfoster/p4-phylogenetics &> p4_install.log
 	cd p4-phylogenetics
 	#Modify setup.py to be able to find gsl
@@ -817,6 +850,7 @@ fi
 echo -e "\nInstalation script finished.\n"
 
 # Successfully tested on
+# - Ubuntu 18.04 (incl. WSL version)
 # - Ubuntu 16.04
 # - Ubuntu 14.04 LTS #Newer R version necessary, see below!!!
 # - Debian 9.0
