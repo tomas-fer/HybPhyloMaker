@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020                                                                                      #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5g                                                                                                               #
+# v.1.6.5i                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -80,7 +80,7 @@ if ! [ -x "$(command -v python3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'python3'"
 		$installer install -y epel-release &> python3_install.log #Only for CentOS
-		$installer install -y python34 &>> python3_install.log #Only for CentOS
+		$installer install -y python3-devel &>> python3_install.log #Only for CentOS
 	else
 		echo -e "Installing 'python3'"
 		$installer install -y python3 &> python3_install.log #Does not work on CentOS
@@ -109,8 +109,10 @@ fi
 if ! [ -x "$(command -v pip3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'pip3'"
-		$installer install -y python34-devel &>> python3_install.log #Only for CentOS
-		$installer install -y python34-pip &> pip3_install.log #Only for CentOS
+		#$installer install -y python34-devel &>> python3_install.log #Only for CentOS
+		$installer install -y python3-devel &>> python3_install.log #Only for CentOS
+		#$installer install -y python34-pip &> pip3_install.log #Only for CentOS
+		$installer install -y python3-pip &> pip3_install.log #Only for CentOS
 	elif [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'pip3'"
 		$installer install -y python3-dev &>> python3_install.log #Does not work on CentOS
@@ -142,7 +144,7 @@ if ! [ -x "$(command -v java)" ]; then
 		distrib=$(cat /etc/*release | grep ^ID= | cut -d'=' -f2)
 		if [[ $distrib =~ "debian" ]]; then
 			debver=$(cat /etc/debian_version | cut -d"." -f1)
-			if [ "$debver" -eq "9" ]; then
+			if [ "$debver" -ge "9" ]; then
 				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
 			else
 				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
@@ -160,8 +162,13 @@ if ! [ -x "$(command -v java)" ]; then
 		echo -e "Installing 'java'"
 		$installer install -y java-1.7.0-openjdk.x86_64 &> java_install.log #Fedora/CentOS
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		susever=$(cat /etc/*release | grep ^VERSION_ID= | cut -d'=' -f2 | sed 's/\"//g' | cut -d'.' -f1)
 		echo -e "Installing 'java'"
-		$installer install -y java-1_7_0-openjdk &> java_install.log #OpenSUSE
+		if [ "$susever" -gt "12" ]; then
+			$installer install -y java-1_8_0-openjdk &> java_install.log #OpenSUSE
+		else
+			$installer install -y java-1_7_0-openjdk &> java_install.log #OpenSUSE
+		fi
 	fi
 fi
 
@@ -186,6 +193,35 @@ if [ ! "$(whereis zlib | grep /)" ]; then
 		$installer install -y zlib-devel &>> zlib_install.log #Fedora/CentOS/OpenSUSE
 	fi
 fi
+
+#libbzip2 library
+if [ ! "$(whereis libbz2 | grep /)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'libbz2'"
+		$installer install -y lzma-dev &>> zlib_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'libbz2'"
+		$installer install -y bzip2-devel &>> zlib_install.log #Fedora/CentOS
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'libbz2'"
+		$installer install -y libbz2-devel &>> zlib_install.log #OpenSUSE
+	fi
+fi
+
+#lzma library
+if [ ! "$(whereis lzma | grep /)" ]; then
+	if [[ $distribution =~ "Debian" ]]; then
+		echo -e "Installing 'lzma'"
+		$installer install -y libbz2-dev &>> zlib_install.log #Debian/Ubuntu
+	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+		echo -e "Installing 'lzma'"
+		$installer install -y xz-devel &>> zlib_install.log #Fedora/CentOS
+	elif [[ $distribution =~ "OpenSUSE" ]]; then
+		echo -e "Installing 'lzma'"
+		$installer install -y xz-devel &>> zlib_install.log #OpenSUSE
+	fi
+fi
+
 
 #pkg-config
 if [ ! "$(whereis pkg-config | grep /)" ]; then
@@ -422,7 +458,7 @@ if [[ `grep avx /proc/cpuinfo` ]]; then
 		rm *.o
 	fi
 fi
-cp raxmlHPC* /usr/local/bin
+cp raxmlHPC* /usr/local/bin 2>/dev/null
 cd ..
 
 #MstatX
@@ -493,7 +529,7 @@ fi
 #see, e.g., http://nix-bio.blogspot.cz/2013/10/installing-blat-and-blast.html for installing tips
 if ! [ -x "$(command -v blat)" ]; then
 	echo -e "Installing 'BLAT'"
-	wget https://users.soe.ucsc.edu/~kent/src/blatSrc35.zip &> blat_install.log
+	wget --no-check-certificate https://users.soe.ucsc.edu/~kent/src/blatSrc35.zip &> blat_install.log
 	if [ -f blatSrc35.zip ]; then
 		unzip blatSrc35.zip 1>/dev/null
 		rm blatSrc35.zip
@@ -593,30 +629,30 @@ fi
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip3 show numpy | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
 			pip3 install numpy &> numpy_install.log
 			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip3 show scipy | grep Version` ]]; then
+		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
 			pip3 install scipy &> scipy_install.log
 			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		if ! [[ `pip2.7 show numpy | grep Version` ]]; then
-			#pip2.7 install numpy &> numpy_install.log
+		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
+			#pip3 install numpy &> numpy_install.log
 			$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip2.7 show scipy | grep Version` ]]; then
-			pip2.7 install scipy &> scipy_install.log
+		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
+			pip3 install scipy &> scipy_install.log
 			#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		if ! [[ `pip2.7 show numpy | grep Version` ]]; then
-			#pip2.7 install numpy &> numpy_install.log
+		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
+			#pip3 install numpy &> numpy_install.log
 			$installer install -y numpy &> numpy_install.log #CentOS, Fedora
 		fi
-		if  ! [[ `pip2.7 show scipy | grep Version` ]]; then
-			#pip2.7 install scipy &> scipy_install.log
+		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
+			#pip3 install scipy &> scipy_install.log
 			$installer install -y scipy &> scipy_install.log #CentOS, Fedora
 		fi
 	fi
@@ -636,25 +672,25 @@ if ! [ -x "$(command -v p4)" ]; then
 	fi
 	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip3 show future | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show future | grep Version` ]]; then
 			pip3 install future &> python-future_install.log
 		fi
-		if ! [[ `pip3 show bitarray | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show bitarray | grep Version` ]]; then
 			pip3 install bitarray &> python-bitarray_install.log
 		fi
 	else
-		if ! [[ `pip2.7 show future | grep Version` ]]; then
-			pip2.7 install future &> python-future_install.log
+		if ! [[ `pip3 --disable-pip-version-check show future | grep Version` ]]; then
+			pip3 install future &> python-future_install.log
 		fi
-		if ! [[ `pip2.7 show bitarray | grep Version` ]]; then
-			pip2.7 install bitarray &> python-bitarray_install.log
+		if ! [[ `pip3 --disable-pip-version-check show bitarray | grep Version` ]]; then
+			pip3 install bitarray &> python-bitarray_install.log
 		fi
 	fi
 	#install NLopt
 	if [[ $distribution =~ "Debian" ]]; then
 		$installer install -y libnlopt-dev &> libnlopt_install.log
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		$installer install -y NLopt &> libnlopt_install.log
+		$installer install -y NLopt-devel &> libnlopt_install.log
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		$installer install -y nlopt-devel &> libnlopt_install.log
 	fi
@@ -694,38 +730,38 @@ fi
 
 #other python modules (mainly for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
-	if ! [[ `pip2 show pandas | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
 		pip2 install pandas &> python-pandas_install.log
 		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
-	if ! [[ `pip2 show scikit-learn | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python'"
 		pip2 install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
-	if ! [[ `pip2 show tables | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show tables | grep Version` ]]; then
 		echo -e "Installing 'tables for python'"
 		pip2 install tables &> python-tables.log
 	fi
-	if ! [[ `pip2 show parsing | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show parsing | grep Version` ]]; then
 		echo -e "Installing 'parsing for python'"
 		pip2 install parsing &> python-parsing.log
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	if ! [[ `pip2.7 show pandas | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
 		pip2.7 install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
 	fi
-	if ! [[ `pip2.7 show scikit-learn | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python'"
 		pip2.7 install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
 	fi
-	if ! [[ `pip show tables | grep Version` ]]; then
+	if ! [[ `pip --disable-pip-version-check show tables | grep Version` ]]; then
 		echo -e "Installing 'tables for python'"
 		pip2.7 install tables &> python-tables.log
 	fi
-	if ! [[ `pip show parsing | grep Version` ]]; then
+	if ! [[ `pip --disable-pip-version-check show parsing | grep Version` ]]; then
 		echo -e "Installing 'parsing for python'"
 		pip2.7 install parsing &> python-parsing.log
 	fi
