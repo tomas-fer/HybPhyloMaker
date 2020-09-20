@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020                                                                                      #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5i                                                                                                               #
+# v.1.6.5j                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -83,7 +83,7 @@ if ! [ -x "$(command -v python3)" ]; then
 		$installer install -y python3-devel &>> python3_install.log #Only for CentOS
 	else
 		echo -e "Installing 'python3'"
-		$installer install -y python3 &> python3_install.log #Does not work on CentOS
+		$installer install -y python3-dev &> python3_install.log #Does not work on CentOS
 		
 	fi
 fi
@@ -105,13 +105,13 @@ else
 	echo >/dev/null
 fi
 
-#Pip3 (also required for 'biopython' and 'kindel' installation, see below)
+#Pip3 (also required for 'biopython', 'kindel' and 'p4' installation, see below)
 if ! [ -x "$(command -v pip3)" ]; then
 	if [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'pip3'"
-		#$installer install -y python34-devel &>> python3_install.log #Only for CentOS
+		$installer install -y python34-devel &>> python3_install.log #Only for CentOS, older version?
 		$installer install -y python3-devel &>> python3_install.log #Only for CentOS
-		#$installer install -y python34-pip &> pip3_install.log #Only for CentOS
+		$installer install -y python34-pip &> pip3_install.log #Only for CentOS, older version?
 		$installer install -y python3-pip &> pip3_install.log #Only for CentOS
 	elif [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'pip3'"
@@ -144,8 +144,10 @@ if ! [ -x "$(command -v java)" ]; then
 		distrib=$(cat /etc/*release | grep ^ID= | cut -d'=' -f2)
 		if [[ $distrib =~ "debian" ]]; then
 			debver=$(cat /etc/debian_version | cut -d"." -f1)
-			if [ "$debver" -ge "9" ]; then
+			if [ "$debver" -eq "9" ]; then
 				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+			elif [ "$debver" -gt "9" ]; then
+				$installer install -y openjdk-11-jre &> java_install.log #Debian9/Ubuntu
 			else
 				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
 			fi
@@ -198,7 +200,7 @@ fi
 if [ ! "$(whereis libbz2 | grep /)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'libbz2'"
-		$installer install -y lzma-dev &>> zlib_install.log #Debian/Ubuntu
+		$installer install -y libbz2-dev &>> zlib_install.log #Debian/Ubuntu
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'libbz2'"
 		$installer install -y bzip2-devel &>> zlib_install.log #Fedora/CentOS
