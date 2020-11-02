@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.7.2                                    *
+# *                                   v.1.7.3                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -186,7 +186,7 @@ else
 	fi
 fi
 
-#Modify Astral tree (replace ' ' back to '-' and '_'
+#Modify Astral tree (replace ' ' back to '-' and '_')
 sed -i 's/ \([^ ]*\) / \1_/g' ${sptree}.tre #replace every second occurrence of ' ' by '_'
 sed -i 's/ /-/g' ${sptree}.tre #replace all spaces by '-'
 
@@ -288,7 +288,7 @@ fi
 
 #Convert SVG to PDF
 module add python36-modules-gcc #adds also cairosvg
-cairosvg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf
+cairosvg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg -o phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
