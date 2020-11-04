@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.7.0                                    *
+# *                                   v.1.7.1                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -41,7 +41,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add bowtie2-2.2.4
 	module add bwa-0.7.15
 	#module add bcftools-1.3.1
-	module add samtools-1.3
+	module add samtools-1.9
 	module add perl-5.10.1
 	module add gcc-4.8.4
 	module add python34-modules-gcc #adds also kindel
