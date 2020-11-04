@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.6.4                                    *
+# *                                   v.1.6.5                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -207,6 +207,9 @@ if [ "$othersource" != "" ] && [ "$othersource" != "NO" ]; then
 	cp -r $othersourcepath/* .
 fi
 
+#Make a list of all files with contigs
+ls *.fas > contig_names.txt
+
 if [[ $cp =~ "yes" ]]; then
 	#Copy cpDNA reference
 	cp -r $source/$cpDNACDS .
@@ -216,9 +219,6 @@ else
 fi
 #Make a new folder for results
 mkdir $path/$type/50pslx
-
-#Make a list of all files with contigs
-ls *.fas > contig_names.txt
 
 #A loop to process all contig files specified in contig_names.txt
 for contigfile in $(cat contig_names.txt)
