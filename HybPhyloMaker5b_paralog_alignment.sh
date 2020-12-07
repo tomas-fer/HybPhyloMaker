@@ -118,7 +118,7 @@ fi
 
 #Test if folder for results exits
 if [ -d "$path/${alnpathselected}${MISSINGPERCENT}/OPtrees" ]; then
-	echo -e "Directory '$path/${treepath}${MISSINGPERCENT}/OPtrees' already exists. Delete it or rename before running this script again. Exiting...\n"
+	echo -e "Directory '$path/${treepath}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/OPtrees' already exists. Delete it or rename before running this script again. Exiting...\n"
 	rm -d ../workdir05b/ 2>/dev/null
 	exit 3
 else
@@ -152,7 +152,7 @@ done
 #Make a list of all fasta files
 ls *.fas | cut -d"." -f1 > FileForOPTree.txt
 #Make dir for results
-mkdir -p $path/${alnpathselected}${MISSINGPERCENT}/OPtrees
+mkdir -p $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/OPtrees
 
 echo -e "done\n"
 
@@ -166,14 +166,15 @@ for file in $(cat list.txt); do
 	#Rename paralogs
 	sed -i 's/>/>para_/' *${file}para_modif70.fas
 	#Merge locus and paralocus alignments
-	cat *${file}_modif70.fas *${file}para_modif70.fas > *${file}ANDpara_modif70.fas
+	cat *${file}_modif70.fas *${file}para_modif70.fas > ${file}ANDpara_modif70.fas
 	#Alignment using MAFFT
-	mafft --auto *${file}ANDpara_modif70.fas > *${file}ANDpara_modif70.mafft
+	mafft --auto ${file}ANDpara_modif70.fas > ${file}ANDpara_modif70.mafft
 	#Tree with FastTree
-	fasttreemp -nt *${file}ANDpara_modif70.mafft > *${file}ANDpara_modif70.fast.tre
+	fasttreemp -nt ${file}ANDpara_modif70.mafft > ${file}ANDpara_modif70.fast.tre
 	#Copy home
-	cp *${file}ANDpara_modif70.mafft $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/OPtrees
-	cp *${file}ANDpara_modif70.fast.tre $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/OPtrees
+	cp ${file}ANDpara_modif70.mafft $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
+	cp ${file}ANDpara_modif70.fast.tre $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
+	cp parastat.txt $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
 done
 
 #Clean scratch/work directory
