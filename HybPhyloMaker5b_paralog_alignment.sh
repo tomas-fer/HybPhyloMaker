@@ -44,13 +44,8 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add fasttree-2.1.8
-	module add raxml-8.2.4
-	module add perl-5.10.1
-	module add R-3.4.3-gcc
-	module add python-3.4.1-gcc
+	module add mafft-7.029
 	module add debian8-compat #for proper working of 'python3' on some computing nodes
-	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker5b is running on Hydra..."
 	#settings for Hydra
