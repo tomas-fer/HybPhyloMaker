@@ -158,23 +158,24 @@ echo -e "done\n"
 
 #----------------Generate alignments of locus and its paralogue----------------
 echo -e "Name\tLocus\tParalocus" > parastat.txt
+cp parastat.txt $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
+
 for file in $(cat list.txt); do
 	#Calculate number of samples
 	locus=$(grep ">" *${file}_modif70.fas | wc -l)
 	paralocus=$(grep ">" *${file}para_modif70.fas | wc -l)
 	echo -e "${file}\t${locus}\t${paralocus}" >> parastat.txt
+	cp parastat.txt $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
 	#Rename paralogs
 	sed -i 's/>/>para_/' *${file}para_modif70.fas
 	#Merge locus and paralocus alignments
 	cat *${file}_modif70.fas *${file}para_modif70.fas > ${file}ANDpara_modif70.fas
 	#Alignment using MAFFT
 	mafft --auto ${file}ANDpara_modif70.fas > ${file}ANDpara_modif70.mafft
+	cp ${file}ANDpara_modif70.mafft $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
 	#Tree with FastTree
 	fasttreemp -nt ${file}ANDpara_modif70.mafft > ${file}ANDpara_modif70.fast.tre
-	#Copy home
-	cp ${file}ANDpara_modif70.mafft $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
 	cp ${file}ANDpara_modif70.fast.tre $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
-	cp parastat.txt $path/${alnpathselected}${MISSINGPERCENT}_${SPECIESPRESENCE}/deleted_above${MISSINGPERCENT}/OPtrees
 done
 
 #Clean scratch/work directory
