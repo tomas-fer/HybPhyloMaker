@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.6.5                                    *
+# *                                   v.1.6.6                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -40,6 +40,7 @@ wget https://cran.r-project.org/src/contrib/Archive/data.table/data.table_1.9.6.
 wget https://cran.r-project.org/src/contrib/Archive/phytools/phytools_0.5-20.tar.gz
 wget https://cran.r-project.org/src/contrib/Archive/seqinr/seqinr_3.1-3.tar.gz
 wget https://cran.r-project.org/src/contrib/Archive/openxlsx/openxlsx_4.0.0.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz
 
 #Install packages to personal (writable) library
 mkdir -p /storage/$server/home/$LOGNAME/Rpackages
