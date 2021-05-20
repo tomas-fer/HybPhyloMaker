@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.6.7f                                   *
+# *                                   v.1.6.7g                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -250,12 +250,17 @@ for i in *modif*; do
 	echo -ne "$i\t" >> nrtaxa.txt
 	grep ">" $i | wc -l >> nrtaxa.txt
 done
-#delete all assemblies with less than 4 samples
-awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | xargs rm
-#delete all files with percentage of missing data for assemblies with less than 4 samples
-awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | cut -d"_" -f 1,2 | sed "s/$/_${MISSINGPERCENT}percN.fas/" | xargs rm
+
 #count assemblies with less than 4 samples
 nrfew=$(awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | wc -l)
+
+if [[ $nrfew -gt 0 ]]; then
+	#delete all assemblies with less than 4 samples
+	awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | xargs rm
+	#delete all files with percentage of missing data for assemblies with less than 4 samples
+	awk '{ if ($2 < 4) print $1 }' nrtaxa.txt | cut -d"_" -f 1,2 | sed "s/$/_${MISSINGPERCENT}percN.fas/" | xargs rm
+fi
+
 echo -e "\n$nrfew alignments with less than 4 samples deleted..."
 
 #Prepare header file
