@@ -93,7 +93,7 @@ for mafft in $(cat listOfMAFFTFiles.txt); do
 	if [[ $noallgaps =~ "yes" ]]; then
 		trimal -in ${mafft} -out ${mafft}.1 -htmlout ${mafft}.noallgaps.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
 	fi
-	if [[ $noallgaps =~ "yes" ]]; then
+	if [[ $gappyout =~ "yes" ]]; then
 		trimal -in ${mafft}.1 -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null #remove gappy positions
 	fi
 	#change '-' to 'Q'
