@@ -284,7 +284,7 @@ done
 
 #-----------------------CHANGE LEADING AND TAILING '-' TO '?'-----------------------
 #i.e. differentiate missing data from gaps
-echo -ne "\nChanging leading/tailing '-' in alignments..."
+echo -ne "Changing leading/tailing '-' in alignments..."
 if [[ $cp =~ "yes" ]]; then
 	ls *.fasta > listOfMAFFTFiles.txt
 else
