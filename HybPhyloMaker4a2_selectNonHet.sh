@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 04a2 - Select low-heterozygosity exons                *
-# *                                   v.1.6.5                                    *
+# *                                   v.1.6.6                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -213,7 +213,7 @@ if [[ $nohetcalculation =~ "yes" ]]; then
 	# Copy BAM files
 	cp $path/$type/21mapped_${mappingmethod}/*.bam .
 	#indexing reference
-	bwa index $reference
+	bwa index $reference 2>/dev/null
 	# Sorting, indexing, variant calling, extraxcting heteroyzgous positions, calculating nr hetero per exon
 	for file in $(ls *.bam | cut -d'.' -f1); do
 		echo -e "$file"
@@ -224,9 +224,9 @@ if [[ $nohetcalculation =~ "yes" ]]; then
 		samtools index ${file}_sorted.bam
 		#samtools view -h -o ${file}.sam ${file}_sorted.bam
 		echo -e "...pileup"
-		samtools mpileup -E -uf $reference ${file}_sorted.bam > ${file}.pileup
+		samtools mpileup -E -uf $reference ${file}_sorted.bam > ${file}.pileup 2>/dev/null
 		echo -e "...vcf"
-		bcftools call --skip-variants indels --multiallelic-caller --variants-only -O v -o ${file}.vcf ${file}.pileup
+		bcftools call --skip-variants indels --multiallelic-caller --variants-only -O v -o ${file}.vcf ${file}.pileup 2>/dev/null
 		#bcftools view -v -m 0.5 ${file}.pileup > ${file}.vcf
 		rm ${file}.pileup
 		#grep heterozygous
@@ -234,7 +234,7 @@ if [[ $nohetcalculation =~ "yes" ]]; then
 		grep -e 0/1 -e 1/2 ${file}.vcf > ${file}_hetero.txt
 		#only SNPs with mapping quality higher than 36 (mapping quality in 6th column)
 		awk '{if ($6 >= 36) print $0}' ${file}_hetero.txt > ${file}_heteroqual.txt
-		echo -e "...calculate nr het per exon"
+		echo -e "...calculate nr het per exon\n"
 		echo -e "$file" > ${file}_nrhet.txt
 		cat $bedfile | while read a b c; do
 			nrhet=$(awk -v low=$b -v high=$c '{ if (($2 >= low) && ($2 <= high)) print $0 }' ${file}_heteroqual.txt | wc -l)
