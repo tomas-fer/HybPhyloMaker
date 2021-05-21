@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 4a3 - TrimmingExons                          *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.7                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -83,8 +83,8 @@ else
 fi
 
 #make folder for results
-mkdir $path/$type/60mafft/trimmed
-mkdir $path/$type/60mafft/trimmed/html
+mkdir -p $path/$type/60mafft/trimmed
+mkdir -p $path/$type/60mafft/trimmed/html
 
 #PROCESS MAFFT FILES
 echo -ne "\nTrimming alignments..."
@@ -92,28 +92,31 @@ for mafft in $(cat listOfMAFFTFiles.txt); do
 	#trimming (keep sequences even if only composed by gaps)
 	if [[ $noallgaps =~ "yes" ]]; then
 		trimal -in ${mafft} -out ${mafft}.1 -htmlout ${mafft}.noallgaps.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
+		mv ${mafft}.1 ${mafft}
 	fi
 	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft}.1 -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		trimal -in ${mafft} -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		mv ${mafft}.2 ${mafft}
 	fi
 	#change '-' to 'Q'
-	sed -i '/^>/!s/-/Q/g' ${mafft}.2
+	sed -i '/^>/!s/-/Q/g' ${mafft}
 	#change 'n' to '-' (to allow trimming on Ns)
-	sed -i '/^>/!s/n/-/g' ${mafft}.2
+	sed -i '/^>/!s/n/-/g' ${mafft}
 	#second trimming (keep sequences even if only composed by gaps)
 	if [[ $noallgaps =~ "yes" ]]; then
-		trimal -in ${mafft}.2 -out ${mafft}.3 -htmlout ${mafft}.noallgapsN.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
+		trimal -in ${mafft} -out ${mafft}.3 -htmlout ${mafft}.noallgapsN.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
+		mv ${mafft}.3 ${mafft}
 	fi
 	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft}.3 -out ${mafft}.4 -htmlout ${mafft}.gappyoutN.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		trimal -in ${mafft} -out ${mafft}.4 -htmlout ${mafft}.gappyoutN.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		mv ${mafft}.4 ${mafft}
 	fi
 	#change '-' back to 'n'
-	sed -i '/^>/!s/-/n/g' ${mafft}.4
+	sed -i '/^>/!s/-/n/g' ${mafft}
 	#change 'Q' back to '-'
-	sed '/^>/!s/Q/-/g' ${mafft}.4 > ${mafft}
+	sed -i '/^>/!s/Q/-/g' ${mafft}
 	#removes everything after a gap (i.e., also sequence length introduced by trimAl)
 	sed -i 's/ .*//' ${mafft}
-	rm ${mafft}.1 ${mafft}.2 ${mafft}.3 ${mafft}.4
 	cp ${mafft} $path/$type/60mafft/trimmed
 	cp ${mafft}.*.html $path/$type/60mafft/trimmed/html
 	rm ${mafft}.*.html
