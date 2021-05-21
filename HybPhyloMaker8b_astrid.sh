@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.6.5                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.6.6                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -493,7 +493,13 @@ if [[ $collapse -eq "0" ]];then
 					#module load bioinformatics/p4?
 				fi
 				#Combine bootstrap with consensus tree
-				python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				if [[ $PBS_O_HOST == *".cz" ]]; then
+					#on Metacentrum, p4 within 'combineboot.py' requires python 2
+					python ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				else
+					#locally, p4 within 'combineboot.py' requires python 3
+					python3 ./combineboot.py Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+				fi
 				mv combinedSupportsTree.tre Astrid_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootANDcons.tre
 				echo
 			fi
