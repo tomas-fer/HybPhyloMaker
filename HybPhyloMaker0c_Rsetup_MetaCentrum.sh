@@ -57,6 +57,7 @@ wget https://cran.r-project.org/src/contrib/fastmatch_1.1-0.tar.gz #required by 
 wget https://cran.r-project.org/src/contrib/Archive/BiocManager/BiocManager_1.30.14.tar.gz #necessary for treeio on Bioconductor
 wget https://cran.r-project.org/src/contrib/Archive/rvcheck/rvcheck_0.1.7.tar.gz #required by treeio
 wget https://cran.r-project.org/src/contrib/Archive/tidytree/tidytree_0.3.3.tar.gz #required by treeio
+wget https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.4.10.tar.gz #required by treeio
 
 #Install packages to personal (writable) library
 mkdir -p /storage/$server/home/$LOGNAME/Rpackages
