@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.7                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -52,8 +52,11 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#module add python27-modules-gcc
 	module add python-3.4.1-gcc
 	module add newick-utils-13042016
+	module add R-3.4.3-gcc
 	module add debian8-compat
 	#module add p4 #do not load before running 'python3 AMAS.py'
+	#Set package library for R
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8a is running on Hydra..."
 	#settings for Hydra
@@ -67,6 +70,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load java/1.7
 	module load bioinformatics/anaconda3/5.1 #python3 and NewickUtilities
+	module load tools/R/3.4.1
 	#module load bioinformatics/newickutilities/0.0
 	#module load bioinformatics/p4/ #???
 else
@@ -426,15 +430,30 @@ fi
 echo -e "Computing ASTRAL tree..."
 if [[ $location == "1" ]]; then
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	if [[ $astralt4	=~ "yes" ]]; then
+		echo -e "\nComputing 'ASTRAL -t 4' tree..."
+		java -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
+	fi
 elif [[ $location == "2" ]]; then
 	java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	if [[ $astralt4	=~ "yes" ]]; then
+		echo -e "\nComputing 'ASTRAL -t 4' tree..."
+		java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
+	fi
 else
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	if [[ $astralt4	=~ "yes" ]]; then
+		echo -e "\nComputing 'ASTRAL -t 4' tree..."
+		java -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
+	fi
 fi
 
 #(Re)root a final Astral species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
 	nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+	if [[ $astralt4	=~ "yes" ]]; then
+		nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre
+	fi
 	echo
 fi
 #Make a copy of the main Astral tree for future combination(s)
@@ -450,24 +469,41 @@ sed -i.bak2 's/_/ /g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 if [[ $requisite =~ "yes" ]]; then
 	if [[ ! $collapse -eq "0" ]]; then
 		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}.tre
+		astraltreet4=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}_t4
 	else
 		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.tre
+		astraltreet4=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_t4
 	fi
 else
 	if [[ ! $collapse -eq "0" ]]; then
 		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}.tre
+		astraltreet4=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}_t4
 	else
 		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+		astraltreet4=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4
 	fi
 fi
+
+#Make a plot of 'Astral -t 4' scoring (using treeio R package)
+cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre tree.tre #make the name simple
+cp $source/astralt4.R .
+R --slave -f astralt4.R
 
 #Copy species tree and log to home
 if [[ $update =~ "yes" ]]; then
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree}
-	cp Astral.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+	if [[ $astralt4	=~ "yes" ]]; then
+		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.tre
+		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.pdf
+	fi
 else
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree}
-	cp Astral.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+	if [[ $astralt4	=~ "yes" ]]; then
+		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.tre
+		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.pdf
+	fi
 fi
 
 if [[ $collapse -eq "0" ]];then
