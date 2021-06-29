@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=2:00:00
-#PBS -l select=1:ncpus=2:mem=12gb:scratch_local=8gb
+#PBS -l select=1:ncpus=2:mem=8gb:scratch_local=8gb
 #PBS -j oe
 #PBS -N HybPhyloMaker8i_Dsuite
 #PBS -m abe
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.6.6a                                   *
 # *                         Martha Kandziora & Tomas Fer                         *
 # *                           tomas.fer@natur.cuni.cz                            *
 # ********************************************************************************
@@ -204,10 +204,14 @@ sed -i 's/\?/N/g' concatenated.fasta
 sed -i '/^>/!s/N/-/g' concatenated.fasta
 
 echo -e "Running SNP-site...\n"
-conda activate SNP-sites
-snp-sites -v concatenated.fasta > concatenated.vcf
-conda deactivate
-module unload conda-modules-py37
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	conda activate SNP-sites
+	snp-sites -v concatenated.fasta > concatenated.vcf
+	conda deactivate
+	module unload conda-modules-py37
+else
+	snp-sites -v concatenated.fasta > concatenated.vcf
+fi
 
 # Filter VCF
 echo -e "Filtering VCF..."
@@ -221,17 +225,30 @@ gzip concatenated_bcf.vcf
 # Run Dsuite
 # compile
 echo -e "\nRunning Dsuite..."
-git clone https://github.com/millanek/Dsuite.git
-cd Dsuite/
-make -j2
-cd ..
-
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	git clone https://github.com/millanek/Dsuite.git
+	cd Dsuite/
+	make -j2
+	cd ..
+fi
 # BBAA
 echo -e "\nCreating BBAA..."
-Dsuite/Build/Dsuite Dtrios -c -n gene_flow -t sptree.tre concatenated_bcf.vcf.gz SpeciesSet.txt
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	Dsuite/Build/Dsuite Dtrios -c -n gene_flow -t sptree.tre concatenated_bcf.vcf.gz SpeciesSet.txt
+else
+	Dsuite Dtrios -c -n gene_flow -t sptree.tre concatenated_bcf.vcf.gz SpeciesSet.txt
+fi
 echo -e "\nCreating Fbranch...."
-Dsuite/Build/Dsuite Fbranch sptree.tre SpeciesSet_gene_flow_tree.txt > SpeciesSet_gene_flow_Fbranch.txt
-python3 Dsuite/utils/dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	Dsuite/Build/Dsuite Fbranch sptree.tre SpeciesSet_gene_flow_tree.txt > SpeciesSet_gene_flow_Fbranch.txt
+else
+	Dsuite Fbranch sptree.tre SpeciesSet_gene_flow_tree.txt > SpeciesSet_gene_flow_Fbranch.txt
+fi
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	python3 Dsuite/utils/dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
+else
+	python3 dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
+fi
 cairosvg gene_flow.svg -o gene_flow.pdf
 echo -e "\nCreating Ruby files...\n"
 cut -f 2 SpeciesSet.txt | uniq > plot_order.txt
