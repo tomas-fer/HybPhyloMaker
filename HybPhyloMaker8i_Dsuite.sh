@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.6.6a                                   *
+# *                                   v.1.6.6b                                   *
 # *                         Martha Kandziora & Tomas Fer                         *
 # *                           tomas.fer@natur.cuni.cz                            *
 # ********************************************************************************
@@ -125,6 +125,7 @@ if [[ ! $location == "1" ]]; then
 fi
 
 #Add necessary scripts and files
+echo -e "\nCopying scripts...\n"
 cp $source/AMAS.py .
 wget https://raw.githubusercontent.com/mmatschiner/tutorials/master/analysis_of_introgression_with_snp_data/src/plot_d.rb 2>/dev/null
 wget https://raw.githubusercontent.com/mmatschiner/tutorials/master/analysis_of_introgression_with_snp_data/src/plot_f4ratio.rb 2>/dev/null
@@ -137,7 +138,7 @@ else
 fi
 
 # Copy ASTRAL species tree
-echo -e "\nCopying ASTRAL species tree...\n"
+echo -e "Copying ASTRAL species tree...\n"
 if [[ $update =~ "yes" ]]; then
 	cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral/Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
 else
@@ -247,7 +248,7 @@ fi
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	python3 Dsuite/utils/dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
 else
-	python3 dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
+	dtools.py -n gene_flow SpeciesSet_gene_flow_Fbranch.txt sptree.tre
 fi
 cairosvg gene_flow.svg -o gene_flow.pdf
 echo -e "\nCreating Ruby files...\n"
