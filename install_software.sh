@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.7a                                                                                                               #
+# v.1.6.7b                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -300,12 +300,12 @@ for Rpackage in quadprog igraph fastmatch; do
 	fi
 done
 rm testpackage
-wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz
-R CMD INSTALL phangorn_2.5.5.tar.gz &> R_phangorn_install.log
+wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz &> R_phangorn_install.log
+R CMD INSTALL phangorn_2.5.5.tar.gz &>> R_phangorn_install.log
 rm phangorn_2.5.5.tar.gz
 
 #R package treeio (from Bioconductor)
-for Rpackage in rvcheck tidytree rlang; do
+for Rpackage in rvcheck tidytree rlang jsonlite; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
 	if grep -Fxq "[1] FALSE" testpackage; then
 		echo -e "Installing '$Rpackage for R'"
@@ -315,8 +315,8 @@ for Rpackage in rvcheck tidytree rlang; do
 	fi
 done
 rm testpackage
-wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz
-R CMD INSTALL treeio_1.4.3.tar.gz &> R_treeio_install.log
+wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz &> R_treeio_install.log
+R CMD INSTALL treeio_1.4.3.tar.gz &>> R_treeio_install.log
 rm treeio_1.4.3.tar.gz
 
 
@@ -923,7 +923,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites cairosvg; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
@@ -946,7 +946,7 @@ echo -e "**************************************************************"
 #Check R packages
 echo -e "\n**************************************************************"
 echo -e "Checking R packages"
-for Rpackage in ape seqinr data.table openxlsx phangorn; do
+for Rpackage in ape seqinr data.table openxlsx phangorn treeio; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
