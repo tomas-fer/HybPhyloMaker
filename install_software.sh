@@ -5,10 +5,10 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2017, 2018, 2019, 2020                                                                                      #
+# Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.5j                                                                                                               #
+# v.1.6.7a                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -248,6 +248,13 @@ if [ ! "$(whereis unzip | grep /)" ]; then
 	$installer install -y unzip &> unzip_install.log
 fi
 
+#wget, tar, bzip2, bc, git
+for i in wget tar bzip2 bc git; do
+	if ! [ -x "$(command -v $i)" ]; then
+		echo -e "Installing '$i'"
+		$installer install -y $i &> ${i}_install.log
+	fi
+done
 
 #R
 #Comment for Ubuntu/Debian: you should install the newest version of R by adding CRAN mirror to /etc/apt/sources.list
@@ -281,13 +288,37 @@ for Rpackage in ape seqinr data.table openxlsx; do
 done
 rm testpackage
 
-#wget, tar, bzip2, bc, git
-for i in wget tar bzip2 bc git; do
-	if ! [ -x "$(command -v $i)" ]; then
-		echo -e "Installing '$i'"
-		$installer install -y $i &> ${i}_install.log
+#R package phangorn (requires quadprog, igraph, fastmatch)
+#older version installed due to compatibility with R 3.5
+for Rpackage in quadprog igraph fastmatch; do
+	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
+	if grep -Fxq "[1] FALSE" testpackage; then
+		echo -e "Installing '$Rpackage for R'"
+		R -q -e "install.packages('$Rpackage', repos='http://cran.rstudio.com/')" &> R_${Rpackage}_install.log
+	else
+		echo -e "R package $Rpackage already installed"
 	fi
 done
+rm testpackage
+wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz
+R CMD INSTALL phangorn_2.5.5.tar.gz &> R_phangorn_install.log
+rm phangorn_2.5.5.tar.gz
+
+#R package treeio (from Bioconductor)
+for Rpackage in rvcheck tidytree rlang; do
+	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
+	if grep -Fxq "[1] FALSE" testpackage; then
+		echo -e "Installing '$Rpackage for R'"
+		R -q -e "install.packages('$Rpackage', repos='http://cran.rstudio.com/')" &> R_${Rpackage}_install.log
+	else
+		echo -e "R package $Rpackage already installed"
+	fi
+done
+rm testpackage
+wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz
+R CMD INSTALL treeio_1.4.3.tar.gz &> R_treeio_install.log
+rm treeio_1.4.3.tar.gz
+
 
 ##------UNCOMMENT NEXT LINES (the whole block) IF YOU WISH TO INSTALL THIS SOFTWARE FROM REPOSITORIES------
 #If commented then newest versions will be installed later from source, see below
@@ -516,7 +547,7 @@ fi
 #bam2fastq
 if ! [ -x "$(command -v bam2fastq)" ]; then
 	echo -e "Installing 'bam2fastq'"
-	wget https://gsl.hudsonalpha.org/static/software/bam2fastq-1.1.0.tgz &> bam2fastq_install.log
+	wget --no-check-certificate https://gsl.hudsonalpha.org/static/software/bam2fastq-1.1.0.tgz &> bam2fastq_install.log
 	if [ -f bam2fastq-1.1.0.tgz ]; then
 		tar xfz bam2fastq-1.1.0.tgz 1>/dev/null
 		rm bam2fastq-1.1.0.tgz
@@ -730,7 +761,34 @@ if ! [ -x "$(command -v kindel)" ]; then
 	fi
 fi
 
-#other python modules (mainly for PartitionFinder)
+#VCFtools
+if ! [ -x "$(command -v vcftools)" ]; then
+	git clone https://github.com/vcftools/vcftools &>> vcftools_install.log
+	cd vcftools
+	./autogen.sh &>> ../vcftools_install.log
+	./configure &>> ../vcftools_install.log
+	make &>> ../vcftools_install.log
+	make install &>> ../vcftools_install.log
+	cd ..
+fi
+
+#Ruby
+if ! [ -x "$(command -v ruby)" ]; then
+	$installer install -y ruby-full &> ruby_install.log
+fi
+
+#other python3 modules (mainly for Dsuite)
+if ! [[ `pip3 --disable-pip-version-check show pandas | grep Version` ]]; then
+	pip3 install pandas &> python3-pandas_install.log
+fi
+if ! [[ `pip3 --disable-pip-version-check show matplotlib | grep Version` ]]; then
+	pip3 install matplotlib &> python3-matplotlib_install.log
+fi
+if ! [[ `pip3 --disable-pip-version-check show cairosvg | grep Version` ]]; then
+	pip3 install cairosvg &> python3-cairosvg_install.log
+fi
+
+#other python2 modules (mainly for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
 	if ! [[ `pip2 --disable-pip-version-check show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
@@ -750,6 +808,10 @@ if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'parsing for python'"
 		pip2 install parsing &> python-parsing.log
 	fi
+	if ! [[ `pip2 --disable-pip-version-check show pyparsing | grep Version` ]]; then
+		echo -e "Installing 'pyparsing for python'"
+		pip2 install pyparsing &> python-pyparsing.log
+	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 	if ! [[ `pip2.7 --disable-pip-version-check show pandas | grep Version` ]]; then
 		echo -e "Installing 'pandas for python'"
@@ -766,6 +828,10 @@ elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ 
 	if ! [[ `pip --disable-pip-version-check show parsing | grep Version` ]]; then
 		echo -e "Installing 'parsing for python'"
 		pip2.7 install parsing &> python-parsing.log
+	fi
+	if ! [[ `pip --disable-pip-version-check show pyparsing | grep Version` ]]; then
+		echo -e "Installing 'pyparsing for python'"
+		pip2.7 install pyparsing &> python-pyparsing.log
 	fi
 fi
 
@@ -826,6 +892,30 @@ if [[ $instexaml =~ "y" ]]; then
 	fi
 fi
 
+#Dsuite
+if ! [ -x "$(command -v Dsuite)" ]; then
+	echo -e "Installing 'Dsuite'"
+	git clone https://github.com/millanek/Dsuite.git &>> Dsuite_install.log
+	cd Dsuite
+	make -j2 &>> ../Dsuite_install.log
+	cp Build/Dsuite /usr/local/bin
+	cp utils/dtools.py /usr/local/bin
+	cd ..
+fi
+
+#SNP-sites
+if ! [ -x "$(command -v snp-sites)" ]; then
+	echo -e "Installing 'SNP-sites'"
+	git clone https://github.com/sanger-pathogens/snp-sites &>> SNP-sites_install.log
+	cd snp-sites
+	autoreconf -i -f &>> ../SNP-sites_install.log
+	./configure &>> ../SNP-sites_install.log
+	make &>> ../SNP-sites_install.log
+	make install &>> ../SNP-sites_install.log
+	ldconfig &>> ../SNP-sites_install.log
+	cd ..
+fi
+
 #Leave 'install' directory
 cd ..
 
@@ -833,7 +923,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R seqtk p4 bucky bcftools; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
@@ -856,7 +946,7 @@ echo -e "**************************************************************"
 #Check R packages
 echo -e "\n**************************************************************"
 echo -e "Checking R packages"
-for Rpackage in ape seqinr data.table openxlsx; do
+for Rpackage in ape seqinr data.table openxlsx phangorn; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
@@ -891,10 +981,11 @@ echo -e "\nInstalation script finished.\n"
 # - Ubuntu 18.04 (incl. WSL version)
 # - Ubuntu 16.04
 # - Ubuntu 14.04 LTS #Newer R version necessary, see below!!!
+# - Debian 10.9 (in Oracle VM)
 # - Debian 9.0
 # - Debian 8.6 #Newer R version necessary, see below!!!
 # - OpenSUSE 42
-# - CentOS 7.2
+# - CentOS 7.2, 7.7 (in WSL)
 # - Fedora 24
 # - Scientific Linux 7.2
 
