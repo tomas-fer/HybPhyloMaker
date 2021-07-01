@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.7b                                                                                                               #
+# v.1.6.7c                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -300,9 +300,16 @@ for Rpackage in quadprog igraph fastmatch; do
 	fi
 done
 rm testpackage
-wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz &> R_phangorn_install.log
-R CMD INSTALL phangorn_2.5.5.tar.gz &>> R_phangorn_install.log
-rm phangorn_2.5.5.tar.gz
+R -q -e "is.element('phangorn', installed.packages()[,1])" > testpackage
+if grep -Fxq "[1] FALSE" testpackage; then
+	echo -e "Installing 'phangorn for R'"
+	wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz &> R_phangorn_install.log
+	R CMD INSTALL phangorn_2.5.5.tar.gz &>> R_phangorn_install.log
+	rm phangorn_2.5.5.tar.gz
+else
+	echo -e "R package phangorn already installed"
+fi
+rm testpackage
 
 #R package treeio (from Bioconductor)
 for Rpackage in rvcheck tidytree rlang jsonlite; do
@@ -315,10 +322,16 @@ for Rpackage in rvcheck tidytree rlang jsonlite; do
 	fi
 done
 rm testpackage
-wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz &> R_treeio_install.log
-R CMD INSTALL treeio_1.4.3.tar.gz &>> R_treeio_install.log
-rm treeio_1.4.3.tar.gz
-
+R -q -e "is.element('treeio', installed.packages()[,1])" > testpackage
+if grep -Fxq "[1] FALSE" testpackage; then
+	echo -e "Installing 'treeio for R'"
+	wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz &> R_treeio_install.log
+	R CMD INSTALL treeio_1.4.3.tar.gz &>> R_treeio_install.log
+	rm treeio_1.4.3.tar.gz
+else
+	echo -e "R package treeio already installed"
+fi
+rm testpackage
 
 ##------UNCOMMENT NEXT LINES (the whole block) IF YOU WISH TO INSTALL THIS SOFTWARE FROM REPOSITORIES------
 #If commented then newest versions will be installed later from source, see below
