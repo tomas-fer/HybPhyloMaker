@@ -20,7 +20,7 @@
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
 # *                                   v.1.6.6b                                   *
-# *                         Martha Kandziora & Tomas Fer                         *
+# *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
 # *                           tomas.fer@natur.cuni.cz                            *
 # ********************************************************************************
 
