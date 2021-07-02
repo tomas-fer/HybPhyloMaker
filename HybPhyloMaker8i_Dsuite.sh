@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.6.6b                                   *
+# *                                   v.1.6.6c                                   *
 # *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
 # *                           tomas.fer@natur.cuni.cz                            *
 # ********************************************************************************
