@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.7.1                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -47,6 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python34-modules-gcc #adds also kindel
 	module add ococo-2016-11
 	module add jdk-7
+	module add datamash-1.3 #for data summary
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
 	#settings for Hydra
@@ -65,6 +66,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	module load bioinformatics/fastuniq/1.1
 	#module load bioinformatics/ococo/ #???
 	module load java/1.7
+	module load datamash #not yet on Hydra
 else
 	echo -e "\nHybPhyloMaker2 is running locally...\n"
 	#settings for local run
@@ -77,15 +79,6 @@ else
 	cd workdir02
 fi
 
-#Setting for the case when working with cpDNA
-if [[ $cp =~ "yes" ]]; then
-	echo -e "Working with cpDNA\n"
-	type="cp"
-else
-	echo -e "Working with exons\n"
-	type="exons"
-fi
-
 #Test if 'workdir' exist
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir02)" ]; then
@@ -93,6 +86,18 @@ if [[ ! $location == "1" ]]; then
 		rm -d ../workdir02/ 2>/dev/null
 		exit 3
 	fi
+fi
+
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	echo -e "Working with cpDNA\n"
+	type="cp"
+	cp $source/$cpDNACDS .
+	
+else
+	echo -e "Working with exons\n"
+	type="exons"
+	cp $source/$probes .
 fi
 
 #Test if folders for results exist
@@ -150,9 +155,9 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 			rm -d ../workdir03/ 2>/dev/null
 			exit 3
 		else
-			cpDNACDS=$(echo $cpDNACDS | cut -d"." -f1)
-			if [ ! -f "$source/${cpDNACDS}_with${nrns}Ns_beginend.fas" ]; then
-				echo -e "${cpDNACDS}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+			name=$(echo $cpDNACDS | cut -d"." -f1)
+			if [ ! -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
+				echo -e "${name}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
 				rm SamplesFileNames.txt
 				rm -d ../workdir02/ 2>/dev/null
 				exit 3
@@ -165,9 +170,9 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 			rm -d ../workdir02/ 2>/dev/null
 			exit 3
 		else
-			probes=$(echo $probes | cut -d"." -f1)
-			if [ ! -f "$source/${probes}_with${nrns}Ns_beginend.fas" ]; then
-				echo -e "${probes}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
+			name=$(echo $probes | cut -d"." -f1)
+			if [ ! -f "$source/${name}_with${nrns}Ns_beginend.fas" ]; then
+				echo -e "${name}_with${nrns}Ns_beginend.fas does not exist within 'HybSeqSource'. Run HybPhyloMaker0b_preparereference.sh first.\n"
 				rm SamplesFileNames.txt
 				rm -d ../workdir02/ 2>/dev/null
 				exit 3
@@ -193,8 +198,8 @@ fi
 if [[ $cp =~ "yes" ]]; then
 	probes=$cpDNACDS
 fi
-probes=$(echo $probes | cut -d"." -f1)
-cp $source/${probes}_with${nrns}Ns_beginend.fas .
+name=$(echo $probes | cut -d"." -f1)
+cp $source/${name}_with${nrns}Ns_beginend.fas .
 
 #Make a new folder for results
 if [ ! -d "$path/$type/21mapped_${mappingmethod}" ]; then
@@ -205,11 +210,11 @@ fi
 if [[ $mapping =~ "yes" ]]; then
 	if [[ $mappingmethod =~ "bowtie2" ]]; then
 		echo -en "Indexing pseudoreference for bowtie2..."
-		bowtie2-build ${probes}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
+		bowtie2-build ${name}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log
 		cp indexing_pseudoreference.log $path/$type/21mapped_bowtie2/
 	else
 		echo -en "Indexing pseudoreference for bwa...\n"
-		bwa index ${probes}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log
+		bwa index ${name}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log
 		cp indexing_pseudoreference.log $path/$type/21mapped_bwa/
 	fi
 fi
@@ -261,14 +266,14 @@ for file in $(cat SamplesFileNames.txt); do
 			bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq${suffix}  -2 ${file}-2P_no-dups.fastq${suffix} -U ${file}-1U${suffix},${file}-2U${suffix} -S ${file}.sam 2>${file}_bowtie2_out.txt
 		else
 			echo "Mapping pair-end reads using bwa..."
-			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt
+			bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt
 			echo "Mapping orphaned reads using bwa..."
 			if [[ $compressed =~ "yes" ]]; then
 				gunzip ${file}-1U.gz
 				gunzip ${file}-2U.gz
 			fi
 			cat ${file}-1U ${file}-2U > ${file}-unpaired
-			bwa mem ${probes}_with${nrns}Ns_beginend.fas ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt
+			bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt
 		fi
 		#create BAM from SAM
 		echo "Converting to BAM..."
@@ -322,7 +327,7 @@ for file in $(cat SamplesFileNames.txt); do
 			samtools index ${file}.bam
 		fi
 		#call consensus with ambiguous bases with ConsensusFixer
-		java -jar ConsensusFixer.jar -i ${file}.bam -r ${probes}_with${nrns}Ns_beginend.fas -plurality $plurality -mcc $mincov -dash
+		java -jar ConsensusFixer.jar -i ${file}.bam -r ${name}_with${nrns}Ns_beginend.fas -plurality $plurality -mcc $mincov -dash
 		#add EOL at the end of the file
 		sed -i '$a\' consensus.fasta
 		#change '-' (introduce by ConsensusFixer when coverage is low) by 'N'
@@ -403,6 +408,103 @@ if [[ $conscall =~ "consensusfixer" ]]; then
 	data1=$(echo $data | rev | cut -d"/" -f1 | rev)
 	cp ambigperc.txt $path/$type/30consensus/${data1}_ambigperc.txt
 	cp ambigbaseperc.txt $path/$type/30consensus/${data1}_ambigbaseperc.txt
+fi
+
+#Calculate per exon coverage using picard tools
+if [ ! -d "$path/$type/21mapped_${mappingmethod}/coverage" ]; then
+	echo -e "\nPer exon coverage calculation...\n"
+	# Make dir for results
+	mkdir $path/$type/21mapped_${mappingmethod}/coverage
+	# Copy BAM files and indices
+	cp $path/$type/21mapped_${mappingmethod}/*.bam .
+	cp $path/$type/21mapped_${mappingmethod}/*.bai .
+	#Copy references and BED file
+	reference=${name}_with${nrns}Ns_beginend.fas
+	cp $source/$reference .
+	header=$(grep ">" ${name}_with${nrns}Ns_beginend.fas | sed 's/>//')
+	bedfile=${header}_exon_positions.bed
+	cp $source/$bedfile .
+	
+	#Get picard tools
+	echo -e "Downloading picard tools...\n"
+	wget https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar 2> /dev/null
+	
+	#Index reference
+	samtools faidx ${reference}
+	
+	#Create sequence dictionary from reference
+	echo -e "Creating sequence dictionary from reference\n" >> picard.log
+	java -jar picard.jar CreateSequenceDictionary -R ${reference} -O reference.dict 2>> picard.log
+	echo >> picard.log
+	#Convert BED file to IntervalList
+	echo -e "Converting BED file to IntervalList\n" >> picard.log
+	java -jar picard.jar BedToIntervalList -I ${bedfile} -O list -SD reference.dict 2>> picard.log
+	echo >> picard.log
+	
+	# Prepare list of BAM file and remove suffix (.bam)
+	ls *.bam  | cut -d"." -f1 > LisfOfBAMFiles.txt
+	# Loop over BAM files
+	echo -e "Calculating per exon coverage..."
+	for file in $(cat LisfOfBAMFiles.txt)
+	do
+		echo -e "${file}"
+		echo -e "\n\nProcessing ${file}\n" >> picard.log
+		#compute metrics (%GC, coverage)
+		java -jar picard.jar CollectHsMetrics -I ${file}.bam -O ${file}_metrics.txt -R ${reference} -BAIT_INTERVALS list -TARGET_INTERVALS list -PER_TARGET_COVERAGE ${file}_perTarget.txt 2>> picard.log
+		# Copy results from SCRATCHDIR to HOME
+		cp ${file}_perTarget.txt $path/$type/21mapped_${mappingmethod}/coverage
+		rm ${file}.bam
+	done
+	cp picard.log $path/$type/21mapped_${mappingmethod}/coverage
+	
+	# Make summary table
+	echo -e "\nCreating summary tables..."
+	ls *perTarget.txt | cut -d"." -f1 | sed 's/_perTarget//' > ListOfCoverageFiles.txt
+	cat `ls *perTarget.txt | head -n 1` | cut -f 2,3,4 > infocolumn.txt
+	echo -e "taxon\n5\n10\n20\n30\n50\n100" >> firstcolumn.txt
+	for i in $(cat ListOfCoverageFiles.txt)
+	do
+		# Print header (species name)
+		echo "$i" >> ${i}_exon_meancoverage.txt
+		# Extract 7th column containing mean coverage per exon
+		cat ${i}_perTarget.txt | cut -f7 | sed '1d' >> ${i}_exon_meancoverage.txt
+		# Write samples name to file with 
+		echo $i > ${i}_nrexons.txt
+		for j in 5 10 20 30 50 100
+		do
+			cat ${i}_perTarget.txt | cut -f7 | awk -v val=$j ' NR>1 {if ($1>val) print $1;}' | wc -l >> ${i}_nrexons.txt
+		done
+	done
+	
+	# Combine information from all samples together
+	paste infocolumn.txt *_exon_meancoverage.txt > exon_meancoverageALL.txt
+	paste firstcolumn.txt *_nrexons.txt > numberexonsALL.txt
+	# Copy summary table to home
+	cp exon_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+	cp numberexonsALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+	
+	# Calculate mean values per locus (a mean from per-exon means)
+	# Delete first three rows (i.e., leaving only mean values)
+	cut -f4- exon_meancoverageALL.txt | datamash transpose > coverage.txt
+	# Prepare header
+	echo locus | tr "\n" "\t" > header.txt #print 'locus' and replaces EOL by TAB, i.e., next line prints on the same line
+	grep ">" $probes | cut -d'_' -f2 | datamash transpose >> header.txt
+	echo -e "exon\t" | perl -0pe 's/\n\Z//' >> header.txt #print 'exonTAB' and removes very last character which is EOL, i.e., next line prints on the same line
+	grep ">" $probes | cut -d'_' -f4 | datamash transpose >> header.txt
+	cat header.txt coverage.txt > exon_meancoverageALLmodif.txt
+	rm header.txt coverage.txt
+	# Calculate mean per locus from per-exon values
+	lines=$(wc -l < "exon_meancoverageALLmodif.txt")
+	datamash -W transpose < "exon_meancoverageALLmodif.txt" | datamash -H groupby 1 mean 3-"$lines" | datamash transpose > locus_meancoverageALL.txt
+	#modify output
+	sed -i.bak 's/GroupBy(//' locus_meancoverageALL.txt
+	sed -i.bak2 's/mean(//' locus_meancoverageALL.txt
+	sed -i.bak3 's/)//' locus_meancoverageALL.txt
+	rm *bak*
+	cp exon_meancoverageALLmodif.txt $path/$type/21mapped_${mappingmethod}/coverage
+	cp locus_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+else
+	echo -e "\nFolder with per exon coverage already exists\n"
 fi
 
 #Clean scratch/work directory
