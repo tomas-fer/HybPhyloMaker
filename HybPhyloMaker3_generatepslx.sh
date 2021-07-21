@@ -19,13 +19,13 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.6.5                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************
 
-# Input: Consensus sequences from HybPhyloMaker2 or Geneious: must be named consensus.fasta or consensus_cpDNA.fasta 
+# Input: Consensus sequences from HybPhyloMaker2 or Geneious: must be named consensus.fasta or consensus_cpDNA.fasta
 # it is multiple fasta file with names (in case of Geneious mapping):
 # e.g., Camptandra-latifolia_S4-all-no-dups_assembled_to_Curcuma_exons_reference_400Ns__consensus_sequence)
 # prepared in /storage/$server/home/$LOGNAME/data/30consensus/
@@ -46,6 +46,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	cd $SCRATCHDIR
 	#Add necessary modules
 	module add blat-suite-34
+	module add R-3.4.3-gcc
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker3 is running on Hydra..."
 	#settings for Hydra
@@ -60,6 +61,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir03
 	#Add necessary modules
 	module load bioinformatics/blat/36x1
+	module load tools/R/3.2.1
 else
 	echo -e "\nHybPhyloMaker3 is running locally..."
 	#settings for local run
@@ -141,6 +143,8 @@ cp -r $path/$type/30consensus/* .
 #Make a new folder for results
 mkdir -p $path/$type
 mkdir $path/$type/40contigs
+#Copy necessary script
+cp $source/histogram.r .
 
 #-----------------------GENEIOUS CONSENSUS SEQUENCE MODIFICATION-----------------------
 echo -en "Parsing consensus sequence..."
@@ -201,7 +205,7 @@ fi
 echo -e "finished\n"
 
 #-----------------------BLAT ASSEMBLIES TO REFERENCE-----------------------
-echo -e "Generating pslx files using BLAT...\n"
+echo -e "Generating pslx files using BLAT..."
 #Copy other transcriptome/genome data from home to scratch/workdir (must be named with suffix *.fas)
 if [ "$othersource" != "" ] && [ "$othersource" != "NO" ]; then 
 	cp -r $othersourcepath/* .
@@ -260,6 +264,37 @@ do
 	fi
 	cp $contigfile.pslx $path/$type/50pslx
 done
+
+#Calculate similarity to reference
+echo -e "\nCalculating similarity to reference..."
+#Make a list of pslx files (shorten name to genus-species_code)
+ls *.pslx | cut -d'_' -f1,2 | cut -d'.' -f1 > ListOfpslx.txt
+#Loop over pslx files
+for pslx in $(cat ListOfpslx.txt)
+do
+	echo $pslx
+	#Delete first five lines
+	sed -i '1,5d' ${pslx}*.pslx
+	#Print 1st column / ( 1st column + 2nd column ). 1st column = number of matches, 2nd column = number of mismatches
+	awk '{ print ( $1 / ($1 + $2) ) * 100}' ${pslx}*.pslx > similarities
+	#Call R script to make a histogram (produce PNG file called 'simil.png')
+	R --slave -f histogram.r $pslx > /dev/null
+	#Calculate average of similarity values
+	awk '{ sum += $1 } END { print sum / NR }' similarities >> summary.txt
+	cat similarities > ${pslx}_similaritytoreference.txt
+	mv simil.png ${pslx}_similaritytoreference.png
+done
+
+paste ListOfpslx.txt summary.txt > similarities_summary.txt
+
+#Make a dir for results
+mkdir $path/$type/50pslx/pslxsimil
+mkdir $path/$type/50pslx/pslxsimil/similarities
+mkdir $path/$type/50pslx/pslxsimil/histograms
+#Copy data to home
+cp similarities_summary.txt $path/$type/50pslx/pslxsimil
+cp *_similaritytoreference.txt $path/$type/50pslx/pslxsimil/similarities
+cp *_similaritytoreference.png $path/$type/50pslx/pslxsimil/histograms
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
