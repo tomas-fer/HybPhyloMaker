@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -543,7 +543,8 @@ else
 	R --slave -f heatmap.R >> R.log 2>&1
 fi
 cp R.log $path/${alnpathselected}${MISSINGPERCENT}
-cp heatmap.pdf $path/${alnpathselected}${MISSINGPERCENT}
+mv heatmap.pdf MissingData_${MISSINGPERCENT}_heatmap.pdf
+cp MissingData_${MISSINGPERCENT}_heatmap.pdf $path/${alnpathselected}${MISSINGPERCENT}
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
