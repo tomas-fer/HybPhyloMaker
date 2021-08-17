@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.6.7a                                   *
+# *                                   v.1.8.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -94,16 +94,34 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 if [[ $update =~ "yes" ]]; then
@@ -116,7 +134,7 @@ if [[ ! $collapse -eq "0" ]]; then
 	echo -e "...and with trees with branches below ${collapse} BS collapsed"
 else
 	if [[ $requisite =~ "no" ]]; then
-		echo -e "\n"
+		echo -e ""
 	fi
 fi
 
@@ -430,19 +448,19 @@ fi
 echo -e "Computing ASTRAL tree..."
 if [[ $location == "1" ]]; then
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
-	if [[ $astralt4	=~ "yes" ]]; then
+	if [[ $astralt4 =~ "yes" ]]; then
 		echo -e "\nComputing 'ASTRAL -t 4' tree..."
 		java -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
 	fi
 elif [[ $location == "2" ]]; then
 	java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
-	if [[ $astralt4	=~ "yes" ]]; then
+	if [[ $astralt4 =~ "yes" ]]; then
 		echo -e "\nComputing 'ASTRAL -t 4' tree..."
 		java -d64 -server -XX:MaxHeapSize=4g -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
 	fi
 else
 	java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
-	if [[ $astralt4	=~ "yes" ]]; then
+	if [[ $astralt4 =~ "yes" ]]; then
 		echo -e "\nComputing 'ASTRAL -t 4' tree..."
 		java -jar $astraljar -t 4 -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre 2> Astralt4.log
 	fi
@@ -451,7 +469,7 @@ fi
 #(Re)root a final Astral species tree with $OUTGROUP
 if [ -n "$OUTGROUP" ]; then
 	nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-	if [[ $astralt4	=~ "yes" ]]; then
+	if [[ $astralt4 =~ "yes" ]]; then
 		nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre
 	fi
 	echo
@@ -487,21 +505,23 @@ fi
 #Make a plot of 'Astral -t 4' scoring (using treeio R package)
 cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre tree.tre #make the name simple
 cp $source/astralt4.R .
-R --slave -f astralt4.R
+R --slave -f astralt4.R >> astralt4_R.log 2>&1
 
 #Copy species tree and log to home
 if [[ $update =~ "yes" ]]; then
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree}
 	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
-	if [[ $astralt4	=~ "yes" ]]; then
+	cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+	if [[ $astralt4 =~ "yes" ]]; then
 		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.tre
 		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.pdf
 	fi
 else
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree}
 	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
-	if [[ $astralt4	=~ "yes" ]]; then
-		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.tre
+	cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+	if [[ $astralt4 =~ "yes" ]]; then
+		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.tre
 		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.pdf
 	fi
 fi
