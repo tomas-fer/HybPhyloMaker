@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.6.8                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -76,17 +76,35 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -e "...with corrected reading frame\n"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -e "...with corrected reading frame\n"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+		echo -e "\n"
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
-	echo -e "\n"
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -e "...with corrected reading frame...and for selection: $selection\n"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -e "...and for selection: $selection\n"
+	fi
 fi
 
 #Check necessary file
@@ -200,6 +218,7 @@ else
 			echo 'SPECIESPRESENCE='"$SPECIESPRESENCE" >> ${group}.sh
 			echo 'type='"$type" >> ${group}.sh
 			echo 'corrected='"$corrected" >> ${group}.sh
+			echo 'selection='"$selection" >> ${group}.sh
 			echo 'location='"$location" >> ${group}.sh
 			echo 'genetreepart='"$genetreepart" >> ${group}.sh
 			echo 'raxmlpthreads='"$raxmlpthreads" >> ${group}.sh
@@ -208,14 +227,26 @@ else
 			echo 'model='"$model" >> ${group}.sh
 			echo 'raxmlboot='"$raxmlboot" >> ${group}.sh
 			echo 'bootstop='"$bootstop" >> ${group}.sh
-			echo 'if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
-			echo '  alnpath=$type/80concatenated_exon_alignments_corrected' >> ${group}.sh
-			echo '  alnpathselected=$type/81selected_corrected' >> ${group}.sh
-			echo '  treepath=$type/82trees_corrected' >> ${group}.sh
+			echo 'if [ -z "$selection" ]; then' >> ${group}.sh
+			echo '  if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
+			echo '    alnpath=$type/80concatenated_exon_alignments_corrected' >> ${group}.sh
+			echo '    alnpathselected=$type/81selected_corrected' >> ${group}.sh
+			echo '    treepath=$type/82trees_corrected' >> ${group}.sh
+			echo '  else' >> ${group}.sh
+			echo '    alnpath=$type/70concatenated_exon_alignments' >> ${group}.sh
+			echo '    alnpathselected=$type/71selected' >> ${group}.sh
+			echo '    treepath=$type/72trees' >> ${group}.sh
+			echo '  fi' >> ${group}.sh
 			echo 'else' >> ${group}.sh
-			echo '  alnpath=$type/70concatenated_exon_alignments' >> ${group}.sh
-			echo '  alnpathselected=$type/71selected' >> ${group}.sh
-			echo '  treepath=$type/72trees' >> ${group}.sh
+			echo '  if [[ $corrected =~ "yes" ]]; then' >> ${group}.sh
+			echo '    alnpath=$type/$selection/80concatenated_exon_alignments_corrected' >> ${group}.sh
+			echo '    alnpathselected=$type/$selection/81selected_corrected' >> ${group}.sh
+			echo '    treepath=$type/$selection/82trees_corrected' >> ${group}.sh
+			echo '  else' >> ${group}.sh
+			echo '    alnpath=$type/$selection/70concatenated_exon_alignments' >> ${group}.sh
+			echo '    alnpathselected=$type/$selection/71selected' >> ${group}.sh
+			echo '    treepath=$type/$selection/72trees' >> ${group}.sh
+			echo '  fi' >> ${group}.sh
 			echo 'fi' >> ${group}.sh
 			echo 'cp '"$path"'/${alnpathselected}${MISSINGPERCENT}/'"$group"' .' >> ${group}.sh
 			echo 'for i in $(cat '"$group"')' >> ${group}.sh
