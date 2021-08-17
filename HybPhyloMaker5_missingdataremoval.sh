@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -98,104 +98,87 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -e "...with corrected reading frame\n"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -e "...with corrected reading frame\n"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+		echo -e "\n"
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
-	echo -e "\n"
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -e "...with corrected reading frame...and for selection: $selection\n"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -e "...and for selection: $selection\n"
+	fi
 fi
 
 #Check necessary file
 echo -ne "Testing if input data are available..."
 if [[ $cp =~ "yes" ]]; then
-	if [ -d "$path/$type/60mafft" ]; then
-		if [ "$(ls -A $path/$type/60mafft)" ]; then
+	if [ -d "$path/$mafftpath" ]; then
+		if [ "$(ls -A $path/$mafftpath)" ]; then
 			echo -e "OK\n"
 		else
-			echo -e "'$path/$type/60mafft' is empty. Exiting...\n"
+			echo -e "'$path/$mafftpath' is empty. Exiting...\n"
 			rm -d ../workdir05/ 2>/dev/null
 			exit 3
 		fi
 	else
-		echo -e "'$path/$type/60mafft' is missing. Exiting...\n"
+		echo -e "'$path/$mafftpath' is missing. Exiting...\n"
 		rm -d ../workdir05/ 2>/dev/null
 		exit 3
 	fi
 else
-	if [[ $corrected =~ "yes" ]]; then
-		if [ -d "$path/$type/80concatenated_exon_alignments_corrected" ]; then
-			if [ "$(ls -A $path/$type/80concatenated_exon_alignments_corrected)" ]; then
-				echo -e "OK\n"
-			else
-				echo -e "'$path/$type/80concatenated_exon_alignments_corrected' is empty. Exiting...\n"
-				rm -d ../workdir05/ 2>/dev/null
-				exit 3
-			fi
+	if [ -d "$path/$alnpath" ]; then
+		if [ "$(ls -A $path/$alnpath)" ]; then
+			echo -e "OK\n"
 		else
-			echo -e "'$path/$type/80concatenated_exon_alignments_corrected' is missing. Exiting...\n"
+			echo -e "'$path/$alnpath' is empty. Exiting...\n"
 			rm -d ../workdir05/ 2>/dev/null
 			exit 3
 		fi
 	else
-		if [ -d "$path/$type/70concatenated_exon_alignments" ]; then
-			if [ "$(ls -A $path/$type/70concatenated_exon_alignments)" ]; then
-				echo -e "OK\n"
-			else
-				echo -e "'$path/$type/70concatenated_exon_alignments' is empty. Exiting...\n"
-				rm -d ../workdir05/ 2>/dev/null
-				exit 3
-			fi
-		else
-			echo -e "'$path/$type/70concatenated_exon_alignments' is missing. Exiting...\n"
+		echo -e "'$path/$alnpath' is missing. Exiting...\n"
+		rm -d ../workdir05/ 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Test if folder for results exits
+if [ -d "$path/$alnpathselected${MISSINGPERCENT}" ]; then
+	echo -e "Directory '$path/$alnpathselected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir05/ 2>/dev/null
+	exit 3
+else
+	if [[ ! $location == "1" ]]; then
+		if [ "$(ls -A ../workdir05)" ]; then
+			echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
 			rm -d ../workdir05/ 2>/dev/null
 			exit 3
 		fi
 	fi
 fi
 
-#Test if folder for results exits
-if [[ $corrected =~ "yes" ]]; then
-	if [ -d "$path/$type/81selected_corrected${MISSINGPERCENT}" ]; then
-		echo -e "Directory '$path/$type/81selected_corrected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir05/ 2>/dev/null
-		exit 3
-	else
-		if [[ ! $location == "1" ]]; then
-			if [ "$(ls -A ../workdir05)" ]; then
-				echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-				rm -d ../workdir05/ 2>/dev/null
-				exit 3
-			fi
-		fi
-	fi
-else
-	if [ -d "$path/$type/71selected${MISSINGPERCENT}" ]; then
-		echo -e "Directory '$path/$type/71selected${MISSINGPERCENT}' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir05/ 2>/dev/null
-		exit 3
-	else
-		if [[ ! $location == "1" ]]; then
-			if [ "$(ls -A ../workdir05)" ]; then
-				echo -e "Directory 'workdir05' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-				rm -d ../workdir05/ 2>/dev/null
-				exit 3
-			fi
-		fi
-	fi
-fi
 #Copy data folder to scratch
 if [[ $cp =~ "yes" ]]; then
-	cp $path/$type/60mafft/*.fasta .
-	#Rename *.mafft to *.fasta
-	# for file in *.mafft; do
-		# mv "$file" "${file%.fasta.mafft}.fasta"
-	# done
+	cp $path/$mafftpath/*.fasta .
 else
 	#cp $path/$alnpath/*.fasta .
 	find $path/$alnpath -maxdepth 1 -name "*.fasta" -exec cp -t . {} + #to avoid 'Argument list too long' error
@@ -330,7 +313,7 @@ sed -i '1s/ 0/ nr_assemblies_with_completely_missing_data/' transposedPlusMeanPl
 paste AssembliesList.txt transposedPlusMeanPlusNumberOf100.txt > MissingDataOverview.txt
 # Copy table and list to home
 cp MissingDataOverview.txt $path/${alnpathselected}${MISSINGPERCENT}
-echo -e "Table with % of missing data per gene and sample saved to $path/$type/71selected${MISSINGPERCENT}\n"
+echo -e "Table with % of missing data per gene and sample saved to $path/$alnpathselected${MISSINGPERCENT}\n"
 
 #-----------SELECTION OF MOST COMPLETE ASSEMBLIES----------------------
 # (i.e., only containing species with at least $MISSINGPERCENT data and are present at least in $SPECIESPRESENCE of samples)
@@ -409,7 +392,7 @@ fi
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for all genes using MstatX..."
 for file in *.fasta; do
-	echo $file
+	echo -e "\t$file"
 	mstatx -i $file -g > /dev/null 2>&1
 	line=$(cat output.txt)
 	echo -e "$file\t$line" >> mstatx.txt
@@ -429,7 +412,7 @@ find -name "*fasta" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to avoid 'Argu
 #Calculate alignment conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for all genes using trimAl..."
 for file in *.fasta; do
-	echo $file
+	echo -e "\t$file"
 	#Calculate sct using trimal | delete first three lines (header) | replace double TABs by single | replace ' ' by nothing | calculate weighted mean by
 	#multiplying first column value (number of residues, i.e. positions) by fifth column (similarity value), sum up all values and divide by the length of the gene
 	trimal -in $file -sst | sed '1,3d' | sed 's/\t\t/\t/g' | sed 's/ //g' | awk -v val=$file '{ sum+=$1*$5; sum2+=$1} END { print val "\t" sum/sum2}' >> sct.out
@@ -481,7 +464,7 @@ fi
 #Calculate global alignment entropy using MstatX
 echo -e "\nCalculating alignment entropy for selected genes using MstatX..."
 for file in AMASselected/*.fas; do
-	echo $file
+	echo -e "\t$file"
 	mstatx -i $file -g  > /dev/null 2>&1
 	line=$(cat output.txt)
 	echo -e "$file\t$line" >> mstatx.txt
@@ -499,7 +482,7 @@ find AMASselected/ -name "*fas" -print0 | xargs -0 sed -i.bak '/^>/!s/n/N/g' #to
 #Calculate conservation value using trimAl
 echo -e "\nCalculating alignment conservation value for selected genes using trimAl..."
 for file in AMASselected/*.fas; do
-	echo $file
+	echo -e "\t$file"
 	#Calculate sct using trimal | delete first three lines (header) | replace double TABs by single | replace ' ' by nothing | calculate weighted mean by
 	#multiplying first column value (number of residues, i.e. positions) by fifth column (similarity value), sum up all values and divide by the length of the gene
 	trimal -in $file -sst | sed '1,3d' | sed 's/\t\t/\t/g' | sed 's/ //g' | awk -v val=$file '{ sum+=$1*$5; sum2+=$1} END { print val "\t" sum/sum2}' >> sct.out
