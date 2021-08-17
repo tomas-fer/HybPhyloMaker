@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                         Script 12 - Exclude samples                          *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -173,7 +173,7 @@ if [ ! -z $(grep "$OUTGROUP" excludelist.txt) ]; then
 fi
 
 #Make a new folder for results
-mkdir $path/$type/$selection
+mkdir -p $path/$type/$selection
 #copy excludelist.txt to $type/$selection
 cp excludelist.txt $path/$type/$selection
 
@@ -195,7 +195,15 @@ fi
 if [[ $cp =~ "yes" ]]; then
 	cp $path/$mafftpath/*.fasta .
 else
-	find $path/$mafftpath -maxdepth 1 -name "*.mafft" -exec cp -t . {} + #to avoid 'Argument list too long' error
+	if [[ $corrected =~ "yes" ]]; then
+		find $path/$mafftpath -maxdepth 1 -name "*.corrframe" -exec cp -t . {} + #to avoid 'Argument list too long' error
+		#remove '.corrframe' (files have now '.mafft' only)
+		for filename in $(ls *.corrframe); do
+			mv ${filename} ${filename%.*}
+		done
+	else
+		find $path/$mafftpath -maxdepth 1 -name "*.mafft" -exec cp -t . {} + #to avoid 'Argument list too long' error
+	fi
 	#remove '.mafft' (files have now '.fasta' only)
 	for filename in $(ls *.mafft); do
 		mv ${filename} ${filename%.*}
@@ -220,9 +228,15 @@ for mafftfile in $(cat listOfMAFFTFiles.txt); do
 	#get only lines without (-v) samples to exclude
 	grep -v -f excludelist.txt $mafftfile > tmp
 	if [[ $cp =~ "no" ]]; then
-		#add '.mafft' to conform with filenames in mafft folders
-		mv tmp ${mafftfile}.mafft
-		cp ${mafftfile}.mafft $path/$selmafftpath
+		if [[ $corrected =~ "yes" ]]; then
+			#add '.mafft.corrframe' to conform with filenames in 61mafft_corrected folders
+			mv tmp ${mafftfile}.mafft.corrframe
+			cp ${mafftfile}.mafft.corrframe $path/$selmafftpath
+		else
+			#add '.mafft' to conform with filenames in 60mafft folders
+			mv tmp ${mafftfile}.mafft
+			cp ${mafftfile}.mafft $path/$selmafftpath
+		fi
 	else
 		mv tmp ${mafftfile}
 		cp ${mafftfile} $path/$selmafftpath
@@ -238,11 +252,19 @@ if [[ $cp =~ "no" ]]; then
 	#Copy script
 	cp $source/AMAS.py .
 	
-	#Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft to To_align_Assembly_10372_*mafft)
-	#(all files starting with "To_align_Assembly_10372_" will be merged)
-	ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft/g > fileNamesForConcat.txt
-	#Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. Assembly_10372
-	ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/Assembly_/g > fileNamesForSaving.txt
+	if [[ $corrected =~ "yes" ]]; then
+		#Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft.corrframe to To_align_Assembly_10372_*mafft.corrframe)
+		#(all files starting with "To_align_Assembly_10372_" will be merged)
+		ls -1 | grep 'corrframe' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.corrframe/g > fileNamesForConcat.txt
+		#Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. CorrectedAssembly_10372
+		ls -1 | grep 'corrframe' | cut -d'_' -f4 | sort -u | sed s/^/CorrectedAssembly_/g > fileNamesForSaving.txt
+	else
+		#Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft to To_align_Assembly_10372_*mafft)
+		#(all files starting with "To_align_Assembly_10372_" will be merged)
+		ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft/g > fileNamesForConcat.txt
+		#Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. Assembly_10372
+		ls -1 | grep 'mafft' | cut -d'_' -f4 | sort -u | sed s/^/Assembly_/g > fileNamesForSaving.txt
+	fi
 	#Combine both files (make single file with two columns)
 	paste fileNamesForConcat.txt fileNamesForSaving.txt > fileForLoop.txt
 	
