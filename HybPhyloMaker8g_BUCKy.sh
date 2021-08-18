@@ -18,8 +18,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08g - BUCKY concordant analysis                    *
-# *                                   v.1.6.4                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -81,20 +81,38 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 #Check necessary file
-echo -ne "Testing if input data are available..."
+echo -ne "\nTesting if input data are available..."
 if [[ $update =~ "yes" ]]; then
 	if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
 		if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
@@ -243,26 +261,26 @@ cat tree.tre > BUCKy_conctree.newick
 cat tree.tre > BUCKy_conctreeCF.newick
 
 #Extract 'Population Tree' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
-grep -a1 "^Population Tree:" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree:/tree PopulationTree =/' >> BUCKy_popultree.newick
-echo "END;" >> BUCKy_popultree.newick
+grep -a1 "^Population Tree:" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree:/tree PopulationTree =/' >> BUCKy_popultree.newick
+echo -e "\nEND;" >> BUCKy_popultree.newick
 #Modify to NEWICK
 R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_popultree.tre\")" BUCKy_popultree.newick > /dev/null
 
 #Extract 'Population Tree, With Branch Lengths' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
 grep -a1 "^Population Tree, With Branch Lengths" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Population Tree, With Branch Lengths In Estimated Coalescent Units:/tree PopulationTreeWithBranchLengthsInEstimatedCoalescentUnits =/' >> BUCKy_popultreeBL.newick
-echo "END;" >> BUCKy_popultreeBL.newick
+echo -e "\nEND;" >> BUCKy_popultreeBL.newick
 #Modify to NEWICK
 R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_popultreeBL.tre\")" BUCKy_popultreeBL.newick > /dev/null
 
 #Extract 'Primary Concordance Tree Topology' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
 grep -a1 "^Primary Concordance Tree Topology" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree Topology:/tree PrimaryConcordanceTreeTopology =/' >> BUCKy_conctree.newick
-echo "END;" >> BUCKy_conctree.newick
+echo -e "\nEND;" >> BUCKy_conctree.newick
 #Modify to NEWICK
 R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_conctree.tre\")" BUCKy_conctree.newick > /dev/null
 
 #Extract 'Primary Concordance Tree with' (the line matching and one following line), change EOL to space and change name to conform NEXUS standards
 grep -a1 "^Primary Concordance Tree with" ${datamodif}.concordance | tr '\n' ' ' | sed 's/ Primary Concordance Tree with Sample Concordance Factors:/tree PrimaryConcordanceTreewithSampleConcordanceFactors =/' >> BUCKy_conctreeCF.newick
-echo "END;" >> BUCKy_conctreeCF.newick
+echo -e "\nEND;" >> BUCKy_conctreeCF.newick
 #Modify to NEWICK
 R -e "library(ape); args <- commandArgs(); name <- args[4]; trees<-read.nexus(name); write.tree(trees, file=\"BUCKy_conctreeCF.tre\")" BUCKy_conctreeCF.newick > /dev/null
 
@@ -290,4 +308,4 @@ else
 	rm -r workdir08g
 fi
 
-echo -e "\nHybPhyloMaker 8g finished..."
+echo -e "HybPhyloMaker 8g finished...\n"
