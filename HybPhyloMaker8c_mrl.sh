@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08c - MRL species tree                         *
-# *                                   v.1.6.4                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -84,16 +84,34 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 if [[ $update =~ "yes" ]]; then
@@ -106,7 +124,7 @@ if [[ ! $collapse -eq "0" ]]; then
 	echo -e "...and with trees with branches below ${collapse} BS collapsed"
 else
 	if [[ $requisite =~ "no" ]]; then
-		echo -e "\n"
+		echo -e ""
 	fi
 fi
 
@@ -307,10 +325,11 @@ fi
 
 #Modify labels in RAxML bipartitions (XX and YY to ' ')
 sed -i.bak 's/-/ /g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-sed -i.bak 's/_/ /g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak2 's/_/ /g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak3 's/e 0/e-0/g' MRL_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 
 #Delete all *.bak files
-rm *.bak
+rm *.bak*
 
 #Rename/delete files
 mv RAxML_info.MRLresult RAxML_MRL_info.log
