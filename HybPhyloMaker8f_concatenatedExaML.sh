@@ -9,10 +9,12 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.6.7                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
+
+#requires partitionfinder-2.1.1.tar.gz in HybSeqSource
 
 #IMPORTANT - submit to queue wagap.cerit-sc.cz using zuphux frontend (brno3-cerit)!!!
 #unfortunately, may be it works from skirit as well (previously problem with RAxML within PartitionFinder)???
@@ -44,6 +46,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add python-3.4.1-gcc
 	module add examl-3.0.15
 	module add raxml-8.2.8
+	module add newick-utils-13042016
 	module add perl-5.20.1-gcc
 	module add debian8-compat
 else
@@ -67,16 +70,34 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 if [[ $update =~ "yes" ]]; then
@@ -146,7 +167,8 @@ if [[ $requisite =~ "no" ]]; then
 	echo -ne "Testing if input data are available..."
 	if [[ $update =~ "yes" ]]; then
 		if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt" ]; then
-			if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			#if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			if [ 0 -lt $(find $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT} -maxdepth 1 -name "*ssembly_*_modif${MISSINGPERCENT}.fas" -exec ls {} + 2>/dev/null | wc -w) ]; then #to avoid 'Argument list too long' error
 				echo -e "OK\n"
 			else
 				echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
@@ -160,7 +182,8 @@ if [[ $requisite =~ "no" ]]; then
 		fi
 	else
 		if [ -f "$path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt" ]; then
-			if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			#if [ 0 -lt $(ls $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_*_modif${MISSINGPERCENT}.fas 2>/dev/null | wc -w) ]; then
+			if [ 0 -lt $(find $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT} -maxdepth 1 -name "*ssembly_*_modif${MISSINGPERCENT}.fas" -exec ls {} + 2>/dev/null | wc -w) ]; then #to avoid 'Argument list too long' error
 				echo -e "OK\n"
 			else
 				echo -e "no alignmenet files in FASTA format found in '$path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}'. Exiting..."
@@ -200,7 +223,7 @@ if [[ $requisite =~ "no" ]]; then
 fi
 
 if [[ $runpf =~ "yes" ]]; then
-	echo "Running concatenation and PartitionFinder first..."
+	echo -e "Running concatenation and PartitionFinder first...\n"
 	#Add necessary scripts and files
 	cp $source/AMAS.py .
 	#Copy list of genes
@@ -221,7 +244,7 @@ if [[ $runpf =~ "yes" ]]; then
 	fi
 	
 	# Copy and modify selected FASTA files
-	echo "cat 1"
+	echo -e "Copying and modifying FASTA files...\n"
 	for i in $(cat selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt | cut -d"_" -f2); do
 		#If working with 'corrected' copy trees starting with 'CorrectedAssembly'
 		cp $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/*ssembly_${i}_modif${MISSINGPERCENT}.fas .
@@ -248,34 +271,47 @@ if [[ $runpf =~ "yes" ]]; then
 	done
 	
 	#Prepare concatenated dataset and transform it to phylip format
-	python3 AMAS.py concat -i *.fas -f fasta -d dna -u fasta -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta >/dev/null
-	python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
-	
+	if [[ $AMAS =~ "slow" ]]; then
+		#Much slower option but works also in case of many genes
+		xx=0
+		for f in *.fas ; do
+			echo $f
+			if [ $xx -eq 0 ]; then
+				cp $f concatenated.workfasta
+				xx=$((xx + 1))
+			else
+				python3 AMAS.py concat -i concatenated.workfasta $f -f fasta -d dna -u fasta -t concatenated.workfasta2 >/dev/null
+				mv concatenated.workfasta2 concatenated.workfasta
+				xx=$((xx + 1))
+			fi
+		done
+		mv concatenated.workfasta concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta
+		python3 AMAS.py convert -d dna -f fasta -i concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta -u phylip >/dev/null
+		mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta-out.phy concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
+	else
+		#Faster solution but with really many genes generate 'Argument list too long' error
+		python3 AMAS.py concat -i *.fas -f fasta -d dna -u fasta -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta >/dev/null
+		python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
+	fi
 	#Calculate proportion of missing data in the concatenated alignment
 	#Removes line breaks from fasta file
 	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta
 	#Calculate length of alignment: 1. get second line and count length, 2. decrease value by one (because previous command also counted LF)
-	echo "cat 2"
 	length=$(cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | head -n 2 | tail -n 1 | wc -c)
 	length=`expr $length - 1`
 	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
-	echo "cat 3"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | sed '/^>/{N; s/\n/ /;}' > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta
 	#Cut first part until space, i.e. header, and remove '>'
-	echo "cat 4"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
 	#Cut only part after the first space, i.e., only sequence, change all missing data (-, ?, N) to 'n', replace all other characters then 'n' by nothing and print percentage of 'n's in each sequence
-	echo "cat 5"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f2 -d" " | sed 's/[?N-]/n/g' | sed 's/[^n]//g' | awk -v val=$length '{ print (length*100)/val }' > missingpercentage.txt
 	paste headers.txt missingpercentage.txt > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
 	#Calculate mean of all values
 	echo -e "MEAN\t$(awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt)" > mean.txt
-	echo "cat 6"
 	cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt mean.txt > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
 	rm headers.txt missingpercentage.txt concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta mean.txt
 	
 	#Modify partition file: take 2nd and following parts of each line separated by "_" (remove 'p1_' etc. introduced by AMAS) | add ';' at the end of each line
-	echo "cat 7"
 	cat partitions.txt | cut -d"_" -f2- | awk '{ print $0 ";" }' | sed 's/-/ - /g' | sed 's/=/ = /g' > part.file
 	#Copy concatenated file to home
 	if [[ $update =~ "yes" ]]; then
@@ -306,7 +342,6 @@ if [[ $runpf =~ "yes" ]]; then
 	echo "models = GTR+G;" >> partition_finder.cfg
 	echo "model_selection = AICc;" >> partition_finder.cfg
 	echo "[data_blocks]" >> partition_finder.cfg
-	echo "cat 8"
 	cat partition_finder.cfg part.file > tmp && mv tmp partition_finder.cfg
 	rm part.file
 	echo "[schemes]" >> partition_finder.cfg
@@ -393,16 +428,16 @@ $raxmlseq -y -m GTRCAT -p 12345 -s concatenated${MISSINGPERCENT}_${SPECIESPRESEN
 #Run ExaML
 echo -e "Building best ExaML tree...\n"
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log
+	mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
 else
-	$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log
+	$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
 fi
 #Measure time
 timenow=`date +%s`
 timespan=`echo "scale=2;($timenow-$time)/60" | bc`
 
 #Delete checkpoint files
-rm *Check*
+rm *Check* 2>/dev/null
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
@@ -432,11 +467,11 @@ if [[ $examlboot =~ "yes" ]]; then
 		parse-examl -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} -m DNA -q RAxMLpartitions.txt.BS${i} -n concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} >> parse-examl_boot.log
 		#Run ExaML
 		if [[ $PBS_O_HOST == *".cz" ]]; then
-			mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
+			mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
 		else
-			$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
+			$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
 		fi
-		mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log
+		mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
 		#Measure time
 		timenow=`date +%s`
 		timespan=`echo "scale=2;($timenow-$time)/60" | bc`
@@ -456,23 +491,30 @@ if [[ $examlboot =~ "yes" ]]; then
 	
 	#Combine all bootstrap trees
 	echo -e "Combining bootstrap trees...\n"
-	echo "cat 9"
 	cat ExaML_result.BINF* > ExaML_bootstrap.tre
 	#Map bootstrap values onto the single best tree
-	echo -e "Mapping bootstrap support values onto bestML tree\n"
+	echo -e "Mapping bootstrap support values onto bestML tree...\n"
 	$raxmlseq -f b -m GTRGAMMA -z ExaML_bootstrap.tre -t ExaML_result.examl.tre -n ExaML_Bootstrap > RAxML_mapBStoBestML.log
 fi
 
 #Delete checkpoint files
-rm *Check*
+rm *Check* 2>/dev/null
 #Delete bootstrap trees
-rm ExaML_result.BINF*
+rm ExaML_result.BINF* 2>/dev/null
 
 #Rename some files
 mv ExaML_result.examl.tre ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre
 if [[ $examlboot =~ "yes" ]]; then
 	mv ExaML_bootstrap.tre ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.trees
 	mv RAxML_bipartitions.ExaML_Bootstrap ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre
+fi
+
+#(Re)root a final concatenated species trees with $OUTGROUP
+if [ -n "$OUTGROUP" ]; then
+	echo -e "Rooting trees...\n"
+	nw_reroot -s ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre $OUTGROUP > tmp && mv tmp ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre
+	nw_reroot -s ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.trees $OUTGROUP > tmp && mv tmp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.trees
+	nw_reroot -s ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre $OUTGROUP > tmp && mv tmp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre
 fi
 
 #Copy results to home
