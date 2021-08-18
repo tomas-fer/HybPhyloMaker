@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08e - concatenated species tree                    *
-# *                                   v.1.6.6a                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2019 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -82,16 +82,34 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 #Check necessary file
@@ -211,13 +229,35 @@ else
 	python3 AMAS.py concat -i *.fas -f fasta -d dna -u fasta -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta >/dev/null
 	python3 AMAS.py concat -i *.fas -f fasta -d dna -u phylip -t concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip >/dev/null
 fi
+
+#Calculate proportion of missing data in the concatenated alignment
+echo -e "Calculating proportion of missing data...\n"
+#Removes line breaks from fasta file
+awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta
+#Calculate length of alignment: 1. get second line and count length, 2. decrease value by one (because previous command also counted LF)
+length=$(cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | head -n 2 | tail -n 1 | wc -c)
+length=`expr $length - 1`
+#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
+cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta | sed '/^>/{N; s/\n/ /;}' > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta
+#Cut first part until space, i.e. header, and remove '>'
+cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
+#Cut only part after the first space, i.e., only sequence, change all missing data (-, ?, N) to 'n', replace all other characters then 'n' by nothing and print percentage of 'n's in each sequence
+cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta | cut -f2 -d" " | sed 's/[?N-]/n/g' | sed 's/[^n]//g' | awk -v val=$length '{ print (length*100)/val }' > missingpercentage.txt
+paste headers.txt missingpercentage.txt > concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
+#Calculate mean of all values
+echo -e "MEAN\t$(awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt)" > mean.txt
+cat concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt mean.txt > tmp && mv tmp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt
+rm headers.txt missingpercentage.txt concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.modif.fasta mean.txt
+
 #Copy concatenated file to home
 if [[ $update =~ "yes" ]]; then
 	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated
 	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated
+	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated
 else
 	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated
 	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated
+	cp concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}_missingperc.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated
 fi
 
 #FastTree for concatenated dataset
