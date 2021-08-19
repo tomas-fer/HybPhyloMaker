@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08h - neighbour network in R                      *
-# *                                   v.1.6.6                                    *
+# *                                   v.1.8.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -82,16 +82,34 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -en "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -en "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -en "...and for selection: $selection"
+	fi
 fi
 
 #Check necessary file
@@ -155,7 +173,7 @@ fi
 #Compute NeighbourNetwork using phangorn
 echo -e "Computing NeighbourNetwork for concatenated dataset...\n"
 mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta file.fasta
-R -q -e "library(phangorn);a<-read.phyDat('file.fasta',format='fasta',type='DNA');m<-dist.hamming(a);nnet<-neighborNet(m);write.nexus.networx(nnet,file='n.nex')"
+R -q -e "library(phangorn);a<-read.phyDat('file.fasta',format='fasta',type='DNA');m<-dist.hamming(a);nnet<-neighborNet(m);write.nexus.networx(nnet,file='n.nex')" >> R.log 2>&1
 mv n.nex NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex
 
 #Removing '_cpDNA' from names in network
@@ -164,8 +182,10 @@ sed -i.bak 's/_cpDNA//g' NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.n
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
 	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/NeighbourNetwork
+	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/NeighbourNetwork
 else
 	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/NeighbourNetwork
+	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/NeighbourNetwork
 fi
 
 #Clean scratch/work directory
