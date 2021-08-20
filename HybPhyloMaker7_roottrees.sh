@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 07 - Root gene trees                         *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -85,13 +85,13 @@ if [ -z "$selection" ]; then
 		alnpath=$type/80concatenated_exon_alignments_corrected
 		alnpathselected=$type/81selected_corrected
 		treepath=$type/82trees_corrected
-		echo -e "...with corrected reading frame\n"
+		echo -e "...with corrected reading frame"
 	else
 		mafftpath=$type/60mafft
 		alnpath=$type/70concatenated_exon_alignments
 		alnpathselected=$type/71selected
 		treepath=$type/72trees
-		echo -e "\n"
+		echo -e ""
 	fi
 else
 	if [[ $corrected =~ "yes" ]]; then
@@ -99,14 +99,20 @@ else
 		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
 		alnpathselected=$type/$selection/81selected_corrected
 		treepath=$type/$selection/82trees_corrected
-		echo -e "...with corrected reading frame...and for selection: $selection\n"
+		echo -e "...with corrected reading frame...and for selection: $selection"
 	else
 		mafftpath=$type/$selection/60mafft
 		alnpath=$type/$selection/70concatenated_exon_alignments
 		alnpathselected=$type/$selection/71selected
 		treepath=$type/$selection/72trees
-		echo -e "...and for selection: $selection\n"
+		echo -e "...and for selection: $selection"
 	fi
+fi
+
+if [[ $update =~ "yes" ]]; then
+	echo -e "...and with updated gene selection\n"
+else
+	echo -e "\n"
 fi
 
 #Check necessary file
