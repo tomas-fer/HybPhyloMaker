@@ -19,14 +19,17 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.7.3                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
 #Runs PhyParts and PhyParts PieCharts for ASTRAL tree
 #Takes all selected gene trees and only select trees with outgroup
+
+#requires run on MetaCentrum or installation with 'install_software.sh'
+#(i.e., 'phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar' must be in HybSeqSource (or in /usr/local/bin/)
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -79,22 +82,39 @@ else
 	type="exons"
 fi
 
-#Settings for (un)corrected reading frame
-if [[ $corrected =~ "yes" ]]; then
-	alnpath=$type/80concatenated_exon_alignments_corrected
-	alnpathselected=$type/81selected_corrected
-	treepath=$type/82trees_corrected
-	echo -en "...with corrected reading frame"
+#Settings for selection and (un)corrected reading frame
+if [ -z "$selection" ]; then
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/61mafft_corrected
+		alnpath=$type/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/81selected_corrected
+		treepath=$type/82trees_corrected
+		echo -e "...with corrected reading frame"
+	else
+		mafftpath=$type/60mafft
+		alnpath=$type/70concatenated_exon_alignments
+		alnpathselected=$type/71selected
+		treepath=$type/72trees
+		echo -e ""
+	fi
 else
-	alnpath=$type/70concatenated_exon_alignments
-	alnpathselected=$type/71selected
-	treepath=$type/72trees
+	if [[ $corrected =~ "yes" ]]; then
+		mafftpath=$type/$selection/61mafft_corrected
+		alnpath=$type/$selection/80concatenated_exon_alignments_corrected
+		alnpathselected=$type/$selection/81selected_corrected
+		treepath=$type/$selection/82trees_corrected
+		echo -e "...with corrected reading frame...and for selection: $selection"
+	else
+		mafftpath=$type/$selection/60mafft
+		alnpath=$type/$selection/70concatenated_exon_alignments
+		alnpathselected=$type/$selection/71selected
+		treepath=$type/$selection/72trees
+		echo -e "...and for selection: $selection"
+	fi
 fi
 
 if [[ $update =~ "yes" ]]; then
 	echo -e "...and with updated gene selection"
-else
-	echo -e ""
 fi
 
 if [[ ! $collapse -eq "0" ]]; then
@@ -107,8 +127,6 @@ fi
 
 if [[ $requisite =~ "yes" ]]; then
 	echo -e "...and only with trees with requisite taxa present\n"
-else
-	echo -e "\n"
 fi
 
 #Settings for collapsed and requisite selection
@@ -266,9 +284,17 @@ echo -e "\nRunning PhyParts with support cutoff ${phypartsbs}..."
 # -o prepend output files with this
 # -s support cutoff (only keep things with greater support than the one specified)
 # -v include verbose output
-echo "phyparts -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v"
-phyparts -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v > phyparts.log 2>&1
-#java -jar /software/phyparts/0.0.1/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v > phyparts.log 2>&1
+if [[ $location =~ "0" ]]; then
+	#download java PhyParts
+	cp /usr/local/bin/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar .
+	cp $source/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar .
+	echo "java -jar phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v"
+	java -jar phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v > phyparts.log 2>&1
+else
+	echo "phyparts -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v"
+	phyparts -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v > phyparts.log 2>&1
+	#java -jar /software/phyparts/0.0.1/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar -a 1 -d trees -m ${sptree}.tre -o trees_res -s ${phypartsbs} -v > phyparts.log 2>&1
+fi
 
 #Run phypartspiecharts
 echo -e "\nRunning PhyParts PieCharts..."
@@ -277,17 +303,33 @@ echo -e "Using colours: ${ppcolors}"
 # species tree
 # prefix of phypart results (i.e., the same as '-o' option in phyparts)
 # number of genetrees
-if [ -z "$ppcolors" ]; then
-	echo "phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}"
-	phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}
+if [[ $location =~ "0" ]]; then
+	#download python script
+	wget https://raw.githubusercontent.com/mossmatters/phyloscripts/master/phypartspiecharts/phypartspiecharts.py 2>/dev/null
+	export QT_QPA_PLATFORM='offscreen'
+	if [ -z "$ppcolors" ]; then
+		echo "python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}"
+		python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} 2>/dev/null
+	else
+		echo "python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}"
+		python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors} 2>/dev/null
+		#python /software/phyparts/0.0.1/target/phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
+	fi
 else
-	echo "phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}"
-	phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
-	#python /software/phyparts/0.0.1/target/phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
+	if [ -z "$ppcolors" ]; then
+		echo "phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}"
+		phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}
+	else
+		echo "phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}"
+		phypartspiecharts --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
+		#python /software/phyparts/0.0.1/target/phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} --colors ${ppcolors}
+	fi
 fi
 
 #Convert SVG to PDF
-module add python36-modules-gcc #adds also cairosvg
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	module add python36-modules-gcc #adds also cairosvg
+fi
 cairosvg phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg -o phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.pdf
 
 #Copy results to home
