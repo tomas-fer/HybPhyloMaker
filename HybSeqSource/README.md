@@ -6,6 +6,8 @@
 _test reference containing 100 nuclear exons_  
 **Curcuma-roscoeana_plastomeCDS_test.fa**  
 _test reference with 11 plastid genes_  
+**excludelist**  
+_list of samples to remove from alignments_  
 
 **Scripts**  
 ---
@@ -32,6 +34,8 @@ http://meta.microbesonline.org/fasttree/treecmp.html
 http://meta.microbesonline.org/fasttree/treecmp.html  
 **fastq2fasta.pl**  
 http://brianknaus.com/software/srtoolbox/fastq2fasta.pl  
+**heatmap.R**  
+_part of HybPhyloMaker_  
 **histogram.r**  
 _part of HybPhyloMaker_  
 **HybPhyloMaker_reports.R**  
