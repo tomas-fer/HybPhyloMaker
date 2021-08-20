@@ -6,7 +6,7 @@
 _test reference containing 100 nuclear exons_  
 **Curcuma-roscoeana_plastomeCDS_test.fa**  
 _test reference with 11 plastid genes_  
-**excludelist**  
+**excludelist.txt**  
 _list of samples to remove from alignments_  
 
 **Scripts**  
