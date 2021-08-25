@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.6.8                                    *
+# *                                   v.1.8.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -24,6 +24,7 @@
 #phangorn 2.5.5 (this works also with R 3.5 and lower)
 #BiocManager 1.30.14 (for installation of Bioconductor packages like treeio)
 #treeio 1.4.3 (from Bioconductor, this works with R 3.4)
+#gplots 3.0.1.2 (this works with R 3.4)
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	echo -e "\nScript HybPhyloMaker0c is running on Metacentrum..."
@@ -58,6 +59,9 @@ wget https://cran.r-project.org/src/contrib/Archive/BiocManager/BiocManager_1.30
 wget https://cran.r-project.org/src/contrib/Archive/rvcheck/rvcheck_0.1.7.tar.gz #required by treeio
 wget https://cran.r-project.org/src/contrib/Archive/tidytree/tidytree_0.3.3.tar.gz #required by treeio
 wget https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.4.10.tar.gz #required by treeio
+wget https://cran.r-project.org/src/contrib/Archive/bitops/bitops_1.0-6.tar.gz #required by gplots
+wget https://cran.r-project.org/src/contrib/Archive/gdata/gdata_2.17.0.tar.gz #required by gplots
+wget https://cran.r-project.org/src/contrib/Archive/caTools/caTools_1.17.1.4.tar.gz #required by gplots
 
 #Install packages to personal (writable) library
 mkdir -p /storage/$server/home/$LOGNAME/Rpackages
@@ -73,6 +77,10 @@ R CMD INSTALL phangorn_2.5.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages 
 #instal 'treeio'
 wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz
 R CMD INSTALL treeio_1.4.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
+
+#instal 'gplots'
+wget https://cran.r-project.org/src/contrib/Archive/gplots/gplots_3.0.1.2.tar.gz
+R CMD INSTALL gplots_3.0.1.2.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
 
 #Delete scratch
 if [[ $PBS_O_HOST == *".cz" ]]; then
