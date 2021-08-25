@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -73,6 +73,34 @@ done
 #instal 'phangorn'
 wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz
 R CMD INSTALL phangorn_2.5.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
+
+#install 'ellipsis'
+wget https://cran.r-project.org/src/contrib/Archive/ellipsis/ellipsis_0.3.1.tar.gz
+R CMD INSTALL ellipsis_0.3.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+
+#install 'Rcpp'
+wget https://cran.r-project.org/src/contrib/Archive/Rcpp/Rcpp_1.0.1.tar.gz
+R CMD INSTALL Rcpp_1.0.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+
+#install 'glue'
+wget https://cran.r-project.org/src/contrib/Archive/glue/glue_1.4.1.tar.gz
+R CMD INSTALL glue_1.4.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+
+#install 'pillar'
+wget https://cran.r-project.org/src/contrib/Archive/pillar/pillar_1.3.1.tar.gz
+R CMD INSTALL pillar_1.3.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by tibble
+
+#install 'tibble'
+wget https://cran.r-project.org/src/contrib/Archive/tibble/tibble_2.1.3.tar.gz
+R CMD INSTALL tibble_2.1.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+
+#install 'tidyselect'
+wget https://cran.r-project.org/src/contrib/Archive/tidyselect/tidyselect_0.2.5.tar.gz
+R CMD INSTALL tidyselect_0.2.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+
+#install 'dplyr'
+wget https://cran.r-project.org/src/contrib/Archive/dplyr/dplyr_0.8.5.tar.gz #required by rlang
+R CMD INSTALL dplyr_0.8.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'treeio'
 wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz
