@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=12:00:00
-#PBS -l select=1:ncpus=2:mem=24gb:scratch_local=8gb
+#PBS -l select=1:ncpus=5:mem=24gb:scratch_local=8gb
 #PBS -j oe
 #PBS -N HybPhyloMaker8k_quartet_sampling
 #PBS -m abe
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08k - quartet sampling                         *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -29,7 +29,7 @@
 #https://github.com/FePhyFoFum/quartetsampling
 
 #Takes concatenated alignment in phylip format from /${tree}/species_trees/concatenated or /${tree}/update/species_trees/concatenated
-#Takes Astral species tree
+#Takes species tree (Astral, concatenated FastTree or ExaML)
 #Run first
 #(1) HybPhyloMaker5_missingdataremoval.sh with the same ${MISSINGPERCENT} and ${SPECIESPRESENCE} values
 #(2) HybPhyloMaker6b_FastTree_for_selected.sh to create the concatenated dataset of selected genes
@@ -176,25 +176,83 @@ fi
 # Removing '_cpDNA' from names in alignment
 sed -i.bak 's/_cpDNA//g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
 
-# Copy Astral species tree
-echo -e "Copying Astral species tree...\n"
-if [[ $update =~ "yes" ]]; then
-	cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral/Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+# Copy  species tree
+if [[ $qstree =~ "Astral" ]]; then
+	echo -e "Copying Astral species tree...\n"
+	if [[ $update =~ "yes" ]]; then
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Astral/Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+	else
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astral/Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+	fi
+	mv Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre tree.tre
+elif [[ $qstree =~ "FastTree" ]]; then
+	echo -e "Copying FastTree concatenated species tree...\n"
+	if [[ $update =~ "yes" ]]; then
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre .
+	else
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre .
+	fi
+	mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fast.tre tree.tre
+elif [[ $qstree =~ "ExaML" ]]; then
+	echo -e "Copying ExaML concatenated species tree...\n"
+	if [[ $update =~ "yes" ]]; then
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/concatenatedExaML/ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+	else
+		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML/ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+	fi
+	mv ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre tree.tre
 else
-	cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Astral/Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
+	echo -e "No species tree selected. Exiting...\n"
+	exit 3
 fi
-# Modify labels in Astral tree
+
+# Modify labels in species tree
 #replace each second occurrence of ' ' by '_'
-sed -i.bak 's/ \([^ ]*\) / \1_/g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak 's/ \([^ ]*\) / \1_/g' tree.tre
 #replace all (remaining) spaces by '-'
-sed -i.bak2 's/ /-/g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak2 's/ /-/g' tree.tre
 
 # Compute quartet sampling
 echo -e "Calculating quartet sampling...\n"
 #clone QS GitHub
 git clone https://github.com/FePhyFoFum/quartetsampling.git &> quartetsampling.log
 #run main QS script
-python3 quartetsampling/pysrc/quartet_sampling.py --tree Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre --align concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip --reps 100 --threads 4 --lnlike 2 --results-dir results >> quartetsampling.log
+python3 quartetsampling/pysrc/quartet_sampling.py --tree tree.tre --align concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip --reps 100 --threads 4 --lnlike 2 --results-dir results >> quartetsampling.log
+
+
+#Process quartet sampling results to produce a tree with colour-labelled nodes
+#output trees are modified with sed&grep and plotted in R to resemble trees in the publication
+echo -e "Plotting tree with quartet sampling scores...\n"
+cd results #enter results folder
+#1. tree with 'qc' values (used later for coloring nodes)
+#removes everything within '[ ]', i.e. df values after species names
+sed -e 's/\[[^][]*\]//g' RESULT.labeled.tre.qc > RESULT.labeled.tre.qc.modif
+#removes 'qc='
+sed -i 's/qc=//g' RESULT.labeled.tre.qc.modif
+#2. tree with all values (used for plotting the tree and three scores
+#removes everything within [] except 'score=...' and '['
+sed 's/\[\&[^][]*\,//g' RESULT.labeled.tre.figtree > RESULT.labeled.tre.figtree.modif
+#removes everything within '[ ]', i.e. df values after species names
+sed -i 's/\[[^][]*\]//g' RESULT.labeled.tre.figtree.modif
+#removes 'score='
+sed -i 's/score=//g' RESULT.labeled.tre.figtree.modif
+#removes ']'
+sed -i 's/\]//g' RESULT.labeled.tre.figtree.modif
+#take only tree, i.e., make newick file
+grep tree1 RESULT.labeled.tre.figtree.modif | sed 's/^.*=//' > RESULT.labeled.tre.figtree.modif.nwk
+sed -i 's/  //' RESULT.labeled.tre.figtree.modif.nwk
+sed -i 's/QS1//' RESULT.labeled.tre.figtree.modif.nwk
+#Copy script from source
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	cp $source/plotQStree.R .
+else
+	cp ../$source/plotQStree.R .
+fi
+
+#Plot tree with colour-labelled nodes
+R --slave -f plotQStree.R $OUTGROUP > R.log 2>&1
+rm plotQStree.R
+cd ..
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
