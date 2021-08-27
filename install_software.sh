@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0a                                                                                                               #
+# v.1.8.0b                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -32,14 +32,14 @@ cd install
 
 #Compilation utilities, i.e., gcc, g++, make, autoconf
 if [[ $distribution =~ "Debian" ]]; then
-	for i in gcc g++ make automake; do
+	for i in gcc g++ make automake cmake; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
 		fi
 	done
 elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	for i in make automake; do
+	for i in make automake cmake; do
 		if ! [ -x "$(command -v $i)" ]; then
 			echo -e "Installing '$i'"
 			$installer install -y $i &> ${i}_install.log
@@ -1010,7 +1010,7 @@ fi
 
 #spectre/SuperQ
 #add metaopt first (see spectre documentation)
-if ! [ -x "$(command -v superq)" ]; then
+if ! [ -f "../HybPhyloMaker/HybSeqSource/spectre-1.1.5/bin/superq" ]; then
 	git clone https://github.com/maplesond/metaopt &>> metaopt_install.log
 	cd metaopt
 	./install-linux.sh &>> ../metaopt_install.log
@@ -1040,11 +1040,11 @@ if ! [ -x "$(command -v raxml-ng)" ]; then
 	echo -e "Installing 'RAxML-NG'"
 	git clone --recursive https://github.com/amkozlov/raxml-ng &> RAxML-NG_install.log
 	cd raxml-ng
-	mkdir build &> ../RAxML-NG_install.log
+	mkdir build &>> ../RAxML-NG_install.log
 	cd build
-	cmake .. &> ../../RAxML-NG_install.log
-	make &> ../../RAxML-NG_install.log
-	make install &> ../../RAxML-NG_install.log
+	cmake .. &>> ../../RAxML-NG_install.log
+	make &>> ../../RAxML-NG_install.log
+	make install &>> ../../RAxML-NG_install.log
 	cd ../..
 fi
 
@@ -1117,14 +1117,13 @@ echo -e "If there is a problems with R packages, installation of newer R version
 if [[ ! -d HybPhyloMaker ]]; then
 	echo -e "\nCloning HybPhyloMaker GitHub repository..."
 	git clone https://github.com/tomas-fer/HybPhyloMaker &> HybPhyloMaker_gitcloning.log
-	cd HybPhyloMaker
-	chmod +x *.sh
-	chmod +x HybSeqSource/ASTRID
+	chmod +x HybPhyloMaker/*.sh
+	chmod +x HybPhyloMaker/HybSeqSource/ASTRID
 fi
 
 #Copy phyparts and spectre to HybSeqSource
 cp install/phyparts/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar HybPhyloMaker/HybSeqSource/ &>> install/phyparts_install.log
-cp -r install/spectre/build/spectre-1.1.5/ HybPhyloMaker/HybSeqSource/ &>> spectre_install.log
+cp -r install/spectre/build/spectre-1.1.5/ HybPhyloMaker/HybSeqSource/ &>> install/spectre_install.log
 
 echo -e "\nInstalation script finished.\n"
 
