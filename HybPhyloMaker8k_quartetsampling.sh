@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08k - quartet sampling                         *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -176,7 +176,7 @@ fi
 # Removing '_cpDNA' from names in alignment
 sed -i.bak 's/_cpDNA//g' concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip
 
-# Copy  species tree
+# Copy species tree
 if [[ $qstree =~ "Astral" ]]; then
 	echo -e "Copying Astral species tree...\n"
 	if [[ $update =~ "yes" ]]; then
@@ -229,7 +229,7 @@ cd results #enter results folder
 sed -e 's/\[[^][]*\]//g' RESULT.labeled.tre.qc > RESULT.labeled.tre.qc.modif
 #removes 'qc='
 sed -i 's/qc=//g' RESULT.labeled.tre.qc.modif
-#2. tree with all values (used for plotting the tree and three scores
+#2. tree with all values 'qc/qd/qi' (used for plotting the tree and three scores)
 #removes everything within [] except 'score=...' and '['
 sed 's/\[\&[^][]*\,//g' RESULT.labeled.tre.figtree > RESULT.labeled.tre.figtree.modif
 #removes everything within '[ ]', i.e. df values after species names
@@ -240,8 +240,11 @@ sed -i 's/score=//g' RESULT.labeled.tre.figtree.modif
 sed -i 's/\]//g' RESULT.labeled.tre.figtree.modif
 #take only tree, i.e., make newick file
 grep tree1 RESULT.labeled.tre.figtree.modif | sed 's/^.*=//' > RESULT.labeled.tre.figtree.modif.nwk
+#remove '  ' which usually left at the beginning of the tree
 sed -i 's/  //' RESULT.labeled.tre.figtree.modif.nwk
+#remove 'QS1'
 sed -i 's/QS1//' RESULT.labeled.tre.figtree.modif.nwk
+
 #Copy script from source
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	cp $source/plotQStree.R .
