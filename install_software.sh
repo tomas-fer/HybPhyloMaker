@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.6.7c                                                                                                               #
+# v.1.8.0                                                                                                                #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -288,7 +288,7 @@ for Rpackage in ape seqinr data.table openxlsx; do
 done
 rm testpackage
 
-#R package phangorn (requires quadprog, igraph, fastmatch)
+#R package phangorn (requires quadprog, igraph, fastmatch) - for neighbour network
 #older version installed due to compatibility with R 3.5
 for Rpackage in quadprog igraph fastmatch; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
@@ -311,7 +311,7 @@ else
 fi
 rm testpackage
 
-#R package treeio (from Bioconductor)
+#R package treeio (from Bioconductor) - for Astral -t 4
 for Rpackage in rvcheck tidytree rlang jsonlite; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
 	if grep -Fxq "[1] FALSE" testpackage; then
@@ -330,6 +330,41 @@ if grep -Fxq "[1] FALSE" testpackage; then
 	rm treeio_1.4.3.tar.gz
 else
 	echo -e "R package treeio already installed"
+fi
+rm testpackage
+
+#R package gplots (requires caTools, bitops, gdata) - for hetmap.R
+#older version installed due to compatibility with R 3.5
+for Rpackage in bitops gdata; do
+	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
+	if grep -Fxq "[1] FALSE" testpackage; then
+		echo -e "Installing '$Rpackage for R'"
+		R -q -e "install.packages('$Rpackage', repos='http://cran.rstudio.com/')" &> R_${Rpackage}_install.log
+	else
+		echo -e "R package $Rpackage already installed"
+	fi
+done
+rm testpackage
+
+R -q -e "is.element('caTools', installed.packages()[,1])" > testpackage
+if grep -Fxq "[1] FALSE" testpackage; then
+	echo -e "Installing 'caTools for R'"
+	wget https://cran.r-project.org/src/contrib/Archive/caTools/caTools_1.17.1.4.tar.gz &> R_caTools_install.log
+	R CMD INSTALL caTools_1.17.1.4.tar.gz &>> R_caTools_install.log
+	rm caTools_1.17.1.4.tar.gz
+else
+	echo -e "R package caTools already installed"
+fi
+rm testpackage
+
+R -q -e "is.element('gplots', installed.packages()[,1])" > testpackage
+if grep -Fxq "[1] FALSE" testpackage; then
+	echo -e "Installing 'gplots for R'"
+	wget https://cran.r-project.org/src/contrib/Archive/gplots/gplots_3.0.1.2.tar.gz &> R_gplots_install.log
+	R CMD INSTALL gplots_3.0.1.2.tar.gz &>> R_gplots_install.log
+	rm gplots_3.0.1.2.tar.gz
+else
+	echo -e "R package gplots already installed"
 fi
 rm testpackage
 
@@ -776,6 +811,7 @@ fi
 
 #VCFtools
 if ! [ -x "$(command -v vcftools)" ]; then
+	echo -e "Installing 'VCFtools'"
 	git clone https://github.com/vcftools/vcftools &>> vcftools_install.log
 	cd vcftools
 	./autogen.sh &>> ../vcftools_install.log
@@ -787,63 +823,76 @@ fi
 
 #Ruby
 if ! [ -x "$(command -v ruby)" ]; then
+	echo -e "Installing 'ruby'"
 	$installer install -y ruby-full &> ruby_install.log
 fi
 
-#other python3 modules (mainly for Dsuite)
+#other python3 modules (mainly for Dsuite and phyparts)
 if ! [[ `pip3 --disable-pip-version-check show pandas | grep Version` ]]; then
+	echo -e "Installing 'pandas for python3'"
 	pip3 install pandas &> python3-pandas_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show matplotlib | grep Version` ]]; then
+	echo -e "Installing 'matplotlib for python3'"
 	pip3 install matplotlib &> python3-matplotlib_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show cairosvg | grep Version` ]]; then
+	echo -e "Installing 'cairosvg for python3'"
 	pip3 install cairosvg &> python3-cairosvg_install.log
+fi
+if ! [[ `pip3 --disable-pip-version-check show PyQt5 | grep Version` ]]; then
+	echo -e "Installing 'PyQt5 for python3'"
+	#older version installed, newer version makes problems with installation (missing dependencies?)
+	pip3 install PyQt5==5.13.2 &> python3-PyQt5_install.log
+fi
+if ! [[ `pip3 --disable-pip-version-check show ete3 | grep Version` ]]; then
+	echo -e "Installing 'ete3 for python3'"
+	pip3 install ete3 &> python3-ete3_install.log
 fi
 
 #other python2 modules (mainly for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
 	if ! [[ `pip2 --disable-pip-version-check show pandas | grep Version` ]]; then
-		echo -e "Installing 'pandas for python'"
+		echo -e "Installing 'pandas for python2'"
 		pip2 install pandas &> python-pandas_install.log
 		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
-		echo -e "Installing 'scikit-learn for python'"
+		echo -e "Installing 'scikit-learn for python2'"
 		pip2 install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show tables | grep Version` ]]; then
-		echo -e "Installing 'tables for python'"
+		echo -e "Installing 'tables for python2'"
 		pip2 install tables &> python-tables.log
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show parsing | grep Version` ]]; then
-		echo -e "Installing 'parsing for python'"
+		echo -e "Installing 'parsing for python2'"
 		pip2 install parsing &> python-parsing.log
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show pyparsing | grep Version` ]]; then
-		echo -e "Installing 'pyparsing for python'"
+		echo -e "Installing 'pyparsing for python2'"
 		pip2 install pyparsing &> python-pyparsing.log
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 	if ! [[ `pip2.7 --disable-pip-version-check show pandas | grep Version` ]]; then
-		echo -e "Installing 'pandas for python'"
+		echo -e "Installing 'pandas for python2'"
 		pip2.7 install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
 	fi
 	if ! [[ `pip2.7 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
-		echo -e "Installing 'scikit-learn for python'"
+		echo -e "Installing 'scikit-learn for python2'"
 		pip2.7 install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
 	fi
 	if ! [[ `pip --disable-pip-version-check show tables | grep Version` ]]; then
-		echo -e "Installing 'tables for python'"
+		echo -e "Installing 'tables for python2'"
 		pip2.7 install tables &> python-tables.log
 	fi
 	if ! [[ `pip --disable-pip-version-check show parsing | grep Version` ]]; then
-		echo -e "Installing 'parsing for python'"
+		echo -e "Installing 'parsing for python2'"
 		pip2.7 install parsing &> python-parsing.log
 	fi
 	if ! [[ `pip --disable-pip-version-check show pyparsing | grep Version` ]]; then
-		echo -e "Installing 'pyparsing for python'"
+		echo -e "Installing 'pyparsing for python2'"
 		pip2.7 install pyparsing &> python-pyparsing.log
 	fi
 fi
@@ -929,6 +978,75 @@ if ! [ -x "$(command -v snp-sites)" ]; then
 	cd ..
 fi
 
+#datamash
+if ! [ -x "$(command -v snp-sites)" ]; then
+	echo -e "Installing 'datamash'"
+	wget https://ftp.gnu.org/gnu/datamash/datamash-1.7.tar.gz &>> datamash_install.log
+	tar -xzf datamash-1.7.tar.gz &>> datamash_install.log
+	rm datamash-1.7.tar.gz
+	cd datamash-1.7
+	./configure &>> datamash_install.log
+	make &>> datamash_install.log
+	make check &>> datamash_install.log
+	make install &>> datamash_install.log
+	cd ..
+fi
+
+#maven (for phyparts and spectre/SuperQ)
+if ! [ -x "$(command -v mvn)" ]; then
+	echo -e "Installing 'maven'"
+	$installer -y install maven &>> maven_install.log
+fi
+
+#phyparts
+if ! [ -f "/usr/local/bin/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar" ]; then
+	echo -e "Installing 'phyparts'"
+	git clone https://bitbucket.org/blackrim/phyparts.git &>> phyparts_install.log
+	cd phyparts
+	./mvn_cmdline.sh &>> phyparts_install.log
+	cp target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar /usr/local/bin/ &>> phyparts_install.log
+	cd ..
+fi
+
+#spectre/SuperQ
+#add metaopt first (see spectre documentation)
+if ! [ -x "$(command -v superq)" ]; then
+	git clone https://github.com/maplesond/metaopt &>> metaopt_install.log
+	cd metaopt
+	./install-linux.sh &>> metaopt_install.log
+	cd ..
+	git clone https://github.com/maplesond/spectre.git &>> spectre_install.log
+	cd spectre
+	mvn clean install &>> spectre_install.log
+	#cp build/spectre-1.1.5/ /usr/local/bin/
+	cd ..
+fi
+
+#RAxML-NG (also for quartet sampling)
+#first install flex bison libgmp3-dev
+for i in flex bison; do
+	if ! [ -x "$(command -v $i)" ]; then
+		echo -e "Installing '$i'"
+		$installer install -y $i &> ${i}_install.log
+	fi
+done
+
+if [ ! "$(whereis libgmp | grep /)" ]; then
+	echo -e "Installing 'libgmp3-dev'"
+	$installer install -y libgmp3-dev &> libgmp3-dev_install.log
+fi
+
+if ! [ -x "$(command -v raxml-ng)" ]; then
+	git clone --recursive https://github.com/amkozlov/raxml-ng &> RAxML-NG_install.log
+	cd raxml-ng
+	mkdir build &> RAxML-NG_install.log
+	cd build
+	cmake .. &> RAxML-NG_install.log
+	make &> RAxML-NG_install.log
+	make install &> RAxML-NG_install.log
+	cd ..
+fi
+
 #Leave 'install' directory
 cd ..
 
@@ -936,10 +1054,25 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites cairosvg; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS raxml-ng examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites cairosvg datamash; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
+
+if [ -f "install/phyparts/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar" ]; then
+	echo "phyparts...OK"
+else
+	echo "phyparts...not found"
+	echo "phyparts" >> not_installed.txt
+fi
+
+if [ -f "install/spectre/build/spectre-1.1.5/bin/superq" ]; then
+	echo "superq...OK"
+else
+	echo "superq...not found"
+	echo "superq" >> not_installed.txt
+fi
+
 sed -i.bak 's/transeq/EMBOSS/' not_installed.txt 2>/dev/null
 sed -i.bak2 's/nw_reroot//' not_installed.txt 2>/dev/null
 sed -i.bak4 's/nw_topology/NewickUtilities/' not_installed.txt 2>/dev/null
@@ -959,7 +1092,7 @@ echo -e "**************************************************************"
 #Check R packages
 echo -e "\n**************************************************************"
 echo -e "Checking R packages"
-for Rpackage in ape seqinr data.table openxlsx phangorn treeio; do
+for Rpackage in ape seqinr data.table openxlsx phangorn treeio gplots; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
@@ -987,6 +1120,10 @@ if [[ ! -d HybPhyloMaker ]]; then
 	chmod +x *.sh
 	chmod +x HybSeqSource/ASTRID
 fi
+
+#Copy phyparts and spectre to HybSeqSource
+cp install/phyparts/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar HybPhyloMaker/HybSeqSource/ &>> install/phyparts_install.log
+cp -r install/spectre/build/spectre-1.1.5/ HybPhyloMaker/HybSeqSource/ &>> spectre_install.log
 
 echo -e "\nInstalation script finished.\n"
 
