@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0                                                                                                                #
+# v.1.8.0a                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -200,13 +200,13 @@ fi
 if [ ! "$(whereis libbz2 | grep /)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'libbz2'"
-		$installer install -y libbz2-dev &>> zlib_install.log #Debian/Ubuntu
+		$installer install -y libbz2-dev &>> libbz2_install.log #Debian/Ubuntu
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'libbz2'"
-		$installer install -y bzip2-devel &>> zlib_install.log #Fedora/CentOS
+		$installer install -y bzip2-devel &>> libbz2_install.log #Fedora/CentOS
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		echo -e "Installing 'libbz2'"
-		$installer install -y libbz2-devel &>> zlib_install.log #OpenSUSE
+		$installer install -y libbz2-devel &>> libbz2_install.log #OpenSUSE
 	fi
 fi
 
@@ -214,16 +214,15 @@ fi
 if [ ! "$(whereis lzma | grep /)" ]; then
 	if [[ $distribution =~ "Debian" ]]; then
 		echo -e "Installing 'lzma'"
-		$installer install -y libbz2-dev &>> zlib_install.log #Debian/Ubuntu
+		$installer install -y liblzma-dev &>> lzma_install.log #Debian/Ubuntu
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'lzma'"
-		$installer install -y xz-devel &>> zlib_install.log #Fedora/CentOS
+		$installer install -y xz-devel &>> lzma_install.log #Fedora/CentOS
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		echo -e "Installing 'lzma'"
-		$installer install -y xz-devel &>> zlib_install.log #OpenSUSE
+		$installer install -y xz-devel &>> lzma_install.log #OpenSUSE
 	fi
 fi
-
 
 #pkg-config
 if [ ! "$(whereis pkg-config | grep /)" ]; then
@@ -696,6 +695,7 @@ fi
 
 #seqtk
 if ! [ -x "$(command -v seqtk)" ]; then
+	echo -e "Installing 'seqtk'"
 	git clone https://github.com/lh3/seqtk.git &>> seqtk_install.log
 	cd seqtk
 	make &>> ../seqtk_install.log
@@ -979,16 +979,16 @@ if ! [ -x "$(command -v snp-sites)" ]; then
 fi
 
 #datamash
-if ! [ -x "$(command -v snp-sites)" ]; then
+if ! [ -x "$(command -v datamash)" ]; then
 	echo -e "Installing 'datamash'"
 	wget https://ftp.gnu.org/gnu/datamash/datamash-1.7.tar.gz &>> datamash_install.log
 	tar -xzf datamash-1.7.tar.gz &>> datamash_install.log
 	rm datamash-1.7.tar.gz
 	cd datamash-1.7
-	./configure &>> datamash_install.log
-	make &>> datamash_install.log
-	make check &>> datamash_install.log
-	make install &>> datamash_install.log
+	./configure &>> ../datamash_install.log
+	make &>> ../datamash_install.log
+	make check &>> ../datamash_install.log
+	make install &>> ../datamash_install.log
 	cd ..
 fi
 
@@ -1003,8 +1003,8 @@ if ! [ -f "/usr/local/bin/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar" ]; 
 	echo -e "Installing 'phyparts'"
 	git clone https://bitbucket.org/blackrim/phyparts.git &>> phyparts_install.log
 	cd phyparts
-	./mvn_cmdline.sh &>> phyparts_install.log
-	cp target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar /usr/local/bin/ &>> phyparts_install.log
+	./mvn_cmdline.sh &>> ../phyparts_install.log
+	cp target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar /usr/local/bin/ &>> ../phyparts_install.log
 	cd ..
 fi
 
@@ -1013,11 +1013,11 @@ fi
 if ! [ -x "$(command -v superq)" ]; then
 	git clone https://github.com/maplesond/metaopt &>> metaopt_install.log
 	cd metaopt
-	./install-linux.sh &>> metaopt_install.log
+	./install-linux.sh &>> ../metaopt_install.log
 	cd ..
 	git clone https://github.com/maplesond/spectre.git &>> spectre_install.log
 	cd spectre
-	mvn clean install &>> spectre_install.log
+	mvn clean install &>> ../spectre_install.log
 	#cp build/spectre-1.1.5/ /usr/local/bin/
 	cd ..
 fi
@@ -1037,14 +1037,15 @@ if [ ! "$(whereis libgmp | grep /)" ]; then
 fi
 
 if ! [ -x "$(command -v raxml-ng)" ]; then
+	echo -e "Installing 'RAxML-NG'"
 	git clone --recursive https://github.com/amkozlov/raxml-ng &> RAxML-NG_install.log
 	cd raxml-ng
-	mkdir build &> RAxML-NG_install.log
+	mkdir build &> ../RAxML-NG_install.log
 	cd build
-	cmake .. &> RAxML-NG_install.log
-	make &> RAxML-NG_install.log
-	make install &> RAxML-NG_install.log
-	cd ..
+	cmake .. &> ../../RAxML-NG_install.log
+	make &> ../../RAxML-NG_install.log
+	make install &> ../../RAxML-NG_install.log
+	cd ../..
 fi
 
 #Leave 'install' directory
