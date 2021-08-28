@@ -16,6 +16,8 @@
 8:  Estimate species tree (ASTRAL, ASTRID, MRL, BUCKy, concatenation)  
 9:  Subselect suitable genes and repeat steps 7+8  
 10:Subselect trees based on samples presence, collapse unsupported branches  
+11:Calculate PhyParts  
+12:Subselect samples based on exclude list  
   
 Uses many additional software that must be installed and put in the PATH prior to run scripts (see [Table](docs/HybPhyloMaker_software.pdf) located in docs folder and consider to run [install_software.sh](install_software.sh)).  
 Also utilizes many scripts developed by others (located in [HybSeqSource folder](HybSeqSource)). PLEASE CITE APPROPRIATELY THOSE SCRIPTS WHEN USING HybPhyloMaker!  
