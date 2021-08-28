@@ -13,7 +13,7 @@
 5:  Treat missing data, select best genes  
 6:  Generate FastTree or RAxML gene trees + calculate/plot trees-alignment properties  
 7:  Root gene trees with outgroup, combine gene trees into a single file  
-8:  Estimate species tree (ASTRAL, ASTRID, MRL, BUCKy, concatenation)  
+8:  Estimate species tree  and other methods... (ASTRAL, ASTRID, MRL, BUCKy, concatenation FastTree/ExaML, NeighbourNetwork, Dsuite, SuperQ network, quartet sampling)  
 9:  Subselect suitable genes and repeat steps 7+8  
 10:Subselect trees based on samples presence, collapse unsupported branches  
 11:Calculate PhyParts  
