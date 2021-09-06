@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08k - quartet sampling                         *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -217,7 +217,7 @@ echo -e "Calculating quartet sampling...\n"
 #clone QS GitHub
 git clone https://github.com/FePhyFoFum/quartetsampling.git &> quartetsampling.log
 #run main QS script
-python3 quartetsampling/pysrc/quartet_sampling.py --tree tree.tre --align concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip --reps 100 --threads 4 --lnlike 2 --results-dir results >> quartetsampling.log
+python3 quartetsampling/pysrc/quartet_sampling.py --tree tree.tre --align concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip --reps 100 --threads 4 --lnlike 2 --results-dir results >> quartetsampling.log 2>&1
 
 
 #Process quartet sampling results to produce a tree with colour-labelled nodes
