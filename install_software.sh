@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0b                                                                                                               #
+# v.1.8.0c                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -72,7 +72,11 @@ fi
 #Python2
 if ! [ -x "$(command -v python2)" ]; then
 	echo -e "Installing 'python2'"
-	$installer install -y python &> python_install.log
+	if [[ $distribution =~ "Fedora" ]]; then
+		$installer install -y python27 &> python_install.log
+	else
+		$installer install -y python &> python_install.log
+	fi
 fi
 
 #Python3
@@ -276,7 +280,7 @@ if ! [ -x "$(command -v R)" ]; then
 fi
 
 #R packages
-for Rpackage in ape seqinr data.table openxlsx; do
+for Rpackage in ape seqinr data.table openxlsx phytools; do
 	R -q -e "is.element('$Rpackage', installed.packages()[,1])" > testpackage
 	if grep -Fxq "[1] FALSE" testpackage; then
 		echo -e "Installing '$Rpackage for R'"
@@ -391,11 +395,12 @@ rm testpackage
 #MAFFT
 if ! [ -x "$(command -v mafft)" ]; then
 	echo -e "Installing 'mafft'"
-	wget http://mafft.cbrc.jp/alignment/software/mafft-7.305-without-extensions-src.tgz &> mafft_install.log
-	if [ -f mafft-7.305-without-extensions-src.tgz ]; then
-		tar -xvf mafft-7.305-without-extensions-src.tgz 1>/dev/null
-		rm mafft-7.305-without-extensions-src.tgz
-		cd mafft-7.305-without-extensions/core
+	wget https://mafft.cbrc.jp/alignment/software/mafft-7.487-without-extensions-src.tgz &> mafft_install.log
+	#wget http://mafft.cbrc.jp/alignment/software/mafft-7.305-without-extensions-src.tgz &> mafft_install.log
+	if [ -f mafft-7.487-without-extensions-src.tgz ]; then
+		tar -xvf mafft-7.487-without-extensions-src.tgz 1>/dev/null
+		rm mafft-7.487-without-extensions-src.tgz
+		cd mafft-7.487-without-extensions/core
 		make &>> ../../mafft_install.log
 		make install &>> ../../mafft_install.log
 		cd ../..
@@ -577,18 +582,24 @@ if ! [ -x "$(command -v nw_reroot)" ]; then
 	if ! [ -x "$(command -v autoreconf)" ]; then
 		$installer install -y dh-autoreconf &> autoreconf_install.log
 	fi
-	git clone https://github.com/tjunier/newick_utils &> newickutil_install.log
-	cd newick_utils/ &>> newickutil_install.log
-	libtoolize &>> newickutil_install.log
-	aclocal &>> newickutil_install.log
-	autoheader &>> newickutil_install.log
-	autoreconf -fi &>> newickutil_install.log
-	./configure &>> newickutil_install.log
-	make &>> newickutil_install.log
-	make check &>> newickutil_install.log
-	make install &>> newickutil_install.log
-	ldconfig &>> newickutil_install.log
-	cd ..
+	# from source (not working with GCC 11)
+	# git clone https://github.com/tjunier/newick_utils &> newickutil_install.log
+	# cd newick_utils/ &>> newickutil_install.log
+	# libtoolize &>> newickutil_install.log
+	# aclocal &>> newickutil_install.log
+	# autoheader &>> newickutil_install.log
+	# autoreconf -fi &>> newickutil_install.log
+	# ./configure &>> newickutil_install.log
+	# make &>> newickutil_install.log
+	# make check &>> newickutil_install.log
+	# make install &>> newickutil_install.log
+	# ldconfig &>> newickutil_install.log
+	# cd ..
+	#from file stored at anaconda repo
+	wget https://anaconda.org/bioconda/newick_utils/1.6/download/linux-64/newick_utils-1.6-h779adbc_4.tar.bz2
+	tar -xf newick_utils-1.6-h779adbc_4.tar.bz2
+	cp bin/nw_* /usr/local/bin
+	cp lib/libnw* /usr/local/lib
 fi
 
 #bam2fastq
@@ -642,13 +653,14 @@ fi
 #Bowtie2
 if ! [ -x "$(command -v bowtie2)" ]; then
 	echo -e "Installing 'Bowtie2'"
-	wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.2.9/bowtie2-2.2.9-source.zip &> bowtie2_install.log
-	if [ -f bowtie2-2.2.9-source.zip ]; then
-		unzip bowtie2-2.2.9-source.zip 1>/dev/null
-		rm bowtie2-2.2.9-source.zip
-		cd bowtie2-2.2.9
+	wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.4.4/bowtie2-2.4.4-source.zip &> bowtie2_install.log
+	if [ -f bowtie2-2.4.4-source.zip ]; then
+		unzip bowtie2-2.4.4-source.zip 1>/dev/null
+		rm bowtie2-2.4.4-source.zip
+		cd bowtie2-2.4.4
 		make &>> ../bowtie2_install.log
-		cp bowtie2* /usr/local/bin
+		make install &>> ../bowtie2_install.log
+		#cp bowtie2* /usr/local/bin
 		cd ..
 	fi
 fi
@@ -656,15 +668,20 @@ fi
 #bwa
 if ! [ -x "$(command -v bwa)" ]; then
 	echo -e "Installing 'bwa'"
-	wget https://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.16a.tar.bz2 &> bwa_install.log
-	if [ -f bwa-0.7.16a.tar.bz2 ]; then
-		tar jxf bwa-0.7.16a.tar.bz2 1>/dev/null
-		rm bwa-0.7.16a.tar.bz2
-		cd bwa-0.7.16a
-		make &>> ../bwa_install.log
-		cp bwa /usr/local/bin
-		cd ..
-	fi
+	git clone https://github.com/lh3/bwa.git &> bwa_install.log
+	#wget https://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.16a.tar.bz2 &> bwa_install.log
+	# if [ -f bwa-0.7.16a.tar.bz2 ]; then
+		# tar jxf bwa-0.7.16a.tar.bz2 1>/dev/null
+		# rm bwa-0.7.16a.tar.bz2
+		# cd bwa-0.7.16a
+		# make &>> ../bwa_install.log
+		# cp bwa /usr/local/bin
+		# cd ..
+	# fi
+	cd bwa
+	make &>> ../bwa_install.log
+	cp bwa /usr/local/bin
+	cd ..
 fi
 
 #ococo (necessary for majority rule consensus building from mapped reads in BAM file)
@@ -681,15 +698,24 @@ fi
 #BUCKy
 if ! [ -x "$(command -v bucky)" ]; then
 	echo -e "Installing 'BUCKy'"
-	wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
-	if [ -f bucky-1.4.4.tgz ]; then
-		tar -xzvf bucky-1.4.4.tgz 1>/dev/null
-		rm bucky-1.4.4.tgz
-		cd bucky-1.4.4/src/
-		make &>> ../../bucky_install.log
-		cp mbsum /usr/local/bin
-		cp bucky /usr/local/bin
-		cd ../..
+	# from source (nor working with GCC 11?)
+	# wget http://dstats.net/download/http://www.stat.wisc.edu/~ane/bucky/v1.4/bucky-1.4.4.tgz &> bucky_install.log
+	# if [ -f bucky-1.4.4.tgz ]; then
+		# tar -xzvf bucky-1.4.4.tgz 1>/dev/null
+		# rm bucky-1.4.4.tgz
+		# cd bucky-1.4.4/src/
+		# make &>> ../../bucky_install.log
+		# cp mbsum /usr/local/bin
+		# cp bucky /usr/local/bin
+		# cd ../..
+	# fi
+	# from binary file stored in enaconda repo
+	wget https://anaconda.org/ipyrad/bucky/v1.4.3/download/linux-64/bucky-v1.4.3-0.tar.bz2 &> bucky_install.log
+	if [ -f bucky-v1.4.3-0.tar.bz2 ]; then
+		tar -xf bucky-v1.4.3-0.tar.bz2 1>/dev/null
+		rm bucky-v1.4.3-0.tar.bz2
+		cp bin/mbsum /usr/local/bin
+		cp bin/bucky /usr/local/bin
 	fi
 fi
 
@@ -730,11 +756,11 @@ if ! [ -x "$(command -v p4)" ]; then
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
 			#pip3 install numpy &> numpy_install.log
-			$installer install -y numpy &> numpy_install.log #CentOS, Fedora
+			$installer install -y python3-numpy &> numpy_install.log #CentOS, Fedora
 		fi
 		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
 			#pip3 install scipy &> scipy_install.log
-			$installer install -y scipy &> scipy_install.log #CentOS, Fedora
+			$installer install -y python3-scipy &> scipy_install.log #CentOS, Fedora
 		fi
 	fi
 	
@@ -824,7 +850,11 @@ fi
 #Ruby
 if ! [ -x "$(command -v ruby)" ]; then
 	echo -e "Installing 'ruby'"
-	$installer install -y ruby-full &> ruby_install.log
+	if [[ $distribution =~ "Debian" ]]; then
+		$installer install -y ruby-full &> ruby_install.log
+	else
+		$installer install -y ruby &> ruby_install.log
+	fi
 fi
 
 #other python3 modules (mainly for Dsuite and phyparts)
@@ -959,6 +989,9 @@ if ! [ -x "$(command -v Dsuite)" ]; then
 	echo -e "Installing 'Dsuite'"
 	git clone https://github.com/millanek/Dsuite.git &>> Dsuite_install.log
 	cd Dsuite
+	#Modify Dsuite_utils.cpp for smooth compiling under newer gcc
+	sed -i '/#include "Dsuite_utils.h"/a #include <limits>' Dsuite_utils.cpp
+	sed -i '/#include "Dsuite_utils.h"/a #include <stdexcept>' Dsuite_utils.cpp
 	make -j2 &>> ../Dsuite_install.log
 	cp Build/Dsuite /usr/local/bin
 	cp utils/dtools.py /usr/local/bin
@@ -1011,6 +1044,7 @@ fi
 #spectre/SuperQ
 #add metaopt first (see spectre documentation)
 if ! [ -f "../HybPhyloMaker/HybSeqSource/spectre-1.1.5/bin/superq" ]; then
+	echo -e "Installing 'spectre/SuperQ'"
 	git clone https://github.com/maplesond/metaopt &>> metaopt_install.log
 	cd metaopt
 	./install-linux.sh &>> ../metaopt_install.log
