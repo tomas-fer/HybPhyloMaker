@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0d                                                                                                               #
+# v.1.8.0e                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -156,31 +156,31 @@ if ! [ -x "$(command -v java)" ]; then
 		if [[ $distrib =~ "debian" ]]; then
 			debver=$(cat /etc/debian_version | cut -d"." -f1)
 			if [ "$debver" -eq "9" ]; then
-				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+				$installer install -y openjdk-8-jdk &> java_install.log #Debian9/Ubuntu
 			elif [ "$debver" -gt "9" ]; then
-				$installer install -y openjdk-11-jre &> java_install.log #Debian9/Ubuntu
+				$installer install -y openjdk-11-jdk &> java_install.log #Debian9/Ubuntu
 			else
-				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+				$installer install -y openjdk-7-jdk &> java_install.log #Debian9/Ubuntu
 			fi
 		elif [[ $distrib =~ "ubuntu" ]]; then
 			#ubuver=$(lsb_release -r -s | cut -d"." -f1)
 			ubuver=$(grep -Po '(?<=VERSION_ID=")\d+' /etc/os-release)
 			if [ "$ubuver" -ge "16" ]; then
-				$installer install -y openjdk-8-jre &> java_install.log #Debian9/Ubuntu
+				$installer install -y openjdk-8-jdk &> java_install.log #Debian9/Ubuntu
 			else
-				$installer install -y openjdk-7-jre &> java_install.log #Debian9/Ubuntu
+				$installer install -y openjdk-7-jdk &> java_install.log #Debian9/Ubuntu
 			fi
 		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 		echo -e "Installing 'java'"
-		$installer install -y java-1.7.0-openjdk.x86_64 &> java_install.log #Fedora/CentOS
+		$installer install -y java-1.8.0-openjdk-devel.x86_64 &> java_install.log #Fedora/CentOS
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		susever=$(cat /etc/*release | grep ^VERSION_ID= | cut -d'=' -f2 | sed 's/\"//g' | cut -d'.' -f1)
 		echo -e "Installing 'java'"
 		if [ "$susever" -gt "12" ]; then
-			$installer install -y java-1_8_0-openjdk &> java_install.log #OpenSUSE
+			$installer install -y java-1_8_0-openjdk-devel &> java_install.log #OpenSUSE
 		else
-			$installer install -y java-1_7_0-openjdk &> java_install.log #OpenSUSE
+			$installer install -y java-1_7_0-openjdk-devel &> java_install.log #OpenSUSE
 		fi
 	fi
 fi
@@ -1073,7 +1073,11 @@ done
 
 if [ ! "$(whereis libgmp | grep /)" ]; then
 	echo -e "Installing 'libgmp3-dev'"
-	$installer install -y libgmp3-dev &> libgmp3-dev_install.log
+	if [[ $distribution =~ "Debian" ]]; then
+		$installer install -y libgmp3-dev &> gmp-dev_install.log
+	else
+		$installer install -y gmp-devel &> gmp-dev_install.log
+	fi
 fi
 
 if ! [ -x "$(command -v raxml-ng)" ]; then
