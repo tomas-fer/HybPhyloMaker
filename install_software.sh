@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0c                                                                                                               #
+# v.1.8.0d                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -80,15 +80,21 @@ if ! [ -x "$(command -v python2)" ]; then
 fi
 
 #Python3
-if ! [ -x "$(command -v python3)" ]; then
-	if [[ $distribution =~ "CentOS" ]]; then
+if [[ $distribution =~ "Debian" ]]; then
+	if [ ! "$(dpkg -s python3-dev 2>/dev/null | grep -w "ok")" ]; then
+		echo -e "Installing 'python3'"
+		$installer install -y python3-dev
+	fi
+elif [[ $distribution =~ "CentOS" ]]; then
+	if [ ! "$(rpm -qa | grep python3-devel)" ]; then
 		echo -e "Installing 'python3'"
 		$installer install -y epel-release &> python3_install.log #Only for CentOS
 		$installer install -y python3-devel &>> python3_install.log #Only for CentOS
-	else
+	fi
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+	if [ ! "$(rpm -qa | grep python3-devel)" ]; then
 		echo -e "Installing 'python3'"
-		$installer install -y python3-dev &> python3_install.log #Does not work on CentOS
-		
+		$installer install -y python3-devel &> python3_install.log
 	fi
 fi
 
@@ -103,7 +109,8 @@ if [[ $distribution =~ "Debian" ]]; then
 else
 	if ! [ -x "$(command -v pip2.7)" ]; then
 		echo -e "Installing 'pip2'"
-		$installer install -y python-pip &> pip_install.log
+		#$installer install -y python-pip &> pip_install.log
+		python2 -m ensurepip --upgrade
 	fi
 	#pip2.7 install --upgrade pip &>> pip_install.log #the upgrade makes troubles on Debian/Ubuntu
 	echo >/dev/null
@@ -215,16 +222,15 @@ if [ ! "$(whereis libbz2 | grep /)" ]; then
 fi
 
 #lzma library
-if [ ! "$(whereis lzma | grep /)" ]; then
-	if [[ $distribution =~ "Debian" ]]; then
+if [[ $distribution =~ "Debian" ]]; then
+	if [ ! "$(dpkg -s liblzma-dev 2>/dev/null | grep -w "ok")" ]
 		echo -e "Installing 'lzma'"
 		$installer install -y liblzma-dev &>> lzma_install.log #Debian/Ubuntu
-	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
+	fi
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
+	if [ ! "$(rpm -qa | grep xz-devel)" ]
 		echo -e "Installing 'lzma'"
-		$installer install -y xz-devel &>> lzma_install.log #Fedora/CentOS
-	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		echo -e "Installing 'lzma'"
-		$installer install -y xz-devel &>> lzma_install.log #OpenSUSE
+		$installer install -y xz-devel &>> lzma_install.log #Fedora/CentOS/OpenSUSE
 	fi
 fi
 
@@ -596,9 +602,9 @@ if ! [ -x "$(command -v nw_reroot)" ]; then
 	# ldconfig &>> newickutil_install.log
 	# cd ..
 	#from file stored at anaconda repo
-	wget https://anaconda.org/bioconda/newick_utils/1.6/download/linux-64/newick_utils-1.6-h779adbc_4.tar.bz2
-	tar -xf newick_utils-1.6-h779adbc_4.tar.bz2
-	cp bin/nw_* /usr/local/bin
+	wget https://anaconda.org/bioconda/newick_utils/1.6/download/linux-64/newick_utils-1.6-h779adbc_4.tar.bz2 &> newickutil_install.log
+	tar -xf newick_utils-1.6-h779adbc_4.tar.bz2 &>> newickutil_install.log
+	cp bin/nw_* /usr/local/bin 
 	cp lib/libnw* /usr/local/lib
 fi
 
@@ -880,48 +886,48 @@ if ! [[ `pip3 --disable-pip-version-check show ete3 | grep Version` ]]; then
 	pip3 install ete3 &> python3-ete3_install.log
 fi
 
-#other python2 modules (mainly for PartitionFinder)
+#other python2 modules (for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
-	if ! [[ `pip2 --disable-pip-version-check show pandas | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pandas for python2'"
 		pip2 install pandas &> python-pandas_install.log
 		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
-	if ! [[ `pip2 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show scikit-learn 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python2'"
 		pip2 install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
-	if ! [[ `pip2 --disable-pip-version-check show tables | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show tables 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'tables for python2'"
 		pip2 install tables &> python-tables.log
 	fi
-	if ! [[ `pip2 --disable-pip-version-check show parsing | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show parsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'parsing for python2'"
 		pip2 install parsing &> python-parsing.log
 	fi
-	if ! [[ `pip2 --disable-pip-version-check show pyparsing | grep Version` ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show pyparsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pyparsing for python2'"
 		pip2 install pyparsing &> python-pyparsing.log
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-	if ! [[ `pip2.7 --disable-pip-version-check show pandas | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pandas for python2'"
 		pip2.7 install pandas &> python-pandas_install.log #CentOS, Fedora and OpenSUSE
 	fi
-	if ! [[ `pip2.7 --disable-pip-version-check show scikit-learn | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show scikit-learn 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python2'"
 		pip2.7 install scikit-learn &> python-sklearn_install.log #CentOS, Fedora and OpenSUSE
 	fi
-	if ! [[ `pip --disable-pip-version-check show tables | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show tables 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'tables for python2'"
 		pip2.7 install tables &> python-tables.log
 	fi
-	if ! [[ `pip --disable-pip-version-check show parsing | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show parsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'parsing for python2'"
 		pip2.7 install parsing &> python-parsing.log
 	fi
-	if ! [[ `pip --disable-pip-version-check show pyparsing | grep Version` ]]; then
+	if ! [[ `pip2.7 --disable-pip-version-check show pyparsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pyparsing for python2'"
 		pip2.7 install pyparsing &> python-pyparsing.log
 	fi
@@ -1127,7 +1133,7 @@ echo -e "**************************************************************"
 #Check R packages
 echo -e "\n**************************************************************"
 echo -e "Checking R packages"
-for Rpackage in ape seqinr data.table openxlsx phangorn treeio gplots; do
+for Rpackage in ape seqinr data.table openxlsx phytools phangorn treeio gplots; do
 	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
 	if grep -Fq "no package called" Rtest; then
 		echo -e "R package $Rpackage...not found"
