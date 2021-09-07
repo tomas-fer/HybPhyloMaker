@@ -500,9 +500,9 @@ if ! [ -x "$(command -v transeq)" ]; then
 		cd EMBOSS-*
 		./configure --without-x &>> ../EMBOSS_install.log
 		make &>> ../EMBOSS_install.log
-		ldconfig
+		ldconfig &>> ../EMBOSS_install.log
 		make install &>> ../EMBOSS_install.log
-		ldconfig
+		ldconfig &>> ../EMBOSS_install.log
 		make install &>> ../EMBOSS_install.log
 		cd ..
 	fi
@@ -1034,7 +1034,7 @@ fi
 #maven (for phyparts and spectre/SuperQ)
 if ! [ -x "$(command -v mvn)" ]; then
 	echo -e "Installing 'maven'"
-	$installer -y install maven &>> maven_install.log
+	$installer install -y maven &>> maven_install.log
 fi
 
 #phyparts
