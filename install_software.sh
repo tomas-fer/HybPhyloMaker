@@ -223,12 +223,12 @@ fi
 
 #lzma library
 if [[ $distribution =~ "Debian" ]]; then
-	if [ ! "$(dpkg -s liblzma-dev 2>/dev/null | grep -w "ok")" ]
+	if [ ! "$(dpkg -s liblzma-dev 2>/dev/null | grep -w "ok")" ]; then
 		echo -e "Installing 'lzma'"
 		$installer install -y liblzma-dev &>> lzma_install.log #Debian/Ubuntu
 	fi
 elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]] || [[ $distribution =~ "OpenSUSE" ]]; then
-	if [ ! "$(rpm -qa | grep xz-devel)" ]
+	if [ ! "$(rpm -qa | grep xz-devel)" ]; then
 		echo -e "Installing 'lzma'"
 		$installer install -y xz-devel &>> lzma_install.log #Fedora/CentOS/OpenSUSE
 	fi
