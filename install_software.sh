@@ -83,7 +83,7 @@ fi
 if [[ $distribution =~ "Debian" ]]; then
 	if [ ! "$(dpkg -s python3-dev 2>/dev/null | grep -w "ok")" ]; then
 		echo -e "Installing 'python3'"
-		$installer install -y python3-dev
+		$installer install -y python3-dev &> python3_install.log 
 	fi
 elif [[ $distribution =~ "CentOS" ]]; then
 	if [ ! "$(rpm -qa | grep python3-devel)" ]; then
