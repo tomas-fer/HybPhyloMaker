@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0e                                                                                                               #
+# v.1.8.0f                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -102,7 +102,9 @@ fi
 if [[ $distribution =~ "Debian" ]]; then
 	if ! [ -x "$(command -v pip2)" ]; then
 		echo -e "Installing 'pip2'"
-		$installer install -y python-pip &> pip_install.log
+		#$installer install -y python-pip &> pip_install.log
+		wget https://bootstrap.pypa.io/pip/2.7/get-pip.py &> pip_install.log
+		python2 get-pip.py &>> pip_install.log
 	fi
 	#pip2 install --upgrade pip &>> pip_install.log #the upgrade makes troubles on Debian/Ubuntu
 	echo >/dev/null
@@ -742,29 +744,29 @@ fi
 if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
 			pip3 install numpy &> numpy_install.log
 			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
+		if  ! [[ `pip3 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
 			pip3 install scipy &> scipy_install.log
 			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
-		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
 			#pip3 install numpy &> numpy_install.log
 			$installer install -y python-numpy-devel &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
-		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
+		if  ! [[ `pip3 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
 			pip3 install scipy &> scipy_install.log
 			#$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
-		if ! [[ `pip3 --disable-pip-version-check show numpy | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
 			#pip3 install numpy &> numpy_install.log
 			$installer install -y python3-numpy &> numpy_install.log #CentOS, Fedora
 		fi
-		if  ! [[ `pip3 --disable-pip-version-check show scipy | grep Version` ]]; then
+		if  ! [[ `pip3 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
 			#pip3 install scipy &> scipy_install.log
 			$installer install -y python3-scipy &> scipy_install.log #CentOS, Fedora
 		fi
@@ -785,17 +787,17 @@ if ! [ -x "$(command -v p4)" ]; then
 	fi
 	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
-		if ! [[ `pip3 --disable-pip-version-check show future | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
 			pip3 install future &> python-future_install.log
 		fi
-		if ! [[ `pip3 --disable-pip-version-check show bitarray | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show bitarray 2>/dev/null | grep Version` ]]; then
 			pip3 install bitarray &> python-bitarray_install.log
 		fi
 	else
-		if ! [[ `pip3 --disable-pip-version-check show future | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
 			pip3 install future &> python-future_install.log
 		fi
-		if ! [[ `pip3 --disable-pip-version-check show bitarray | grep Version` ]]; then
+		if ! [[ `pip3 --disable-pip-version-check show bitarray 2>/dev/null | grep Version` ]]; then
 			pip3 install bitarray &> python-bitarray_install.log
 		fi
 	fi
@@ -864,24 +866,24 @@ if ! [ -x "$(command -v ruby)" ]; then
 fi
 
 #other python3 modules (mainly for Dsuite and phyparts)
-if ! [[ `pip3 --disable-pip-version-check show pandas | grep Version` ]]; then
+if ! [[ `pip3 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'pandas for python3'"
 	pip3 install pandas &> python3-pandas_install.log
 fi
-if ! [[ `pip3 --disable-pip-version-check show matplotlib | grep Version` ]]; then
+if ! [[ `pip3 --disable-pip-version-check show matplotlib 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'matplotlib for python3'"
 	pip3 install matplotlib &> python3-matplotlib_install.log
 fi
-if ! [[ `pip3 --disable-pip-version-check show cairosvg | grep Version` ]]; then
+if ! [[ `pip3 --disable-pip-version-check show cairosvg 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'cairosvg for python3'"
 	pip3 install cairosvg &> python3-cairosvg_install.log
 fi
-if ! [[ `pip3 --disable-pip-version-check show PyQt5 | grep Version` ]]; then
+if ! [[ `pip3 --disable-pip-version-check show PyQt5 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'PyQt5 for python3'"
 	#older version installed, newer version makes problems with installation (missing dependencies?)
 	pip3 install PyQt5==5.13.2 &> python3-PyQt5_install.log
 fi
-if ! [[ `pip3 --disable-pip-version-check show ete3 | grep Version` ]]; then
+if ! [[ `pip3 --disable-pip-version-check show ete3 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'ete3 for python3'"
 	pip3 install ete3 &> python3-ete3_install.log
 fi
@@ -1080,6 +1082,16 @@ if [ ! "$(whereis libgmp | grep /)" ]; then
 	fi
 fi
 
+if [[ $distribution =~ "Debian" ]]; then
+	if [ ! "$(dpkg -s libgmp3-dev 2>/dev/null | grep -w "ok")" ]; then
+		$installer install -y libgmp3-dev &> gmp-dev_install.log
+	fi
+elif [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "CentOS" ]]; then
+	if [ ! "$(rpm -qa | grep gmp-devel)" ]; then
+		$installer install -y gmp-devel &> gmp-dev_install.log
+	fi
+fi
+
 if ! [ -x "$(command -v raxml-ng)" ]; then
 	echo -e "Installing 'RAxML-NG'"
 	git clone --recursive https://github.com/amkozlov/raxml-ng &> RAxML-NG_install.log
@@ -1148,6 +1160,29 @@ for Rpackage in ape seqinr data.table openxlsx phytools phangorn treeio gplots; 
 	fi
 done
 rm Rtest
+echo -e "**************************************************************"
+
+#Check python packages
+echo -e "\n**************************************************************"
+echo -e "Checking python packages"
+echo -e "\nPython2"
+for package in numpy scipy pandas scikit-learn tables parsing pyparsing; do
+	version=$(pip2 --disable-pip-version-check show $package 2>/dev/null | grep Version | sed 's/Version: //')
+	if [ -z "$version" ]; then
+		echo -e "${package}...not found"
+	else
+		echo -e "${package}...OK (v${version})"
+	fi
+done
+echo -e "\nPython3"
+for package in numpy scipy future bitarray pandas matplotlib cairosvg PyQt5 ete3; do
+	version=$(pip3 --disable-pip-version-check show $package 2>/dev/null | grep Version | sed 's/Version: //')
+	if [ -z "$version" ]; then
+		echo -e "${package}...not found"
+	else
+		echo -e "${package}...OK (v${version})"
+	fi
+done
 echo -e "**************************************************************"
 
 echo -e "\n**************************************************************"
