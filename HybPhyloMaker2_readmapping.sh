@@ -528,7 +528,7 @@ fi
 
 #Copy log to home
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-cp ${logname}.log $path/$type/21mapped
+cp ${logname}.log $path/$type/21mapped_${mappingmethod}/
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
