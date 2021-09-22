@@ -88,6 +88,25 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 
+#Write log
+logname=HPM2
+echo -e "HybPhyloMaker2: mapping reads to reference" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data cp mapping probes cpDNACDS mappingmethod conscall mincov majthres plurality nrns; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
@@ -506,6 +525,10 @@ if [ ! -d "$path/$type/21mapped_${mappingmethod}/coverage" ]; then
 else
 	echo -e "\nFolder with per exon coverage already exists\n"
 fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/$type/21mapped
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
