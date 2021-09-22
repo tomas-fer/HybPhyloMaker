@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *         Script 03 - Process consensus after mapping, make pslx files         *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -76,6 +76,46 @@ else
 	cd workdir03
 fi
 
+#Test if folder for results exits
+if [ -d "$path/$type/40contigs" ]; then
+	echo -e "Directory '$path/$type/40contigs' already exists. Delete it or rename before running this script again. Exiting...\n"
+	rm -d ../workdir03/ 2>/dev/null
+	exit 3
+else
+	if [ -d "$path/$type/50pslx" ]; then
+		echo -e "Directory '$path/$type/50pslx' already exists. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir03/ 2>/dev/null
+		exit 3
+	else
+		if [[ ! $location == "1" ]]; then
+			if [ "$(ls -A ../workdir03)" ]; then
+				echo -e "Directory 'workdir03' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+				rm -d ../workdir03/ 2>/dev/null
+				exit 3
+			fi
+		fi
+	fi
+fi
+
+#Write log
+logname=HPM3
+echo -e "HybPhyloMaker3: generate PSLX from consensus" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data cp probes cpDNACDS conscall otherpslx othersource minident; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
@@ -114,27 +154,6 @@ else
 		echo -e "'$path/$type/30consensus/consensus.fasta' is missing. Exiting...\n"
 		rm -d ../workdir03/ 2>/dev/null
 		exit 3
-	fi
-fi
-
-#Test if folder for results exits
-if [ -d "$path/$type/40contigs" ]; then
-	echo -e "Directory '$path/$type/40contigs' already exists. Delete it or rename before running this script again. Exiting...\n"
-	rm -d ../workdir03/ 2>/dev/null
-	exit 3
-else
-	if [ -d "$path/$type/50pslx" ]; then
-		echo -e "Directory '$path/$type/50pslx' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir03/ 2>/dev/null
-		exit 3
-	else
-		if [[ ! $location == "1" ]]; then
-			if [ "$(ls -A ../workdir03)" ]; then
-				echo -e "Directory 'workdir03' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-				rm -d ../workdir03/ 2>/dev/null
-				exit 3
-			fi
-		fi
 	fi
 fi
 
@@ -295,6 +314,10 @@ mkdir $path/$type/50pslx/pslxsimil/histograms
 cp similarities_summary.txt $path/$type/50pslx/pslxsimil
 cp *_similaritytoreference.txt $path/$type/50pslx/pslxsimil/similarities
 cp *_similaritytoreference.png $path/$type/50pslx/pslxsimil/histograms
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/$type/50pslx
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
