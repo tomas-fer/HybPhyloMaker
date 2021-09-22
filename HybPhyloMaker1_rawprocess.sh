@@ -75,25 +75,6 @@ else
 	cd workdir01
 fi
 
-#Write log
-logname=HPM1
-echo -e "HybPhyloMaker1: raw reads filtering and summary" > ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
-elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
-else
-	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
-fi
-echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-echo -e "\nSettings" >> ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
-fi
-for set in data adapterfile; do
-	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
-done
-
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir01)" ]; then
 		echo -e "Directory 'workdir01' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
@@ -113,6 +94,25 @@ else
 		exit 3
 	fi
 fi
+
+#Write log
+logname=HPM1
+echo -e "HybPhyloMaker1: raw reads filtering and summary" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data adapterfile; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
 
 #Test data structure
 echo -en "Testing input data structure..."
