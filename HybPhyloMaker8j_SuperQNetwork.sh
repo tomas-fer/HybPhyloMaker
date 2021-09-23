@@ -3,7 +3,7 @@
 #PBS -l walltime=12:00:00
 #PBS -l select=1:ncpus=2:mem=24gb:scratch_local=8gb
 #PBS -j oe
-#PBS -N HybPhyloMaker8h_superQ_network
+#PBS -N HybPhyloMaker8j_superQ_network
 #PBS -m abe
 #-------------------HYDRA-------------------
 #$ -S /bin/bash
@@ -12,14 +12,14 @@
 #$ -l mres=3G,h_data=3G,h_vmem=3G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker8h_superQ_network
-#$ -o HybPhyloMaker8h_superQ_network.log
+#$ -N HybPhyloMaker8j_superQ_network
+#$ -o HybPhyloMaker8j_superQ_network.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
-# *                    Script 08h - SuperQ network in Spectre                    *
-# *                                   v.1.8.0                                    *
+# *                    Script 08j - SuperQ network in Spectre                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -153,6 +153,30 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 
+#Write log
+logname=HPM8j
+echo -e "HybPhyloMaker8j: SuperQ network in Spectre" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update tree; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
 # Make new dir for results
 if [[ $update =~ "yes" ]]; then
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
@@ -194,6 +218,14 @@ if [[ $update =~ "yes" ]]; then
 else
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 	cp spectre.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
+fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ $update =~ "yes" ]]; then
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
+else
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 fi
 
 #Clean scratch/work directory
