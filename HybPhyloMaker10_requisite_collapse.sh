@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *  Script 10 - Select trees with requisite taxa, collapse unsupported branches *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -121,6 +121,42 @@ if [[ $requisite =~ "yes" ]]; then
 	echo -e "...and only with trees with requisite taxa present\n"
 else
 	echo -e "\n"
+fi
+
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir10)" ]; then
+		echo -e "Directory 'workdir10' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir10 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Write log
+logname=HPM10
+echo -e "HybPhyloMaker10: select trees with requisite taxa, collapse unsupported branches" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP collapse requisite requisitetaxa; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "\nList of requisite samples" >> ${logname}.log
+	echo $requisitetaxa | tr '|' '\n' >> ${logname}.log
+fi
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
 fi
 
 #Add necessary programs and files
@@ -266,6 +302,32 @@ if [[ ! $collapse -eq "0" ]]; then
 		else
 			mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/collapsed${collapse}
 			cp trees_collapsed${collapse}.newick $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/collapsed${collapse}
+		fi
+	fi
+fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ ! $collapse -eq "0" ]]; then
+	if [[ $requisite =~ "yes" ]]; then
+		if [[ $update =~ "yes" ]]; then
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite/collapsed${collapse}
+		else
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite/collapsed${collapse}
+		fi
+	else
+		if [[ $update =~ "yes" ]]; then
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/collapsed${collapse}
+		else
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/collapsed${collapse}
+		fi
+	fi
+else
+	if [[ $requisite =~ "yes" ]]; then
+		if [[ $update =~ "yes" ]]; then
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/with_requisite
+		else
+			cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/with_requisite
 		fi
 	fi
 fi
