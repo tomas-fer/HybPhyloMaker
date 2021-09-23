@@ -169,7 +169,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data selection cp corrected MISSINGPERCENT SPECIESPRESENCE FastTreeBoot; do
+for set in data selection cp corrected MISSINGPERCENT SPECIESPRESENCE tree FastTreeBoot; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 if [ ! -z "$selection" ]; then
