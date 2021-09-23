@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 4a3 - TrimmingExons                          *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -106,15 +106,20 @@ mkdir -p $path/$type/60mafft/trimmed
 mkdir -p $path/$type/60mafft/trimmed/html
 
 #PROCESS MAFFT FILES
-echo -ne "\nTrimming alignments..."
+echo -e "\nTrimming alignments..."
+numbermafft=$(cat listOfMAFFTFiles.txt | wc -l)
+calculating=0
 for mafft in $(cat listOfMAFFTFiles.txt); do
+	calculating=$((calculating + 1))
+	echo -e "\t${mafft} ($calculating out of $numbermafft)"
+	echo ${mafft} >> warnings.txt
 	#trimming (keep sequences even if only composed by gaps)
 	if [[ $noallgaps =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.1 -htmlout ${mafft}.noallgaps.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
+		trimal -in ${mafft} -out ${mafft}.1 -htmlout ${mafft}.noallgaps.html -noallgaps -keepseqs >/dev/null 2>> warnings.txt #remove positions with gaps only
 		mv ${mafft}.1 ${mafft}
 	fi
 	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		trimal -in ${mafft} -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null 2>> warnings.txt #remove gappy positions
 		mv ${mafft}.2 ${mafft}
 	fi
 	#change '-' to 'Q'
@@ -123,11 +128,11 @@ for mafft in $(cat listOfMAFFTFiles.txt); do
 	sed -i '/^>/!s/n/-/g' ${mafft}
 	#second trimming (keep sequences even if only composed by gaps)
 	if [[ $noallgaps =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.3 -htmlout ${mafft}.noallgapsN.html -noallgaps -keepseqs >/dev/null #remove positions with gaps only
+		trimal -in ${mafft} -out ${mafft}.3 -htmlout ${mafft}.noallgapsN.html -noallgaps -keepseqs >/dev/null 2>> warnings.txt #remove positions with gaps only
 		mv ${mafft}.3 ${mafft}
 	fi
 	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.4 -htmlout ${mafft}.gappyoutN.html -gappyout -keepseqs >/dev/null #remove gappy positions
+		trimal -in ${mafft} -out ${mafft}.4 -htmlout ${mafft}.gappyoutN.html -gappyout -keepseqs >/dev/null 2>> warnings.txt #remove gappy positions
 		mv ${mafft}.4 ${mafft}
 	fi
 	#change '-' back to 'n'
@@ -203,6 +208,9 @@ if [[ $cp =~ "no" ]]; then
 	done
 	echo -e "finished"
 fi
+
+#Copy warnings to mafft
+cp warnings.txt $path/$type/60mafft/trimmed
 
 #Copy log to home
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
