@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -76,6 +76,7 @@ else
 	mkdir -p workdir06b
 	cd workdir06b
 fi
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -en "Working with cpDNA"
@@ -153,6 +154,29 @@ else
 	fi
 fi
 
+#Write log
+logname=HPM6b
+echo -e "HybPhyloMaker6b: FastTree gene tree building" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected MISSINGPERCENT SPECIESPRESENCE FastTreeBoot; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
 
 #Add necessary scripts and files
 cp $source/catfasta2phyml.pl .
@@ -466,6 +490,10 @@ fi
 
 #Copy R.log to home
 cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/FastTree
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
