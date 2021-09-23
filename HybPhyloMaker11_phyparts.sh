@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -127,6 +127,44 @@ fi
 
 if [[ $requisite =~ "yes" ]]; then
 	echo -e "...and only with trees with requisite taxa present\n"
+fi
+
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir11)" ]; then
+		echo -e "Directory 'workdir11' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir11 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Write log
+logname=HPM11
+echo -e "HybPhyloMaker11: PhyParts for Astral species tree" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+ppcolors=${ppcolors// /-} #change ' ' in ${ppcolors} to '-'
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP collapse requisite phypartsbs ppcolors nrpptrees; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+ppcolors=${ppcolors//-/ } #change '-' in ${ppcolors} back to ' '
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "\nList of requisite samples" >> ${logname}.log
+	echo $requisitetaxa | tr '|' '\n' >> ${logname}.log
+fi
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
 fi
 
 #Settings for collapsed and requisite selection
@@ -347,6 +385,14 @@ else
 	cp trees_res.*node* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 	cp trees_res.*hist* $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
 	cp phyparts.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}/trees_res_${nrpptrees}trees
+fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ $update =~ "yes" ]]; then
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/phyparts_${phypartsbs}
+else
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/phyparts_${phypartsbs}
 fi
 
 #Clean scratch/work directory
