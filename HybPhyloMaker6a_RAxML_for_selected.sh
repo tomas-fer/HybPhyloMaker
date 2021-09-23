@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -155,6 +155,30 @@ else
 			exit 3
 		fi
 	fi
+fi
+
+#Write log
+logname=HPM6a
+echo -e "HybPhyloMaker6a: RAxML gene tree building" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected MISSINGPERCENT SPECIESPRESENCE genetreepart model raxmlboot bsrep bootstop numbcores raxmlperjob; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
 fi
 
 #Add necessary scripts and files
@@ -592,6 +616,10 @@ else
 		cp bootstop_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 	fi
 fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
