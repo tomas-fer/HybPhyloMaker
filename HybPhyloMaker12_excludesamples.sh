@@ -187,15 +187,6 @@ if [ ! -z "$selection" ]; then
 	echo >> ${logname}.log
 fi
 
-#Setting for the case when working with cpDNA
-if [[ $cp =~ "yes" ]]; then
-	echo -en "Working with cpDNA"
-	type="cp"
-else
-	echo -en "Working with exons"
-	type="exons"
-fi
-
 #Check $OUTGROUP against excludelist.txt (if outgroup is to be selected ask for a new outgroup and exit)
 #download exclude list (excludelist.txt) from HybSeqSource
 cp $source/excludelist.txt .
