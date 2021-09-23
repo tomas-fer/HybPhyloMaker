@@ -21,8 +21,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *       Script 04b - Put exons to correct reading frame and translate          *
-# *                                   v.1.6.5a                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -80,6 +80,26 @@ else
 	mkdir -p workdir04b
 	cd workdir04b
 fi
+
+#Write log
+logname=HPM4b
+echo -e "HybPhyloMaker4b: put exons to correct reading frame and translate" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data cp otherpslx othersource maxstop; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
@@ -93,8 +113,7 @@ fi
 cp $source/catfasta2phyml.pl .
 cp $source/AMAS.py .
 #Copy MAFFT exon alignments
-#cp $path/$type/60mafft/*.mafft .
-find $path/$type/60mafft -maxdepth 1 -name "*.mafft" -exec cp -t . {} + #to avoid 'Argument list too long' error
+cp $path/$type/60mafft/*.mafft .
 #Make a dir for corrected exons and concatenated loci
 mkdir $path/$type/61mafft_corrected
 mkdir $path/$type/62mafft_translated
@@ -103,8 +122,7 @@ mkdir $path/$type/90concatenated_exon_alignments_translated
 
 #Translate into frame 1, 2 and 3, count number of stop codons and save it to file
 echo -ne "Translating exons to all three reading frames and selecting the correct one..."
-#ls *.mafft > listOfMAFFTFiles.txt
-find -name "*.mafft" | sed 's/\.\///' > listOfMAFFTFiles.txt #to avoid 'Argument list too long' error
+ls *.mafft > listOfMAFFTFiles.txt
 for mafftfile in $(cat listOfMAFFTFiles.txt)
 do
 	#Replace gaps in sequences by 'n'
@@ -234,11 +252,9 @@ echo -e "done\n"
 echo -ne "Concatenating corrected exons..."
 #Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft to To_align_Assembly_10372_*mafft)
 #(all files starting with "To_align_Assembly_10372_" will be merged)
-#ls -1 selected/*.corrframe | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.corrframe/g > fileNamesForConcat.txt
-ls -1 selected | grep 'corrframe' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.corrframe/g > fileNamesForConcat.txt
+ls -1 selected/*.corrframe | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.corrframe/g > fileNamesForConcat.txt
 #Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. Assembly_10372
-#ls -1 selected/*.corrframe | cut -d'_' -f4 | sort -u | sed s/^/CorrectedAssembly_/g > fileNamesForSaving.txt
-ls -1 selected | grep 'corrframe' | cut -d'_' -f4 | sort -u | sed s/^/CorrectedAssembly_/g > fileNamesForSaving.txt
+ls -1 selected/*.corrframe | cut -d'_' -f4 | sort -u | sed s/^/CorrectedAssembly_/g > fileNamesForSaving.txt
 #Combine both files (make single file with two columns)
 paste fileNamesForConcat.txt fileNamesForSaving.txt > fileForLoop.txt
 
@@ -270,11 +286,9 @@ echo -e "done\n"
 echo -ne "Concatenating translated exons..."
 #Modify mafft file names (from, i.e., To_align_Assembly_10372_Contig_1_516.fasta.mafft.translated to To_align_Assembly_10372_*mafft.translated)
 #(all files starting with "To_align_Assembly_10372_" will be merged)
-#ls -1 selectedtranslated/*.translated | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.translated/g > fileNamesForConcat.txt
-ls -1 selectedtranslated | grep 'translated' | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.translated/g > fileNamesForConcat.txt
+ls -1 selectedtranslated/*.translated | cut -d'_' -f4 | sort -u | sed s/^/To_align_Assembly_/g | sed s/\$/_*mafft.translated/g > fileNamesForConcat.txt
 #Modify mafft file names - prepare names for saving concatenate alignments (not possible to use names above as they contain '*'), e.g. Assembly_10372
-#ls -1 selectedtranslated/*.translated | cut -d'_' -f4 | sort -u | sed s/^/TranslatedAssembly_/g > fileNamesForSaving.txt
-ls -1 selectedtranslated | grep 'translated' | cut -d'_' -f4 | sort -u | sed s/^/TranslatedAssembly_/g > fileNamesForSaving.txt
+ls -1 selectedtranslated/*.translated | cut -d'_' -f4 | sort -u | sed s/^/TranslatedAssembly_/g > fileNamesForSaving.txt
 #Combine both files (make single file with two columns)
 paste fileNamesForConcat.txt fileNamesForSaving.txt > fileForLoop.txt
 #Concatenate the exon alignments (values from first and second column of fileForLoop.txt are assigned to variable 'a' and 'b', respectively),
@@ -291,6 +305,10 @@ cat fileForLoop.txt | while read -r a b; do
 	cp selectedtranslated/$b.* $path/$type/90concatenated_exon_alignments_translated
 done
 echo -e "done\n"
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/$type/80concatenated_exon_alignments_corrected
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
