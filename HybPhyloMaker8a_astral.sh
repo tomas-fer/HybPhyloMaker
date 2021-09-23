@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -340,6 +340,34 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 
+#Write log
+logname=HPM8a
+echo -e "HybPhyloMaker8a: ASTRAL species tree" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree FastTreeBoot OUTGROUP collapse requisite mlbs combine astralt4; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "\nList of requisite samples" >> ${logname}.log
+	echo $requisitetaxa | tr '|' '\n' >> ${logname}.log
+fi
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
 #Add necessary programs and files
 cp $source/$astraljar .
 cp -r $source/lib .
@@ -503,26 +531,27 @@ else
 fi
 
 #Make a plot of 'Astral -t 4' scoring (using treeio R package)
-cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre tree.tre #make the name simple
-cp $source/astralt4.R .
-R --slave -f astralt4.R >> astralt4_R.log 2>&1
-
+if [[ $astralt4 =~ "yes" ]]; then
+	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre tree.tre #make the name simple
+	cp $source/astralt4.R .
+	R --slave -f astralt4.R >> astralt4_R.log 2>&1
+fi
 #Copy species tree and log to home
 if [[ $update =~ "yes" ]]; then
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree}
 	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
-	cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
 	if [[ $astralt4 =~ "yes" ]]; then
 		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.tre
 		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltreet4}.pdf
+		cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
 	fi
 else
 	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree}
 	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
-	cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
 	if [[ $astralt4 =~ "yes" ]]; then
 		cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_t4.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.tre
 		cp tree.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltreet4}.pdf
+		cp astralt4_R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
 	fi
 fi
 
@@ -530,7 +559,7 @@ if [[ $collapse -eq "0" ]];then
 	if [[ $tree =~ "RAxML" ]] || [[ $tree =~ "FastTree" && $FastTreeBoot =~ "yes" ]]; then
 		if [[ $mlbs =~ "yes" ]]; then
 			#Run Astral bootstrap
-			echo -e "\nComputing ASTRAL multilocus bootrap..."
+			echo -e "Computing ASTRAL multilocus bootrap..."
 			if [[ $location == "1" ]]; then
 				java -jar $astraljar -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -b bs-files -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_allbootstraptrees.tre 2> Astral_boot.log
 			elif [[ $location == "2" ]]; then
@@ -554,7 +583,7 @@ if [[ $collapse -eq "0" ]];then
 			sed -i.bak4 's/_/YY/g' Astral*.tre
 			#Make combined trees
 			if [[ $combine =~ "yes" ]]; then
-				echo -e "\nCombining support values from main, bootstrap and bootstrap consensus trees to one tree..."
+				echo -e "Combining support values from main, bootstrap and bootstrap consensus trees to one tree..."
 				#Copy alignment (for sample names) and rename it
 				if [ ! -f $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip ]; then
 					#Copy list of genes
@@ -635,7 +664,15 @@ if [[ $collapse -eq "0" ]];then
 		fi
 	fi
 fi
-echo -e "\nProgress of ASTRAL run is written to Astral.log and Astral_boot.log (if MLBS was requested)..."
+echo -e "Progress of ASTRAL run is written to Astral.log and Astral_boot.log (if MLBS was requested)..."
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ $update =~ "yes" ]]; then
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+else
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+fi
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
