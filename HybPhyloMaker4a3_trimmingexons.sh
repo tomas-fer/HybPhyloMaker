@@ -92,6 +92,13 @@ else
 	type="exons"
 fi
 
+if [[ $noallgaps =~ "no" && $gappyout =~ "no" ]] ; then
+	echo -e "Nothing to do. Exiting..."
+	echo -e "Set 'noallgaps' and/or 'gappyout' to 'yes' and rerun.\n"
+	rm -d ../workdir04a3/ 2>/dev/null
+	exit 3
+fi
+
 #Copy assemblies to scratch/workdir
 if [[ $cp =~ "yes" ]]; then
 	cp $path/$type/60mafft/*.fasta .
