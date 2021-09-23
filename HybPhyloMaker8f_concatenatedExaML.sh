@@ -9,7 +9,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -220,6 +220,34 @@ if [[ $requisite =~ "no" ]]; then
 			fi
 		fi
 	fi
+fi
+
+#Write log
+logname=HPM8f
+echo -e "HybPhyloMaker8f: concatenated species tree using ExaML" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP requisite examlboot; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [[ $requisite =~ "yes" ]]; then
+	echo -e "\nList of requisite samples" >> ${logname}.log
+	echo $requisitetaxa | tr '|' '\n' >> ${logname}.log
+fi
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
 fi
 
 if [[ $runpf =~ "yes" ]]; then
@@ -536,6 +564,14 @@ else
 		cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.trees $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML
 		cp ExaML_bootstrap_${MISSINGPERCENT}_${SPECIESPRESENCE}${modif1}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML
 	fi
+fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ $update =~ "yes" ]]; then
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML
+else
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML
 fi
 
 #Clean scratch/work directory
