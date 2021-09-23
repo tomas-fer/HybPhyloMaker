@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 4a3 - TrimmingExons                          *
-# *                                   v.1.6.7                                    *
+# *                                   v.1.8.0                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -63,6 +63,25 @@ else
 	mkdir -p workdir04a3
 	cd workdir04a3
 fi
+
+#Write log
+logname=HPM4a3
+echo -e "HybPhyloMaker4a3: exon trimming" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data cp gappyout noallgaps; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
 
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
@@ -185,6 +204,9 @@ if [[ $cp =~ "no" ]]; then
 	echo -e "finished"
 fi
 
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/$type/70concatenated_exon_alignments/trimmed
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
