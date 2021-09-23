@@ -76,6 +76,15 @@ else
 	cd workdir12
 fi
 
+#Setting for the case when working with cpDNA
+if [[ $cp =~ "yes" ]]; then
+	echo -en "Working with cpDNA"
+	type="cp"
+else
+	echo -en "Working with exons"
+	type="exons"
+fi
+
 #Settings for (un)corrected reading frame
 if [[ $corrected =~ "yes" ]]; then
 	mafftpath=$type/61mafft_corrected
