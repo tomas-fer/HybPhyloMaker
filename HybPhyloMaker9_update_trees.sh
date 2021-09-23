@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                           Script 09 - Update trees                           *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                    *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -109,19 +109,51 @@ else
 	fi
 fi
 
-#Copy scripts
-cp $source/plotting_correlations.R .
-cp $source/alignmentSummary.R .
-cp $source/treepropsPlot.r .
-#Set a log file for R outputs/error messages
-touch R.log
-
 #Test if updated gene selection exists
 if [ ! -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/gene_properties_update.txt" ]; then
 	echo -e "'$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/gene_properties_update.txt' is missing. Exiting...\n"
 	rm -d ../workdir09 2>/dev/null
 	exit 3
 fi
+
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir09)" ]; then
+		echo -e "Directory 'workdir09' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir09 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Write log
+logname=HPM9
+echo -e "HybPhyloMaker9: update trees" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
+#Copy scripts
+cp $source/plotting_correlations.R .
+cp $source/alignmentSummary.R .
+cp $source/treepropsPlot.r .
+#Set a log file for R outputs/error messages
+touch R.log
 
 #Copy updated gene list with properties (with unwanted genes deleted)
 cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/gene_properties_update.txt .
@@ -195,6 +227,10 @@ mkdir -p $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 cp selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes
 echo -e "\nList of updated selected genes saved to $path/${alnpathselected}${MISSINGPERCENT}/updatedSelectedGenes/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}_update.txt..."
 echo -e "Change 'update' to 'update=yes' in 'settings.cfg' and continue with running scripts 7 and 8..."
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
