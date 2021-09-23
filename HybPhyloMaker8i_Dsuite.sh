@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
 # *       Dept. of Botany, Charles University, Prague, Czech Republic, 2021      *
 # *                           tomas.fer@natur.cuni.cz                            *
@@ -143,6 +143,30 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 
+#Write log
+logname=HPM8i
+echo -e "HybPhyloMaker8i: Dsuite" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update tree OUTGROUP; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
 #Add necessary scripts and files
 echo -e "\nCopying scripts...\n"
 cp $source/AMAS.py .
@@ -165,7 +189,7 @@ else
 fi
 
 # Modify species tree
-mv  Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre sptree.tre
+mv Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre sptree.tre
 # replace ' ' back to '-' and '_'
 sed -i 's/ \([^ ]*\) / \1_/g' sptree.tre #replace every second occurrence of ' ' by '_'
 sed -i 's/ /-/g' sptree.tre #replace all spaces by '-'
@@ -283,6 +307,14 @@ if [[ $update =~ "yes" ]]; then
 	cp *.{svg,png,pdf,txt,fasta,log,gz,tre} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Dsuite
 else
 	cp *.{svg,png,pdf,txt,fasta,log,gz,tre} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Dsuite
+fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+if [[ $update =~ "yes" ]]; then
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/Dsuite
+else
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/Dsuite
 fi
 
 #Clean scratch/work directory
