@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.7.4                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
+# *                                   v.1.8.0                                    *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -40,13 +40,13 @@
 # 1. You must obtain 'token' from Illumina BaseSpace (how to do this see steps 1-5 at                               #
 # https://support.basespace.illumina.com/knowledgebase/articles/403618-python-run-downloader )                      #
 # 2. Save this token to text file (token_header.txt) with one line text:                                            #
-# header = "x-access-token: <your-token-here>                                                                       #
+# header = "x-access-token: <your-token-here>"                                                                      #
 # 3. Login to BaseSpace via web browser and get ID for the project                                                  #
 # (all fastq.gz files from the project will be downloaded)                                                          #
 # How to do this: go to (via clicking) Projects -> <project-name> -> Samples -> <sample-name> -> <file>.fastq.gz    #
 # Look at the address which should looks like                                                                       #
-# https://basespace.illumina.com/sample/28555179/files/tree/Z001_S1_L001_R1_001.fastq.gz?id=2016978377              #
-# desired ID is the last number                                                                                     #
+# https://basespace.illumina.com/projects/2016978377                                                                #
+# desired ID is the last number (put this to settings.cfg)                                                          #
 # 4. prepare file renamelist.txt with two columns (desired sample name and 'Sample_Name' from BaseSpace)            #
 #   (Sample_Name is first unique part of file name at BaseSpace), e.g.                                              #
 # genus1-species1_S001	Z001                                                                                        #
@@ -167,7 +167,7 @@ if [[ $download =~ "yes" ]]; then
 	
 	#Get info about samples
 	echo -e "Getting info about samples in the project with ID: ${projectID}..."
-	curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/projects/${projectID}/samples?Limit=1000 2>/dev/null > JSONproject.txt
+	curl -L -J --config ./token_header.txt ${bsserver}/v1pre3/projects/${projectID}/samples?Limit=1000 2>/dev/null > JSONproject.txt
 	#Test if there is permit to access the project
 	if [ ! -z "$(grep ErrorCode JSONproject.txt)" ]; then
 		echo -e "You probably does not have access rights to the project. Exiting...\n"
@@ -193,7 +193,7 @@ if [[ $download =~ "yes" ]]; then
 	echo -e "\nGetting info about files in the project ${projectID}..."
 	for i in $(cat samplesList.txt); do
 		#download information about files for particular sample
-		curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/samples/${i}/files?Extensions=gz 2>/dev/null > JSONsamples.txt
+		curl -L -J --config ./token_header.txt ${bsserver}/v1pre3/samples/${i}/files?Extensions=gz 2>/dev/null > JSONsamples.txt
 		#get 'Id', display only them and add it to the IDs list
 		grep -Po '"Id":.*?[^\\]",' JSONsamples.txt | awk -F\" '{print $4}' >> filesList.txt
 		#get sizes
@@ -209,11 +209,11 @@ if [[ $download =~ "yes" ]]; then
 	#Download individual files using parallel
 	echo -e "\nDownloading fastq.gz files...\n"
 	if [[ $location == "1" ]]; then
-		cat filesList.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+		cat filesList.txt | parallel 'curl -L -J --config token_header.txt ${bsserver}/v1pre3/files/{}/content -O'
 	elif [[ $location == "2" ]]; then
-		cat filesList.txt | parallel --max-procs $NSLOTS 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+		cat filesList.txt | parallel --max-procs $NSLOTS 'curl -L -J --config token_header.txt ${bsserver}/v1pre3/files/{}/content -O'
 	elif [[ $location == "0" ]]; then
-		cat filesList.txt | parallel 'curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/{}/content -O'
+		cat filesList.txt | parallel 'curl -L -J --config token_header.txt ${bsserver}/v1pre3/files/{}/content -O'
 	fi
 	#Check file sizes of downloaded files (if they match sizes stated by BaseSpace)
 	#Download incorrectly downloaded files
@@ -229,7 +229,7 @@ if [[ $download =~ "yes" ]]; then
 			echo -e "${fileName} size incorrect. Downloading again...\n"
 			mv ${fileName} ${fileName}.bak 2>/dev/null #make a backup of the wrongly downloaded file
 			until [[ $(stat -c %s `awk '{ print $1 }' <<< $line` 2>/dev/null) -eq ${fileSizeBS} ]]; do
-				curl -L -J --config token_header.txt https://api.basespace.illumina.com/v1pre3/files/${fileBS}/content -O
+				curl -L -J --config token_header.txt ${bsserver}/v1pre3/files/${fileBS}/content -O
 				echo
 			done
 		fi
@@ -247,7 +247,7 @@ if [[ $download =~ "yes" ]]; then
 		#Run details (total yield, number of clusters, total reads, total reads PF...)
 		echo "Getting info about run ${runID}"
 		#Get info about the run
-		curl -L -J --config ./token_header.txt https://api.basespace.illumina.com/v1pre3/runs/${runID} 2>/dev/null > JSONrun.txt
+		curl -L -J --config ./token_header.txt ${bsserver}/v1pre3/runs/${runID} 2>/dev/null > JSONrun.txt
 		#Test if there is permit to access the project
 		if [ ! -z "$(grep ErrorCode JSONrun.txt)" ]; then
 			echo -e "You probably does not have access rights to the run. Skiping run statistics...\n"
