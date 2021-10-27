@@ -1,0 +1,9 @@
+/exons/sel1/82trees_corrected70_75/RAxML/species_trees/Astral
+/exons/sel1/82trees_corrected70_75/RAxML/species_trees/collapsed50/Astral
+/exons/sel1/82trees_corrected70_75/RAxML/species_trees/concatenated
+/exons/sel1/82trees_corrected70_75/RAxML/species_trees/MRL
+/exons/sel1/82trees_corrected70_75/RAxML/update/species_trees/Astral
+/exons/sel1/82trees_corrected70_75/RAxML/update/species_trees/Astrid
+/exons/sel1/82trees_corrected70_75/RAxML/update/species_trees/concatenated
+/exons/82trees_corrected70_75/RAxML/species_trees/Astral
+/exons/82trees_corrected70_75/RAxML/species_trees/concatenated
