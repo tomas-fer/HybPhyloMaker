@@ -1,0 +1,6 @@
+Siphonochilus_aethiopicus_S130	Outgroup
+Amomum_subulatum_S51	Alpinioideae
+Renealmia_polypus_S370	Alpinioideae
+Curcuma_parviflora_S159	Zingiberoideae
+Cornukaempferia_longipetiolata_S212	Zingiberoideae
+Globba_candida_S209	Zingiberoideae
