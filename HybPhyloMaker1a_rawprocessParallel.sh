@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 01a - Raw data processing in parallel                *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -58,19 +58,19 @@ fi
 if [[ ! $location == "1" ]]; then
 	if [ "$(ls -A ../workdir01)" ]; then
 		echo -e "Directory 'workdir01' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir01/ 2>/dev/null
+		rm -d ../workdir01a/ 2>/dev/null
 		exit 3
 	else
 		if [ -d "$path/20filtered" ]; then
 			echo -e "Directory '$path/20filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
-			rm -d ../workdir01/ 2>/dev/null
+			rm -d ../workdir01a/ 2>/dev/null
 			exit 3
 		fi
 	fi
 else
 	if [ -d "$path/20filtered" ]; then
 		echo -e "Directory '$path/20filtered' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir01/ 2>/dev/null
+		rm -d ../workdir01a/ 2>/dev/null
 		exit 3
 	fi
 fi
@@ -107,24 +107,24 @@ if [ -d "$path/10rawreads" ]; then #Test if 10rawreads folder exists
 		for sample in $(cat SamplesFileNames.txt); do
 			if [ ! -d "$path/10rawreads/$sample" ]; then #Test if each samples-specific folder exists
 				echo -e "Directory $sample does not exist.\n"
-				rm -d ../workdir01/ 2>/dev/null
+				rm -d ../workdir01a/ 2>/dev/null
 				exit 3
 			else
 				if [ ! -f "$path/10rawreads/$sample/${sample}_"*"R1"*".fastq.gz" ] || [ ! -f "$path/10rawreads/$sample/${sample}_"*"R2"*".fastq.gz" ]; then #Test if FASTQ.gz files exist
 					echo -e "Proper fastq.gz files missing in $sample folder...\n"
-					rm -d ../workdir01/ 2>/dev/null
+					rm -d ../workdir01a/ 2>/dev/null
 					exit 3
 				fi
 			fi
 		done
 	else
 		echo "List of samples (SamplesFileNames.txt) is missing. Should be in 10rawreads...\n"
-		rm -d ../workdir01/ 2>/dev/null
+		rm -d ../workdir01a/ 2>/dev/null
 		exit 3
 	fi
 else
 	echo -e "Folder 10rawreads does not exist within your homedir.\n"
-	rm -d ../workdir01/ 2>/dev/null
+	rm -d ../workdir01a/ 2>/dev/null
 	exit 3
 fi
 echo -e "OK for running HybPhyloMaker...\n"
@@ -316,7 +316,7 @@ fi
 echo -e "\nHybPhyloMaker 1a finished..."
 if [[ $location == "2" ]]; then
 	echo -e "\nGo to homedir and run submitRawProcessJobs.sh...\n"
-else [[ $location == "1" ]]; then
+else
 	echo -e "\nGo to $path/20filtered and run submitRawProcessJobs.sh..."
 	echo -e "This starts parallel filtering of raw reads."
 	echo -e "\nAfter all jobs finish run script HybPhyloMaker1a2 in order to summarize the filtered data...\n"
