@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 02 - Read mapping using bowtie2/bwa                 *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -46,7 +46,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add gcc-4.8.4
 	module add python34-modules-gcc #adds also kindel
 	module add ococo-2016-11
-	module add jdk-7
+	module add jdk-8
 	module add datamash-1.3 #for data summary
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker2 is running on Hydra...\n"
@@ -171,7 +171,7 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 	if [[ $cp =~ "yes" ]]; then
 		if [ ! -f "$source/$cpDNACDS" ]; then
 			echo -e "'$cpDNACDS' is missing in 'HybSeqSource'. Exiting...\n"
-			rm -d ../workdir03/ 2>/dev/null
+			rm -d ../workdir02/ 2>/dev/null
 			exit 3
 		else
 			name=$(echo $cpDNACDS | cut -d"." -f1)
@@ -375,6 +375,9 @@ for file in $(cat SamplesFileNames.txt); do
 	rm ${file}.bam.bai
 done
 
+#Rename the probe file (just for the case it has the suffix *.fasta which would make problems in the next step)
+mv $probes probes.fa
+
 #Combine all fasta file into one
 cat *.fasta > consensus.fasta
 #Remove line breaks from fasta file
@@ -507,9 +510,9 @@ if [ ! -d "$path/$type/21mapped_${mappingmethod}/coverage" ]; then
 	cut -f4- exon_meancoverageALL.txt | datamash transpose > coverage.txt
 	# Prepare header
 	echo locus | tr "\n" "\t" > header.txt #print 'locus' and replaces EOL by TAB, i.e., next line prints on the same line
-	grep ">" $probes | cut -d'_' -f2 | datamash transpose >> header.txt
+	grep ">" probes.fa | cut -d'_' -f2 | datamash transpose >> header.txt
 	echo -e "exon\t" | perl -0pe 's/\n\Z//' >> header.txt #print 'exonTAB' and removes very last character which is EOL, i.e., next line prints on the same line
-	grep ">" $probes | cut -d'_' -f4 | datamash transpose >> header.txt
+	grep ">" probes.fa | cut -d'_' -f4 | datamash transpose >> header.txt
 	cat header.txt coverage.txt > exon_meancoverageALLmodif.txt
 	rm header.txt coverage.txt
 	# Calculate mean per locus from per-exon values
