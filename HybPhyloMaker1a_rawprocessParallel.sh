@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 01a - Raw data processing in parallel                *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -147,7 +147,7 @@ do
 	echo '#!/bin/bash' >> ${file}.sh
 	echo '#----------------MetaCentrum----------------' >> ${file}.sh
 	echo '#PBS -l walltime=2:0:0' >> ${file}.sh
-	echo '#PBS -l select=1:ncpus=2:mem=4gb:scratch_local=16gb' >> ${file}.sh
+	echo '#PBS -l select=1:ncpus=2:mem=16gb:scratch_local=24gb' >> ${file}.sh
 	echo '#PBS -j oe' >> ${file}.sh
 	echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> ${file}.sh
 	echo '#PBS -N rawprocess_for_'"${file}" >> ${file}.sh
