@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
 # *       Dept. of Botany, Charles University, Prague, Czech Republic, 2021      *
 # *                           tomas.fer@natur.cuni.cz                            *
@@ -238,10 +238,12 @@ sed -i "s/$OUTGROUP/Outgroup/" concatenated.fasta
 # put the outgroup as a first accession in FASTA
 grep -A 1 "Outgroup" concatenated.fasta > final.fasta
 # remove EOL after 'Outgroup', i.e. put 'Outgroup' and its sequence on a single line
-perl -pe 's/Outgroup\n/Outgroup/g' concatenated.fasta > tmp && mv tmp concatenated.fasta
+perl -pe 's/Outgroup.fas\n/Outgroup.fas/g' concatenated.fasta > tmp && mv tmp concatenated.fasta
 # take everything except the outgroup to final file
 grep -v "Outgroup" concatenated.fasta >> final.fasta
 mv final.fasta concatenated.fasta
+# replace ".fas" in names
+sed -i 's/.fas//g' concatenated.fasta
 # replace '?'s by 'N'
 sed -i 's/\?/N/g' concatenated.fasta
 # replace 'N's by '-'
