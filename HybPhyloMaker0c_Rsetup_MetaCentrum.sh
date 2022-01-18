@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -62,6 +62,7 @@ wget https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.4.10.tar.gz #r
 wget https://cran.r-project.org/src/contrib/Archive/bitops/bitops_1.0-6.tar.gz #required by gplots
 wget https://cran.r-project.org/src/contrib/Archive/gdata/gdata_2.17.0.tar.gz #required by gplots
 wget https://cran.r-project.org/src/contrib/Archive/caTools/caTools_1.17.1.4.tar.gz #required by gplots
+wget https://cran.r-project.org/src/contrib/isoband_0.2.5.tar.gz #required by ggplot2
 
 #Install packages to personal (writable) library
 mkdir -p /storage/$server/home/$LOGNAME/Rpackages
@@ -109,6 +110,46 @@ R CMD INSTALL treeio_1.4.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #t
 #instal 'gplots'
 wget https://cran.r-project.org/src/contrib/Archive/gplots/gplots_3.0.1.2.tar.gz
 R CMD INSTALL gplots_3.0.1.2.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
+
+#instal 'reshape'
+wget https://cran.r-project.org/src/contrib/reshape_0.8.8.tar.gz
+R CMD INSTALL reshape_0.8.8.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+
+#instal 'reshape2'
+wget https://cran.r-project.org/src/contrib/reshape2_1.4.4.tar.gz
+R CMD INSTALL reshape2_1.4.4.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+
+#instal 'ggplot2'
+wget https://cran.r-project.org/src/contrib/ggplot2_3.3.5.tar.gz
+R CMD INSTALL ggplot2_3.3.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+
+#instal 'plyr'
+wget https://cran.r-project.org/src/contrib/plyr_1.8.6.tar.gz
+R CMD INSTALL plyr_1.8.6.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+
+#instal 'farver'
+wget https://cran.r-project.org/src/contrib/farver_2.1.0.tar.gz
+R CMD INSTALL farver_2.1.0.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
+
+#instal 'lifecycle'
+wget https://cran.r-project.org/src/contrib/lifecycle_1.0.1.tar.gz
+R CMD INSTALL lifecycle_1.0.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
+
+#instal 'munsell'
+wget https://cran.r-project.org/src/contrib/munsell_0.5.0.tar.gz
+R CMD INSTALL munsell_0.5.0.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
+
+#instal 'scales'
+wget https://cran.r-project.org/src/contrib/scales_1.1.1.tar.gz
+R CMD INSTALL scales_1.1.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+
+#instal 'getopt'
+wget https://cran.r-project.org/src/contrib/getopt_1.20.3.tar.gz
+R CMD INSTALL getopt_1.20.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by optparse
+
+#instal 'optparse'
+wget https://cran.r-project.org/src/contrib/optparse_1.7.1.tar.gz
+R CMD INSTALL optparse_1.7.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #Delete scratch
 if [[ $PBS_O_HOST == *".cz" ]]; then
