@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08j - SuperQ network in Spectre                    *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -198,9 +198,10 @@ echo -e "Computing SuperQ network...\n"
 if [[ ! $location == "1" ]]; then
 	#copy SuperQ binary dir
 	cp -r $source/spectre-1.1.5 .
-	export JAVA_OPTS='-Xmx80g'
+	#export JAVA_OPTS='-Xmx80g'
 	spectre-1.1.5/bin/superq -o output.net -y JOptimizer -b balanced trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick > spectre.log
 else
+	export JAVA_OPTS='-Xmx80g'
 	superq -o output.net -y JOptimizer -b balanced trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick > spectre.log
 fi
 mv output.net SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex
