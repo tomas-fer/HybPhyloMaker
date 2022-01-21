@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
 #PBS -l walltime=24:0:0
-#PBS -l select=1:ncpus=4:mem=16gb:scratch_local=4gb
+#PBS -l select=1:ncpus=1:mem=4gb:scratch_local=4gb
 #PBS -j oe
 #PBS -N HybPhyloMaker13_DiscoVista
 #PBS -m abe
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                            Script 13 - DiscoVista                            *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.1                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -77,8 +77,8 @@ export WS_HOME=`pwd`
 #copy list of folders to compare
 cp $source/comparelist.txt .
 
-#method 1 (species tree)
-mkdir species parameters
+#method 0, 1, 5  (species tree)
+mkdir species parameters genetrees rel_frequency
 #copy annotations
 cp $source/annotation.txt parameters/
 #create clade-defs.txt file
@@ -102,14 +102,28 @@ for i in $(cat comparelist.txt); do
 	if [ ! -z $(grep MRL <<< $i) ]; then str=MRL; fi
 	if [ ! -z $(grep "concatenated$" <<< $i) ]; then str=concatFT; fi
 	if [ ! -z $(grep concatenatedExaML <<< $i) ]; then str=concatExaML; fi
-	dirn=${str}.${ty}.${mis}.${pres}.${corr}.${sl}.${tr}.${up}.${col}-FNA
+	dirn=${str}.${ty}.${mis}.${pres}.${corr}.${sl}.${tr}.${up}.${col}
 	mkdir species/$dirn
+	mkdir genetrees/$dirn
+	mkdir rel_frequency/$dirn
+
+	# fix i to not contain SPECIENSTREE FOLDER
+	speciestree_folder=$(sed 's![^/]*$!!' <<< ${i})
+
+	cp ${path}${speciestree_folder}/trees.newick genetrees/$dirn/genetrees.tree
+	sed -i 's/-/_/g' genetrees/$dirn/genetrees.tree #replace all '-' occurrences by '-'
+
+	cp ${path}${speciestree_folder}/trees.newick rel_frequency/$dirn/estimated_gene_trees.tree
+	sed -i 's/-/_/g' rel_frequency/$dirn/estimated_gene_trees.tree #replace all '-' occurrences by '-'
+
 	#check for Astral
 	if [ ! -z $(grep Astral <<< $i) ]; then
 		if [[ $col =~ "nocol" ]]; then
 			cp ${path}${i}/Astral_${mis}_${pres}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/Astral_${mis}_${pres}.tre rel_frequency/$dirn/estimated_species_tree.tree
 		else
 			cp ${path}${i}/Astral_${mis}_${pres}_${col}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/Astral_${mis}_${pres}_${col}.tre rel_frequency/$dirn/estimated_species_tree.tree
 		fi
 		sed -i 's/ /_/g' species/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
 	fi
@@ -117,8 +131,10 @@ for i in $(cat comparelist.txt); do
 	if [ ! -z $(grep Astrid <<< $i) ]; then
 		if [[ $col =~ "nocol" ]]; then
 			cp ${path}${i}/Astrid_${mis}_${pres}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/Astrid_${mis}_${pres}.tre rel_frequency/$dirn/estimated_species_tree.tree		
 		else
 			cp ${path}${i}/Astrid_${mis}_${pres}_${col}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/Astrid_${mis}_${pres}_${col}.tre rel_frequency/$dirn/estimated_species_tree.tree
 		fi
 		sed -i 's/ /_/g' species/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
 	fi
@@ -126,8 +142,10 @@ for i in $(cat comparelist.txt); do
 	if [ ! -z $(grep MRL <<< $i) ]; then
 		if [[ $col =~ "nocol" ]]; then
 			cp ${path}${i}/MRL_${mis}_${pres}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/MRL_${mis}_${pres}.tre rel_frequency/$dirn/estimated_species_tree.tree
 		else
 			cp ${path}${i}/MRL_${mis}_${pres}_${col}.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/MRL_${mis}_${pres}_${col}.tre rel_frequency/$dirn/estimated_species_tree.tree
 		fi
 		sed -i 's/ /_/g' species/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
 	fi
@@ -135,8 +153,10 @@ for i in $(cat comparelist.txt); do
 	if [ ! -z $(grep "concatenated$" <<< $i) ]; then
 		if [[ $col =~ "nocol" ]]; then
 			cp ${path}${i}/concatenated${mis}_${pres}.fast.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/concatenated${mis}_${pres}.fast.tre rel_frequency/$dirn/estimated_species_tree.tree
 		else
 			cp ${path}${i}/concatenated${mis}_${pres}_${col}.fast.tre species/$dirn/estimated_species_tree.tree
+			cp ${path}${i}/concatenated${mis}_${pres}_${col}.fast.tre rel_frequency/$dirn/estimated_species_tree.tree
 		fi
 		sed -i 's/ /_/g' species/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
 	fi
@@ -148,10 +168,33 @@ for i in $(cat comparelist.txt); do
 			cp ${path}${i}/ExaML_bootstrap_${mis}_${pres}_${col}.tre species/$dirn/estimated_species_tree.tree
 		fi
 	fi
+	sed -i 's/ /_/g' species/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
+	sed -i 's/ /_/g' rel_frequency/$dirn/estimated_species_tree.tree #replace all ' ' occurrences by '-'
+
+	
+	# prepare data for m1
+	# write each gene tree to single file
+	mkdir -p genetrees/input
+	num=1
+	while read line
+	do
+		mkdir -p genetrees/input/tree_${num}
+		mkdir genetrees/input/tree_${num}/${dirn}
+	    echo "$line" > genetrees/input/tree_${num}/${dirn}/estimated_gene_trees.tree
+	    let num=num+1
+	done < genetrees/$dirn/genetrees.tree
+
+	# run m5
+	mkdir rel_frequency/$dirn/results
+
+	#Run DiscoVista M5
+	$WS_HOME/DiscoVista/src/utils/discoVista.py -c parameters/clade-defs.txt -p rel_frequency/$dirn/ -t 90 -m 5 -o rel_frequency/$dirn/results -a parameters/annotation.txt -g Outgroup
 done
 
-#Run DiscoVista
-$WS_HOME/DiscoVista/src/utils/discoVista.py -c parameters/clade-defs.txt -p species/ -t 0.95 -m 0 -o results
+#Run DiscoVista M0
+$WS_HOME/DiscoVista/src/utils/discoVista.py -c parameters/clade-defs.txt -p species/ -t 0.90 -m 0 -o results
+#Run DiscoVista M1
+$WS_HOME/DiscoVista/src/utils/discoVista.py -c parameters/clade-defs.txt -p genetrees/input/ -t 90 -m 1 -o genetrees/results -a parameters/annotation.txt -k 20
 
 #Make dir for results
 mkdir -p $path/DiscoVista/speciestree
@@ -160,6 +203,14 @@ cp -r species/ $path/DiscoVista/speciestree
 cp -r parameters/ $path/DiscoVista/speciestree
 cp -r results/ $path/DiscoVista/speciestree
 cp comparelist.txt $path/DiscoVista/speciestree
+
+p -r genetrees/ $path/DiscoVista/
+cp comparelist.txt $path/DiscoVista/genetrees
+cp -r parameters/ $path/DiscoVista/genetrees
+
+cp -r rel_frequency/ $path/DiscoVista/
+cp -r parameters/ $path/DiscoVista/rel_frequency
+cp comparelist.txt $path/DiscoVista/rel_frequency
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
