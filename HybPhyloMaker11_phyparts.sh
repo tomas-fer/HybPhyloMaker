@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -245,6 +245,8 @@ fi
 #Modify Astral tree (replace ' ' back to '-' and '_')
 sed -i 's/ \([^ ]*\) / \1_/g' ${sptree}.tre #replace every second occurrence of ' ' by '_'
 sed -i 's/ /-/g' ${sptree}.tre #replace all spaces by '-'
+#Reroot Astral tree with $OUTGROUP
+nw_reroot -s ${sptree}.tre $OUTGROUP > tmp && mv tmp ${sptree}.tre
 
 #Modify labels in gene tree
 sed -i.bak 's/XX/-/g' $treefile
