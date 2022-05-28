@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *            Script 08e - concatenated species tree using FastTree             *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -45,7 +45,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add fasttree-2.1.8
-	module add python-3.4.1-intel
+	module add python-3.4.1-gcc
 	module add newick-utils-13042016
 	#module add debian8-compat
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
