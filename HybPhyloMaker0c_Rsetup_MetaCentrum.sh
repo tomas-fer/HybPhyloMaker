@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -54,7 +54,7 @@ wget https://cran.r-project.org/src/contrib/Archive/seqinr/seqinr_3.1-3.tar.gz
 wget https://cran.r-project.org/src/contrib/Archive/openxlsx/openxlsx_4.0.0.tar.gz
 wget https://cran.r-project.org/src/contrib/Archive/quadprog/quadprog_1.5-7.tar.gz #required by phangorn
 wget https://cran.r-project.org/src/contrib/Archive/igraph/igraph_1.2.5.tar.gz #required by phangorn
-wget https://cran.r-project.org/src/contrib/fastmatch_1.1-0.tar.gz #required by phangorn
+wget https://cran.r-project.org/src/contrib/Archive/fastmatch/fastmatch_1.1-0.tar.gz #required by phangorn
 wget https://cran.r-project.org/src/contrib/Archive/BiocManager/BiocManager_1.30.14.tar.gz #necessary for treeio on Bioconductor
 wget https://cran.r-project.org/src/contrib/Archive/rvcheck/rvcheck_0.1.7.tar.gz #required by treeio
 wget https://cran.r-project.org/src/contrib/Archive/tidytree/tidytree_0.3.3.tar.gz #required by treeio
@@ -112,7 +112,7 @@ wget https://cran.r-project.org/src/contrib/Archive/gplots/gplots_3.0.1.2.tar.gz
 R CMD INSTALL gplots_3.0.1.2.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
 
 #instal 'reshape'
-wget https://cran.r-project.org/src/contrib/reshape_0.8.8.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/reshape/reshape_0.8.8.tar.gz
 R CMD INSTALL reshape_0.8.8.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'reshape2'
@@ -120,11 +120,11 @@ wget https://cran.r-project.org/src/contrib/reshape2_1.4.4.tar.gz
 R CMD INSTALL reshape2_1.4.4.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'ggplot2'
-wget https://cran.r-project.org/src/contrib/ggplot2_3.3.5.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.3.5.tar.gz
 R CMD INSTALL ggplot2_3.3.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'plyr'
-wget https://cran.r-project.org/src/contrib/plyr_1.8.6.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/plyr/plyr_1.8.6.tar.gz
 R CMD INSTALL plyr_1.8.6.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'farver'
@@ -140,7 +140,7 @@ wget https://cran.r-project.org/src/contrib/munsell_0.5.0.tar.gz
 R CMD INSTALL munsell_0.5.0.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
 
 #instal 'scales'
-wget https://cran.r-project.org/src/contrib/scales_1.1.1.tar.gz
+wget https://cran.r-project.org/src/contrib/Archive/scales/scales_1.1.1.tar.gz
 R CMD INSTALL scales_1.1.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
 
 #instal 'getopt'
