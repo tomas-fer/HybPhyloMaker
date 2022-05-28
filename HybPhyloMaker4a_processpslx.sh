@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 04a - Process pslx files                       *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
@@ -50,7 +50,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add mafft-7.029
 	module add parallel
 	module add perl-5.10.1
-	module add debian8-compat
+	#module add debian10-compat
 	#available processors
 	procavail=`expr $TORQUE_RESC_TOTAL_PROCS - 2`
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
@@ -360,7 +360,7 @@ if [[ $cp =~ "no" ]]; then
 
 	if [[ $location == "1" ]]; then
 		#Add necessary module
-		module add python-3.4.1-intel
+		module add python-3.4.1-gcc
 		#module add perl-5.10.1
 		#Make a new folder for results
 		mkdir $path/$type/70concatenated_exon_alignments
