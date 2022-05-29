@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *          Additional script - combine summary tables into single XLS          *
-# *                                   v.1.6.5                                    *
+# *                                   v.1.6.5a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2018 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -255,10 +255,12 @@ echo "Writing XLSX..."
 # END`
 R --slave -f HybPhyloMaker_reports.R $nrsamples $nrgenes $nrselected $MISSINGPERCENT
 
-mv summary.xlsx ${data}_summary.xlsx
+#get only text after the last'/'
+data1=$(sed 's:.*/::' <<< $data)
+mv summary.xlsx ${data1}_summary.xlsx
 
 #Copy summary to home
-cp ${data}_summary.xlsx ${path}
+cp ${data1}_summary.xlsx ${path}
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
