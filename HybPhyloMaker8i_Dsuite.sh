@@ -238,12 +238,10 @@ sed -i "s/$OUTGROUP/Outgroup/" concatenated.fasta
 # put the outgroup as a first accession in FASTA
 grep -A 1 "Outgroup" concatenated.fasta > final.fasta
 # remove EOL after 'Outgroup', i.e. put 'Outgroup' and its sequence on a single line
-perl -pe 's/Outgroup.fas\n/Outgroup.fas/g' concatenated.fasta > tmp && mv tmp concatenated.fasta
+perl -pe 's/Outgroup\n/Outgroup/g' concatenated.fasta > tmp && mv tmp concatenated.fasta
 # take everything except the outgroup to final file
 grep -v "Outgroup" concatenated.fasta >> final.fasta
 mv final.fasta concatenated.fasta
-# replace ".fas" in names
-sed -i 's/.fas//g' concatenated.fasta
 # replace '?'s by 'N'
 sed -i 's/\?/N/g' concatenated.fasta
 # replace 'N's by '-'
@@ -273,6 +271,9 @@ gzip concatenated_bcf.vcf
 echo -e "\nRunning Dsuite..."
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	git clone https://github.com/millanek/Dsuite.git
+	#wget https://github.com/millanek/Dsuite/archive/60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
+	#unzip 60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
+	#mv Dsuite-* Dsuite
 	cd Dsuite/
 	make -j2
 	cd ..
