@@ -9,8 +9,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0c                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2022 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -237,7 +237,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP requisite examlboot; do
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP requisite examlboot constrtree; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 if [[ $requisite =~ "yes" ]]; then
@@ -445,6 +445,10 @@ else
 fi
 
 #Run ExaML (single bestML only, no bootstrap)
+#Check if constrained tree is required
+if [ ! -z "$constrtree" ]; then
+	cp $source/$constrtree .
+fi
 #Set starting time
 time=`date +%s`
 #Prepare binary file for ExaML
@@ -456,9 +460,17 @@ $raxmlseq -y -m GTRCAT -p 12345 -s concatenated${MISSINGPERCENT}_${SPECIESPRESEN
 #Run ExaML
 echo -e "Building best ExaML tree...\n"
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	if [ ! -z "$constrtree" ]; then
+		mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -g $constrtree -p 12345 -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	else
+		mpirun $examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	fi
 else
-	$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	if [ ! -z "$constrtree" ]; then
+		examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -g $constrtree -p 12345 -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	else
+		examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+	fi
 fi
 #Measure time
 timenow=`date +%s`
@@ -495,11 +507,18 @@ if [[ $examlboot =~ "yes" ]]; then
 		parse-examl -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} -m DNA -q RAxMLpartitions.txt.BS${i} -n concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i} >> parse-examl_boot.log
 		#Run ExaML
 		if [[ $PBS_O_HOST == *".cz" ]]; then
-			mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			if [ ! -z "$constrtree" ]; then
+				mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -g $constrtree -p 12345 -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			else
+				mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			fi
 		else
-			$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			if [ ! -z "$constrtree" ]; then
+				$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -g $constrtree -p 12345 -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			else
+				$examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
+			fi
 		fi
-		mpirun $examlbin -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.phylip.BS${i}.binary -m GAMMA -t RAxML_parsimonyTree.T${i} -n BINF_${i} >> ExaML_boot.log 2>>ExaML_error.log
 		#Measure time
 		timenow=`date +%s`
 		timespan=`echo "scale=2;($timenow-$time)/60" | bc`
