@@ -19,9 +19,9 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
-# *       Dept. of Botany, Charles University, Prague, Czech Republic, 2021      *
+# *       Dept. of Botany, Charles University, Prague, Czech Republic, 2022      *
 # *                           tomas.fer@natur.cuni.cz                            *
 # ********************************************************************************
 
@@ -158,7 +158,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data selection cp corrected update tree OUTGROUP; do
+for set in data selection cp corrected update tree OUTGROUP SNPs; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 if [ ! -z "$selection" ]; then
@@ -257,23 +257,90 @@ else
 	snp-sites -v concatenated.fasta > concatenated.vcf
 fi
 
+#VCF parsing
+grep ^# concatenated.vcf > header.txt
+grep -v "^#" concatenated.vcf > snps.txt
+cut -d'=' -f2 partitions.txt | tr '-' '\t' > bed.txt
+#Calculate nr SNPs per exon
+cat bed.txt | while read -r a b; do
+	echo -en "from ${a} to ${b}\t" >> nrSNPsPerExonBefore.txt
+	awk -v a=$a -v b=$b 'a<=$2 && $2<=b' snps.txt | wc -l >> nrSNPsPerExonBefore.txt
+done
+
 # Filter VCF
 echo -e "Filtering VCF..."
 gzip concatenated.vcf
 bcftools view -e 'AC==0 || AC==AN || F_MISSING > 0.2' -m2 -M2 -O z -o concatenated_bcf.vcf.gz concatenated.vcf.gz
-vcftools --gzvcf concatenated_bcf.vcf.gz --thin 100 --recode --out concatenated_bcf
-mv concatenated_bcf.recode.vcf concatenated_bcf.vcf
-rm concatenated_bcf.vcf.gz
-gzip concatenated_bcf.vcf
+gzip -d -c concatenated_bcf.vcf.gz > concatenated_bcf.vcf
+grep ^# concatenated_bcf.vcf > headerF.txt
+grep -v "^#" concatenated_bcf.vcf > snpsF.txt
+rm concatenated_bcf.vcf
+mv concatenated.vcf.gz FULLconcatenated.vcf.gz
+mv concatenated_bcf.vcf.gz FILTEREDconcatenated.vcf.gz
+#Calculate nr SNPs per exon after filtering
+cat bed.txt | while read -r a b; do
+	awk -v a=$a -v b=$b 'a<=$2 && $2<=b' snpsF.txt | wc -l >> nrSNPsPerExonFiltered.txt
+done
+paste nrSNPsPerExonBefore.txt nrSNPsPerExonFiltered.txt > nrSNPsPerExon.txt
+echo -e "Interval\tBeforeFiltering\tAfterFiltering" > first.txt
+cat first.txt nrSNPsPerExon.txt > tmp && mv tmp nrSNPsPerExon.txt
+rm nrSNPsPerExonBefore.txt nrSNPsPerExonFiltered.txt first.txt
+
+#VCF thinning
+#first SNP per exon
+cat bed.txt | while read -r a b; do
+	awk -v a=$a -v b=$b 'a<=$2 && $2<=b' snpsF.txt | head -n 1 >> firstSNP.txt
+done
+cat headerF.txt firstSNP.txt > firstSNP.vcf
+gzip firstSNP.vcf
+#random SNP per exon
+cat bed.txt | while read -r a b; do
+	awk -v a=$a -v b=$b 'a<=$2 && $2<=b' snpsF.txt | sort -R > snpsF1.txt
+	head -n 1 snpsF1.txt >> randomSNP.txt
+done
+rm snpsF1.txt
+cat headerF.txt randomSNP.txt > randomSNP.vcf
+gzip randomSNP.vcf
+#thinning (i.e., one SNP in 100bp window)
+vcftools --gzvcf FILTEREDconcatenated.vcf.gz --thin 100 --recode --out thinned
+#nr thinned SNPs
+grep -v "^#" thinned.recode.vcf > snps_thin.txt
+mv thinned.recode.vcf thinned.vcf
+gzip thinned.vcf
+cat bed.txt | while read -r a b; do
+	awk -v a=$a -v b=$b 'a<=$2 && $2<=b' snps_thin.txt | wc -l >> nrSNPsPerExonThin.txt
+done
+sed -i '1i Thinned' nrSNPsPerExonThin.txt
+paste nrSNPsPerExon.txt nrSNPsPerExonThin.txt > tmp && mv tmp nrSNPsPerExon.txt
+
+#SNP statistics
+initial=$(wc -l < snps.txt)
+filtered=$(wc -l < snpsF.txt)
+onePerExon=$(wc -l < firstSNP.txt)
+thinned=$(wc -l < snps_thin.txt)
+echo -e "Initial\t${initial}\nFiltered\t${filtered}\nOnePerExon\t${onePerExon}\nThinned\t${thinned}" > SNPstat.txt
+rm bed.txt snps.txt snpsF.txt header.txt headerF.txt firstSNP.txt randomSNP.txt snps_thin.txt nrSNPsPerExonThin.txt
+
+#Prepare/select final VCF for Dsuite
+if [[ $SNPs =~ "thinning" ]]; then
+	cp thinned.vcf.gz Dsuite.vcf.gz
+elif [[ $SNPs =~ "first" ]]; then
+	cp firstSNP.vcf.gz Dsuite.vcf.gz
+elif [[ $SNPs =~ "random" ]]; then
+	cp randomSNP.vcf.gz Dsuite.vcf.gz
+else
+	echo "No valid option for SNP thinning provided. Exiting..." && exit 3
+fi
 
 # Run Dsuite
 # compile
 echo -e "\nRunning Dsuite..."
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	git clone https://github.com/millanek/Dsuite.git
-	#wget https://github.com/millanek/Dsuite/archive/60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
-	#unzip 60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
-	#mv Dsuite-* Dsuite
+	#git clone https://github.com/millanek/Dsuite.git
+	#IMPORTANT: if the analysis is not working with the most recent version of Dsuite, comment previous line and uncomment next three lines to get older version
+	wget https://github.com/millanek/Dsuite/archive/60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
+	unzip 60356e8493fa0bf1b85acea3be1b72df9dfb5881.zip
+	mv Dsuite-* Dsuite
 	cd Dsuite/
 	make -j2
 	cd ..
@@ -281,10 +348,11 @@ fi
 # BBAA
 echo -e "\nCreating BBAA..."
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	Dsuite/Build/Dsuite Dtrios -c -n gene_flow -t sptree.tre concatenated_bcf.vcf.gz SpeciesSet.txt
+	Dsuite/Build/Dsuite Dtrios -c -n gene_flow -t sptree.tre Dsuite.vcf.gz SpeciesSet.txt
 else
-	Dsuite Dtrios -c -n gene_flow -t sptree.tre concatenated_bcf.vcf.gz SpeciesSet.txt
+	Dsuite Dtrios -c -n gene_flow -t sptree.tre Dsuite.vcf.gz SpeciesSet.txt
 fi
+rm Dsuite.vcf.gz
 echo -e "\nCreating Fbranch...."
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	Dsuite/Build/Dsuite Fbranch sptree.tre SpeciesSet_gene_flow_tree.txt > SpeciesSet_gene_flow_Fbranch.txt
