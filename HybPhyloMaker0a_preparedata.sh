@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -283,7 +283,9 @@ else
 fi
 
 #Remove token
-rm token_header.txt
+if [[ $download =~ "yes" ]]; then
+	rm token_header.txt
+fi
 
 for i in $(cat renamelist.txt | cut -f1)
 do
