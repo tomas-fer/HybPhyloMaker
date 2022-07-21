@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -300,7 +300,11 @@ done
 
 # Prepare samples list
 cat renamelist.txt | cut -f1 > SamplesFileNames.txt
-cp renamelist.txt $path/00downloadinfo
+if [[ $download =~ "yes" ]]; then
+	cp renamelist.txt $path/00downloadinfo
+else
+	cp renamelist.txt $path
+fi
 rm renamelist.txt 
 cd ..
 cp -r 10rawreads $path
