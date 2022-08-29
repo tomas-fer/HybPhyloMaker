@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0c                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2022 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -50,7 +50,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Python (and its modules) are added later in the script
 	#module add python-2.7.6-gcc
 	#module add python27-modules-gcc
-	module add python-3.4.1-gcc
+	#module add python-3.4.1-gcc
 	module add newick-utils-13042016
 	module add R-3.4.3-gcc
 	#module add debian8-compat
@@ -399,6 +399,12 @@ fi
 sed -i.bak 's/XX/-/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 sed -i.bak2 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick
 
+#Check if OUTGROUP does exist in gene tree files
+if [ -z $(grep $OUTGROUP trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick) ]; then
+	echo -e "$OUTGROUP was not found in gene tree file. Exiting..."
+	exit 3
+fi
+
 if [[ $collapse -eq "0" ]];then
 	if [[ $mlbs =~ "yes" ]]; then
 		#Copy bootrapped gene tree files (if tree=RAxML or tree=FastTree and FastTreeBoot=yes)
@@ -622,9 +628,10 @@ if [[ $collapse -eq "0" ]];then
 				sed -i.bak2 's/_/YY/' concatenated.phylip
 				#Remove python3 module and load p4 module if on MetaCentrum
 				if [[ $PBS_O_HOST == *".cz" ]]; then
-					module rm python-3.4.1-gcc
+					#module rm python-3.4.1-gcc
 					#module add python-2.7.6-gcc
 					#module add python27-modules-gcc
+					module add debian8-compat
 					module add p4
 				elif [[ $HOSTNAME == compute-*-*.local ]]; then
 					module unload bioinformatics/anaconda3
@@ -634,6 +641,7 @@ if [[ $collapse -eq "0" ]];then
 				if [[ $PBS_O_HOST == *".cz" ]]; then
 					#on Metacentrum, p4 within 'combineboot.py' requires python 2
 					python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
+					module rm debian8-compat
 				else
 					#locally, p4 within 'combineboot.py' requires python 3
 					python3 ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
