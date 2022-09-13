@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *       Script 04b - Put exons to correct reading frame and translate          *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -50,8 +50,8 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	module add emboss-6.5.7
 	module add perl-5.10.1
-	module add python-3.4.1-gcc
-	module add debian8-compat
+	#module add python-3.4.1-gcc
+	#module add debian8-compat
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker4b is running on Hydra..."
 	#settings for Hydra
