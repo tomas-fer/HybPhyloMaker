@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 02a2 - Read mapping in parallel summary               *
-# *                                   v.1.8.0                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0a                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2022 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -115,7 +115,7 @@ cat *.fasta > consensus.fasta
 awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' consensus.fasta > tmp && mv tmp consensus.fasta
 mkdir -p $path/$type/30consensus
 if [[ $cp =~ "yes" ]]; then
-	mv consensus.fasta consensus_cpDNA.fasta
+	cp consensus.fasta consensus_cpDNA.fasta
 	cp consensus_cpDNA.fasta $path/$type/30consensus
 else
 	cp consensus.fasta $path/$type/30consensus
