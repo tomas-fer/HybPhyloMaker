@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2022 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -641,20 +641,22 @@ if [[ $collapse -eq "0" ]];then
 				if [[ $PBS_O_HOST == *".cz" ]]; then
 					#on Metacentrum, p4 within 'combineboot.py' requires python 2
 					python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
-					module rm debian8-compat
 				else
 					#locally, p4 within 'combineboot.py' requires python 3
 					python3 ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_withbootstrap.tre
 				fi
-				mv combinedSupportsTree.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDboot.tre
+				#rename the resulting tree (and discard possible errors comming from 'debian8-compat' module)
+				mv combinedSupportsTree.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDboot.tre 2>/dev/null
 				#Combine with bootstrap consensus tree
 				if [[ $PBS_O_HOST == *".cz" ]]; then
 					#on Metacentrum, p4 within 'combineboot.py' requires python 2
 					python ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDboot.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
+					module rm debian8-compat
 				else
 					#locally, p4 within 'combineboot.py' requires python 3
 					python3 ./combineboot.py Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDboot.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_bootmajorcons.tre
 				fi
+				#rename the resulting tree
 				mv combinedSupportsTree.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_mainANDbootANDcons.tre
 				echo
 			fi
