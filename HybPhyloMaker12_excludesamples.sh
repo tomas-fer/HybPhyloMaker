@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                         Script 12 - Exclude samples                          *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -294,7 +294,7 @@ if [[ $cp =~ "no" ]]; then
 	
 	if [[ $location == "1" ]]; then
 		#Add necessary module
-		module add python-3.4.1-intel
+		module add python-3.4.1-gcc
 		#Make a new folder for results
 		mkdir $path/$selalnpath
 	elif [[ $location == "2" ]]; then
