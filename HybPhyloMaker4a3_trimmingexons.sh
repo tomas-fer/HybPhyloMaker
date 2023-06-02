@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                          Script 4a3 - TrimmingExons                          *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -108,8 +108,8 @@ else
 	ls | grep '.mafft' > listOfMAFFTFiles.txt
 fi
 
-#make folder for results
-mkdir -p $path/$type/60mafft/trimmed
+#make folders for results
+mkdir -p $path/$type/60mafft/trimmed/
 mkdir -p $path/$type/60mafft/trimmed/html
 
 #PROCESS MAFFT FILES
@@ -120,59 +120,49 @@ for mafft in $(cat listOfMAFFTFiles.txt); do
 	calculating=$((calculating + 1))
 	echo -e "\t${mafft} ($calculating out of $numbermafft)"
 	echo ${mafft} >> warnings.txt
+	mafftname=`ls ${mafft} | cut -d'.' -f 1,2`
+	#change 'n's, 'N's and '?'s to '-' (to allow trimming on n, N and ?)
+	sed -i -e '/^>/!s/n/-/g' -e '/>/!s/N/-/g' -e '/>/!s/?/-/g' ${mafft}
 	#trimming (keep sequences even if only composed by gaps)
 	if [[ $noallgaps =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.1 -htmlout ${mafft}.noallgaps.html -noallgaps -keepseqs >/dev/null 2>> warnings.txt #remove positions with gaps only
-		mv ${mafft}.1 ${mafft}
+		trimal -in ${mafft} -out ${mafftname}.noallgaps -htmlout ${mafftname}.noallgaps.html -noallgaps -keepseqs >/dev/null 2>> warnings.txt #remove positions with gaps only
+		mv ${mafftname}.noallgaps ${mafft}
+		#removes everything after a gap (i.e., also sequence length introduced by trimAl)
+		sed -i 's/ .*//' ${mafft}
+		cp ${mafft} $path/$type/60mafft/trimmed/
+		cp ${mafftname}.noallgaps.html $path/$type/60mafft/trimmed/html
 	fi
 	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.2 -htmlout ${mafft}.gappyout.html -gappyout -keepseqs >/dev/null 2>> warnings.txt #remove gappy positions
-		mv ${mafft}.2 ${mafft}
+		trimal -in ${mafft} -out ${mafftname}.gappyout -htmlout ${mafftname}.gappyout.html -gappyout -keepseqs >/dev/null 2>> warnings.txt #remove gappy positions
+		mv ${mafftname}.gappyout ${mafft}
+		#removes everything after a gap (i.e., also sequence length introduced by trimAl)
+		sed -i 's/ .*//' ${mafft}
+		cp ${mafft} $path/$type/60mafft/trimmed/
+		cp ${mafftname}.gappyout.html $path/$type/60mafft/trimmed/html
 	fi
-	#change '-' to 'Q'
-	sed -i '/^>/!s/-/Q/g' ${mafft}
-	#change 'n' to '-' (to allow trimming on Ns)
-	sed -i '/^>/!s/n/-/g' ${mafft}
-	#second trimming (keep sequences even if only composed by gaps)
-	if [[ $noallgaps =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.3 -htmlout ${mafft}.noallgapsN.html -noallgaps -keepseqs >/dev/null 2>> warnings.txt #remove positions with gaps only
-		mv ${mafft}.3 ${mafft}
-	fi
-	if [[ $gappyout =~ "yes" ]]; then
-		trimal -in ${mafft} -out ${mafft}.4 -htmlout ${mafft}.gappyoutN.html -gappyout -keepseqs >/dev/null 2>> warnings.txt #remove gappy positions
-		mv ${mafft}.4 ${mafft}
-	fi
-	#change '-' back to 'n'
-	sed -i '/^>/!s/-/n/g' ${mafft}
-	#change 'Q' back to '-'
-	sed -i '/^>/!s/Q/-/g' ${mafft}
-	#removes everything after a gap (i.e., also sequence length introduced by trimAl)
-	sed -i 's/ .*//' ${mafft}
-	cp ${mafft} $path/$type/60mafft/trimmed
-	cp ${mafft}.*.html $path/$type/60mafft/trimmed/html
-	rm ${mafft}.*.html
+	rm ${mafftname}.*.html
 done
 echo -e "finished"
 
 #Remove empty files locally
 find . -name '*.mafft' -type f -empty -delete
 #Remove empty file in home dir
-find $path/$type/60mafft/trimmed/ -name '*.mafft' -type f -empty -delete
+find $path/$type/60mafft/trimmed -name '*.mafft' -type f -empty -delete
 
-#-----------------------CHANGE LEADING AND TAILING '-' TO '?'-----------------------
-#i.e. differentiate missing data from gaps
-echo -ne "\nChanging leading/tailing '-' in alignments..."
-for mafftfile in $(cat listOfMAFFTFiles.txt); do
-	#Removes line breaks from fasta file
-	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' $mafftfile > tmp && mv tmp $mafftfile
-	#Replace leading and tailing '-' by '?'
-	#sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
-	perl -pe 's/\G-|-(?=-*$)/?/g' $mafftfile > tmp && mv tmp $mafftfile
-	if [[ $cp =~ "yes" ]]; then
-		cp $mafftfile $path/$type/60mafft/trimmed
-	fi
-done
-echo -e "finished"
+# #-----------------------CHANGE LEADING AND TAILING '-' TO '?'-----------------------
+# #i.e. differentiate missing data from gaps
+# echo -ne "\nChanging leading/tailing '-' in alignments..."
+# for mafftfile in $(cat listOfMAFFTFiles.txt); do
+	# #Removes line breaks from fasta file
+	# awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' $mafftfile > tmp && mv tmp $mafftfile
+	# #Replace leading and tailing '-' by '?'
+	# #sed -i.bak -e ':a;s/^\(-*\)-/\1?/;ta' -e ':b;s/-\(-*\)$/?\1/;tb' $mafftfile
+	# perl -pe 's/\G-|-(?=-*$)/?/g' $mafftfile > tmp && mv tmp $mafftfile
+	# if [[ $cp =~ "yes" ]]; then
+		# cp $mafftfile $path/$type/60mafft/trimmed
+	# fi
+# done
+# echo -e "finished"
 
 #-----------------------CONCATENATE THE EXON ALIGNMENTS-----------------------
 if [[ $cp =~ "no" ]]; then
@@ -221,8 +211,12 @@ cp warnings.txt $path/$type/60mafft/trimmed
 
 #Copy log to home
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-cp ${logname}.log $path/$type/70concatenated_exon_alignments/trimmed
-
+if [[ $cp =~ "yes" ]]; then
+	cp ${logname}.log $path/$type/60mafft/trimmed
+else
+	cp ${logname}.log $path/$type/60mafft/trimmed
+	cp ${logname}.log $path/$type/70concatenated_exon_alignments/trimmed
+fi
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	#delete scratch
