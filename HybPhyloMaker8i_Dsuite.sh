@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                             Script 08i - Dsuite                              *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # *                  Roman Ufimov, Martha Kandziora & Tomas Fer                  *
 # *       Dept. of Botany, Charles University, Prague, Czech Republic, 2022      *
 # *                           tomas.fer@natur.cuni.cz                            *
@@ -51,7 +51,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add bcftools-1.11
 	module add vcftools-0.1.16
 	module unload python-2.6.6-gcc #avoid conflict with the next module
-	module add python36-modules-gcc
+	#module add python36-modules-gcc
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8i is running on Hydra..."
 	#settings for Hydra
@@ -345,6 +345,10 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	make -j2
 	cd ..
 fi
+
+#Set working python environment
+module unload python/3.7.7-gcc-8.3.0-t4loj4a
+module add python36-modules-gcc
 # BBAA
 echo -e "\nCreating BBAA..."
 if [[ $PBS_O_HOST == *".cz" ]]; then
