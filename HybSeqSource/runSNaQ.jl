@@ -3,9 +3,9 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: running SNaQ analysis on a set of gene trees
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0
+# v.1.8.0a
 # Called from HybPhyloMaker8l_SNaQ.sh
-# Requires 'julia'
+# Requires 'julia' and 'R'
 # Cite 'PhyloNetworks' (https://github.com/crsl4/PhyloNetworks.jl) when using this script!
 # Implemented by
 # Roman Ufimov & Tomas Fer, 2023
@@ -29,6 +29,8 @@ end
 println("nruns: ", nruns)
 
 import Pkg
+Pkg.build("RCall")
+Pkg.build("PhyloPlots")
 Pkg.add("PhyloNetworks")
 Pkg.add("PhyloPlots")
 Pkg.add("DataFrames")
