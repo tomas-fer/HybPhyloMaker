@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 08l - SNaQ network in PhyloNetworks                  *
-# *                                   v.1.8.0                                    *
+# *                                   v.1.8.0a                                   *
 # *                           Roman Ufimov & Tomas Fer                           *
 # * Dept. of Botany, Charles University, Prague, Czech Republic, 2023            *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -48,6 +48,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
+	module add r/4.0.0-gcc
 	module add julia
 	module add newick-utils-13042016
 	module add python36-modules-gcc #to add cairosvg
@@ -66,6 +67,8 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	cd workdir08j
 	#Add necessary modules
 	module load bioinformatics/anaconda3/5.1 #adds NewickUtilities
+	module load tools/R/3.4.1
+	#module load bioinformatics/newickutilities/0.0
 	#julia
 	#cairosvg
 else
