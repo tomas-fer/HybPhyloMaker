@@ -3,7 +3,7 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: running SNaQ analysis on a set of gene trees
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0a
+# v.1.8.0b
 # Called from HybPhyloMaker8l_SNaQ.sh
 # Requires 'julia' and 'R'
 # Cite 'PhyloNetworks' (https://github.com/crsl4/PhyloNetworks.jl) when using this script!
@@ -13,7 +13,7 @@
 #--------------------------------------------------------------------------------------------
 
 
-# This script can be run as (example for hmin=0, hmax=5 and 10 runs):
+# This script can be run as (example for outgroup defined in OUTGROUP, hmin=0, hmax=5 and 10 runs):
 # julia runSNaQ.jl "$OUTGROUP" 0 5 10
 
 length(ARGS) > 2 ||
