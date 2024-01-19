@@ -9,7 +9,7 @@
 #$ -S /bin/bash
 #$ -pe mthread 10
 #$ -q mThC.q
-#$ -l mres=2G,h_data=2G,h_vmem=2G
+#$ -l mres=16G,h_data=16G,h_vmem=16G
 #$ -cwd
 #$ -j y
 #$ -N HybPhyloMaker8l_SNaQ
@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 08l - SNaQ network in PhyloNetworks                  *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # *                           Roman Ufimov & Tomas Fer                           *
 # * Dept. of Botany, Charles University, Prague, Czech Republic, 2023            *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -63,8 +63,8 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	path=../$data
 	source=../HybSeqSource
 	#Make and enter work directory
-	mkdir -p workdir08j
-	cd workdir08j
+	mkdir -p workdir08l
+	cd workdir08l
 	#Add necessary modules
 	module load bioinformatics/anaconda3/5.1 #adds NewickUtilities
 	module load tools/R/3.4.1
@@ -179,7 +179,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data selection cp corrected update tree hstart hmax; do
+for set in data MISSINGPERCENT SPECIESPRESENCE selection cp corrected update tree hstart hmax; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 if [ ! -z "$selection" ]; then
