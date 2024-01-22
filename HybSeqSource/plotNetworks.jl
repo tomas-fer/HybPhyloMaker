@@ -1,0 +1,67 @@
+#!/usr/bin/env julia
+
+#--------------------------------------------------------------------------------------------
+# HybPhyloMaker: plotting phylogenetic networks using Julia
+# https://github.com/tomas-fer/HybPhyloMaker
+# v.1.8.0
+# Called from HybPhyloMaker8m2_PhyloNet_summary.sh
+# Requires 'julia' and 'R'
+# Tomas Fer, 2023
+# tomas.fer@natur.cuni.cz
+#--------------------------------------------------------------------------------------------
+
+
+# This script can be run as (example for outgroup defined in OUTGROUP):
+# julia plotNetworks.jl "$OUTGROUP"
+# without modifications plot phylogenetic networks in all files containing 'reti_' in their names
+# one network per file, in rich newick format (e.g., results of PhyloNet or SNaQ)
+
+outgroup = ARGS[1]
+println("Outgroup: ", outgroup)
+
+import Pkg
+Pkg.build("RCall")
+Pkg.build("PhyloPlots")
+Pkg.add("PhyloNetworks")
+Pkg.add("PhyloPlots")
+using PhyloNetworks
+using PhyloPlots
+using RCall
+
+#define suffix for network plots
+suffix = ".svg"
+#define string for unrooted plots
+unr = "_unrooted"
+#define string for rooted plots
+r = "_rooted"
+
+#Loop over results
+#get all the files containing 'reti_' in the current directory
+files = filter(x -> occursin("reti_", x), readdir())
+@info "Plotting unrooted networks"
+for file in files
+	#read the contents of the file into a variable with the same name as the file
+	eval(Meta.parse("net = readTopology(\"$file\")")) #read the network from file
+	imagefilename = "$file$unr$suffix"
+	println(file)
+	R"svg"(imagefilename, width=12, height=6)
+	R"par"(mar=[0.1,0.1,0.1,0.1])
+	plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+	R"dev.off()"
+end
+
+#Plot rooted networks - this fails if rooting is incompatible with hybridization node!
+@info "Plotting rooted networks"
+for file in files
+	#read the contents of the file into a variable with the same name as the file
+	eval(Meta.parse("net = readTopology(\"$file\")")) #read the network from file
+	imagefilename = "$file$r$suffix"
+	println(file)
+	#Reroot the network using outgroup
+	rootatnode!(net, outgroup)
+	R"svg"(imagefilename, width=12, height=6)
+	R"par"(mar=[0.1,0.1,0.1,0.1])
+	plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+	R"dev.off()"
+end
+@info "Plotting done"
