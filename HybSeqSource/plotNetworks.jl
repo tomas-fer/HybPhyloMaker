@@ -3,9 +3,10 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: plotting phylogenetic networks using Julia
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0
+# v.1.8.0a
 # Called from HybPhyloMaker8m2_PhyloNet_summary.sh
 # Requires 'julia' and 'R'
+# Install packages (PhyloNetworks, PhyloPlots, RCall, DataFrames, CSV, Distributed) before running
 # Tomas Fer, 2023
 # tomas.fer@natur.cuni.cz
 #--------------------------------------------------------------------------------------------
@@ -20,10 +21,6 @@ outgroup = ARGS[1]
 println("Outgroup: ", outgroup)
 
 import Pkg
-Pkg.build("RCall")
-Pkg.build("PhyloPlots")
-Pkg.add("PhyloNetworks")
-Pkg.add("PhyloPlots")
 using PhyloNetworks
 using PhyloPlots
 using RCall
