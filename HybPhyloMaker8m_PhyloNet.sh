@@ -11,14 +11,14 @@
 #$ -l mres=1G
 #$ -cwd
 #$ -j y
-#$ -N HybPhyloMaker8l_PhyloNet
-#$ -o HybPhyloMaker8l_PhyloNet.log
+#$ -N HybPhyloMaker8m_PhyloNet
+#$ -o HybPhyloMaker8m_PhyloNet.log
 
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
-# *                             Script 08m - PhyloNet                            *
-# *                                   v.1.8.0                                    *
+# *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
+# *                                   v.1.8.0a                                   *
 # *                                  Tomas Fer                                   *
 # * Dept. of Botany, Charles University, Prague, Czech Republic, 2023            *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -69,6 +69,11 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#julia
 	#cairosvg
 	#cpu=$NSLOTS
+	#Remove possible previously generated file for jobs
+	rm -f ../submitPhyloNetjobs.sh
+	#Create new 'submitPhyloNetjobs.sh' and make it executable
+	touch ../submitPhyloNetjobs.sh
+	chmod +x ../submitPhyloNetjobs.sh
 else
 	echo -e "\nHybPhyloMaker8m is running locally..."
 	#settings for local run
@@ -178,7 +183,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data selection cp corrected update tree hstart hmax; do
+for set in data MISSINGPERCENT SPECIESPRESENCE selection cp corrected update tree hstart hmax; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 if [ ! -z "$selection" ]; then
@@ -274,11 +279,22 @@ for pn in $(seq $hstart $hmax); do
 	echo -e "InferNetwork_MPL (gt0-gt${nrtrees1}) ${pn} -pl ${cpu} -di ${data1}_${pn}_reticulations.txt;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
 	echo -e "END;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
 	if [[ $update =~ "yes" ]]; then
-		cp PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet
+		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}
+		cp PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}
 	else
-		cp PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet
+		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/${pn}
+		cp PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/${pn}
 	fi
 done
+
+#Create new 'submitPhyloNetjobs.sh' and make it executable
+if [[ $update =~ "yes" ]]; then
+	touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/submitPhyloNetjobs.sh
+	chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/submitPhyloNetjobs.sh
+else
+	touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/submitPhyloNetjobs.sh
+	chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/submitPhyloNetjobs.sh
+fi
 
 #Create PhyloNet job files
 if [[ $location == "1" || $location == "2" ]]; then
@@ -355,10 +371,11 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'wget https://github.com/NakhlehLab/PhyloNet/releases/latest/download/PhyloNet.jar' >> PhyloNet_${pn}.sh
 		echo '#Copy PhyloNet NEXUS input file' >> PhyloNet_${pn}.sh
 		echo 'if [[ $update =~ "yes" ]]; then' >> PhyloNet_${pn}.sh
-		echo '  cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus .' >> PhyloNet_${pn}.sh
+		echo '  cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}/PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus .' >> PhyloNet_${pn}.sh
 		echo 'else' >> PhyloNet_${pn}.sh
-		echo '  cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus .' >> PhyloNet_${pn}.sh
+		echo '  cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/${pn}/PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus .' >> PhyloNet_${pn}.sh
 		echo 'fi' >> PhyloNet_${pn}.sh
+		echo '#Modify nr of CPUs to all available' >> PhyloNet_${pn}.sh
 		echo 'sed -i "s/pl 1/pl ${cpuavail}/" PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus' >> PhyloNet_${pn}.sh
 		echo '#Run PhyloNet' >> PhyloNet_${pn}.sh
 		echo 'java -Xmx${mem} -jar PhyloNet.jar PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus > ${data1}_${pn}_reticulations.txt' >> PhyloNet_${pn}.sh
@@ -371,9 +388,11 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'rm ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_nrgtrees.txt ${pn}_logliks.txt' >> PhyloNet_${pn}.sh
 		echo '#Copy results to home' >> PhyloNet_${pn}.sh
 		echo 'if [[ $update =~ "yes" ]]; then' >> PhyloNet_${pn}.sh
-		echo '  cp *.{networks,txt} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet' >> PhyloNet_${pn}.sh
+		echo '  mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}' >> PhyloNet_${pn}.sh
+		echo '  cp *.{networks,txt} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}' >> PhyloNet_${pn}.sh
 		echo 'else' >> PhyloNet_${pn}.sh
-		echo '  cp *.{networks,txt} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet' >> PhyloNet_${pn}.sh
+		echo '  mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/${pn}' >> PhyloNet_${pn}.sh
+		echo '  cp *.{networks,txt} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/${pn}' >> PhyloNet_${pn}.sh
 		echo 'fi' >> PhyloNet_${pn}.sh
 		echo '#Clean scratch/work directory' >> PhyloNet_${pn}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> PhyloNet_${pn}.sh
@@ -454,24 +473,3 @@ elif [[ $location == "1" ]]; then
 elif [[ $location == "0" ]]; then
 	echo -e "\nRun script HybPhyloMaker8m2 in order to summarize PhyloNet results...\n"
 fi
-
-#Copy log to home
-echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-if [[ $update =~ "yes" ]]; then
-	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet
-else
-	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet
-fi
-
-#Clean scratch/work directory
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	#delete scratch
-	if [[ ! $SCRATCHDIR == "" ]]; then
-		rm -rf $SCRATCHDIR/*
-	fi
-else
-	cd ..
-	rm -r workdir08m
-fi
-
-echo -e "\nHybPhyloMaker8m finished...\n"
