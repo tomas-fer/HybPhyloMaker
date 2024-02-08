@@ -3,13 +3,13 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: running SNaQ analysis on a set of gene trees
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0c
+# v.1.8.0d
 # Called from HybPhyloMaker8l_SNaQ.sh
 # Requires 'julia' and 'R'
 # Install packages (PhyloNetworks, PhyloPlots, RCall, DataFrames, CSV, Distributed) before running
 # Cite 'PhyloNetworks' (https://github.com/crsl4/PhyloNetworks.jl) when using this script!
 # Implemented by
-# Roman Ufimov & Tomas Fer, 2023
+# Roman Ufimov & Tomas Fer, 2024
 # tomas.fer@natur.cuni.cz
 #--------------------------------------------------------------------------------------------
 
@@ -114,21 +114,27 @@ R"dev.off()"
 y = DataFrame(Hmax = hm, NetScore = scores)
 CSV.write("scores.txt", y; delim='\t')
 
-#Plot rooted networks - this fails if rooting is incompatible with hybridization node!
-@info "Plotting rooted networks"
-for file in files
-	#extract the filename without the extension
-	name = splitext(file)[1]
-	#read the contents of the file into a variable with the same name as the file
-	eval(Meta.parse("const $name = readSnaqNetwork(\"$file\")")) #read the whole output
-	#put network to variable 'net'
-	eval(Meta.parse("net = $name"))
-	imagefilename = "$name$r$suffix"
-	println(name)
-	#Reroot the network using outgroup
-	rootatnode!(net, outgroup)
-	R"svg"(imagefilename, width=12, height=6)
-	R"par"(mar=[0.1,0.1,0.1,0.1])
-	plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
-	R"dev.off()"
+if outgroup != "test"
+	#Plot rooted networks - this fails if rooting is incompatible with hybridization node!
+	@info "Plotting rooted networks"
+	for file in files
+		#extract the filename without the extension
+		name = splitext(file)[1]
+		#read the contents of the file into a variable with the same name as the file
+		eval(Meta.parse("const $name = readSnaqNetwork(\"$file\")")) #read the whole output
+		#put network to variable 'net'
+		eval(Meta.parse("net = $name"))
+		imagefilename = "$name$r$suffix"
+		println(name)
+		#Reroot the network using outgroup
+		rootatnode!(net, outgroup)
+		R"svg"(imagefilename, width=12, height=6)
+		R"par"(mar=[0.1,0.1,0.1,0.1])
+		plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+		R"dev.off()"
+	end
+else
+	println("Outgroup was not set")
 end
+
+@info "Plotting done"
