@@ -3,11 +3,11 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: plotting phylogenetic networks using Julia
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0a
+# v.1.8.0b
 # Called from HybPhyloMaker8m2_PhyloNet_summary.sh
 # Requires 'julia' and 'R'
-# Install packages (PhyloNetworks, PhyloPlots, RCall, DataFrames, CSV, Distributed) before running
-# Tomas Fer, 2023
+# Install packages (PhyloNetworks, PhyloPlots, RCall) before running
+# Tomas Fer, 2024
 # tomas.fer@natur.cuni.cz
 #--------------------------------------------------------------------------------------------
 
@@ -47,18 +47,23 @@ for file in files
 	R"dev.off()"
 end
 
-#Plot rooted networks - this fails if rooting is incompatible with hybridization node!
-@info "Plotting rooted networks"
-for file in files
-	#read the contents of the file into a variable with the same name as the file
-	eval(Meta.parse("net = readTopology(\"$file\")")) #read the network from file
-	imagefilename = "$file$r$suffix"
-	println(file)
-	#Reroot the network using outgroup
-	rootatnode!(net, outgroup)
-	R"svg"(imagefilename, width=12, height=6)
-	R"par"(mar=[0.1,0.1,0.1,0.1])
-	plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
-	R"dev.off()"
+if outgroup != "test"
+	#Plot rooted networks - this fails if rooting is incompatible with hybridization node!
+	@info "Plotting rooted networks"
+	for file in files
+		#read the contents of the file into a variable with the same name as the file
+		eval(Meta.parse("net = readTopology(\"$file\")")) #read the network from file
+		imagefilename = "$file$r$suffix"
+		println(file)
+		#Reroot the network using outgroup
+		rootatnode!(net, outgroup)
+		R"svg"(imagefilename, width=12, height=6)
+		R"par"(mar=[0.1,0.1,0.1,0.1])
+		plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+		R"dev.off()"
+	end
+else
+	println("Outgroup was not set")
 end
+
 @info "Plotting done"
