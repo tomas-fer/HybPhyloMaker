@@ -19,9 +19,9 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 08l - SNaQ network in PhyloNetworks                  *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # *                           Roman Ufimov & Tomas Fer                           *
-# * Dept. of Botany, Charles University, Prague, Czech Republic, 2023            *
+# * Dept. of Botany, Charles University, Prague, Czech Republic, 2024            *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -47,6 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	. settings.cfg
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
+	export JULIA_DEPOT_PATH=/storage/$server/home/$LOGNAME/.julia
 	#Add necessary modules
 	module add r/4.0.0-gcc
 	module add julia
@@ -122,72 +123,6 @@ else
 	fi
 fi
 
-#Check necessary file
-echo -ne "\n\nTesting if input data are available..."
-if [[ $update =~ "yes" ]]; then
-	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-		echo -e "OK\n"
-	else
-		echo -e "no gene trees file found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
-		rm -d ../workdir08l 2>/dev/null
-		exit 3
-	fi
-else
-	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
-		echo -e "OK\n"
-	else
-		echo -e "no gene trees file found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
-		rm -d ../workdir08l 2>/dev/null
-		exit 3
-	fi
-fi
-
-#Test if folder for results exits
-if [[ $update =~ "yes" ]]; then
-	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08l 2>/dev/null
-		exit 3
-	fi
-else
-	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ' already exists. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08l 2>/dev/null
-		exit 3
-	fi
-fi
-if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir08l)" ]; then
-		echo -e "Directory 'workdir08l' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
-		rm -d ../workdir08l 2>/dev/null
-		exit 3
-	fi
-fi
-
-#Write log
-logname=HPM8l
-echo -e "HybPhyloMaker8l: SNaQ network in PhyloNetworks" > ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
-elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
-else
-	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
-fi
-echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-echo -e "\nSettings" >> ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
-fi
-for set in data MISSINGPERCENT SPECIESPRESENCE selection cp corrected update tree hstart hmax; do
-	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
-done
-if [ ! -z "$selection" ]; then
-	echo -e "\nList of excluded samples" >> ${logname}.log
-	cat $source/excludelist.txt >> ${logname}.log
-	echo >> ${logname}.log
-fi
-
 #Settings for collapsed and requisite selection
 if [[ $requisite =~ "yes" ]]; then
 	if [[ ! $collapse -eq "0" ]]; then
@@ -230,15 +165,137 @@ else
 	fi
 fi
 
-#Remove '.tre' from species tree name
-sptree=$(cut -d'.' -f1 <<< $astraltree)
-
-#Copy species tree
-echo -e "\nCopying trees..."
+#Check necessary file
+echo -ne "\n\nTesting if gene trees are available..."
 if [[ $update =~ "yes" ]]; then
-	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree} .
+	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile}" ]; then
+		echo -e "OK\n"
+	else
+		echo -e "no gene trees file called '${modif}${treefile}' found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
+		rm -d ../workdir08l 2>/dev/null
+		exit 3
+	fi
 else
-	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree} .
+	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile}" ]; then
+		echo -e "OK\n"
+	else
+		echo -e "no gene trees file called '${modif}${treefile}' found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
+		rm -d ../workdir08l 2>/dev/null
+		exit 3
+	fi
+fi
+
+if [[ $hstart -gt 0 ]]; then
+	hbefore=$((hstart - 1))
+	echo -ne "\n\nTesting if previous network is available (hstart was set to '${hstart}')..."
+	if [[ $update =~ "yes" ]]; then
+		if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ/net${hbefore}_${cpu}runs.out" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no SNaQ output file called 'net${hbefore}_${cpu}runs.out' found in '${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ'. Run first HybPhyloMaker8l_SNaQ.sh with 'hstart=$hbefore'. Exiting..."
+			rm -d ../workdir08l 2>/dev/null
+			exit 3
+		fi
+	else
+		if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ/net${hbefore}_${cpu}runs.out" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no SNaQ output file called 'net${hbefore}_${cpu}runs.out' found in '${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ'. Run first HybPhyloMaker8l_SNaQ.sh with 'hstart=$hbefore'. Exiting..."
+			rm -d ../workdir08l 2>/dev/null
+			exit 3
+		fi
+	fi
+else
+	echo -ne "\n\nTesting if species tree is available (hstart was set to '0')..."
+	if [[ $update =~ "yes" ]]; then
+		if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree}" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no Astral tree file called '${astraltree}' found in '${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral'. Run first HybPhyloMaker8a_astral.sh. Exiting..."
+			rm -d ../workdir08l 2>/dev/null
+			exit 3
+		fi
+	else
+		if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree}" ]; then
+			echo -e "OK\n"
+		else
+			echo -e "no Astral tree file called '${astraltree}' found in '${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral'. Run first HybPhyloMaker8a_astral.sh. Exiting..."
+			rm -d ../workdir08l 2>/dev/null
+			exit 3
+		fi
+	fi
+fi
+
+#Test if folder for results exits
+# if [[ $update =~ "yes" ]]; then
+	# if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ" ]; then
+		# echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ' already exists. Delete it or rename before running this script again. Exiting...\n"
+		# rm -d ../workdir08l 2>/dev/null
+		# exit 3
+	# fi
+# else
+	# if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ" ]; then
+		# echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ' already exists. Delete it or rename before running this script again. Exiting...\n"
+		# rm -d ../workdir08l 2>/dev/null
+		# exit 3
+	# fi
+# fi
+if [[ ! $location == "1" ]]; then
+	if [ "$(ls -A ../workdir08l)" ]; then
+		echo -e "Directory 'workdir08l' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
+		rm -d ../workdir08l 2>/dev/null
+		exit 3
+	fi
+fi
+
+#Write log
+logname=HPM8l
+echo -e "HybPhyloMaker8l: SNaQ network in PhyloNetworks" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data MISSINGPERCENT SPECIESPRESENCE selection cp corrected update tree hstart hmax; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
+#Download and modify species tree (i.e., starting tree for SNaQ if hstart set to 0)
+if [[ $hstart -eq 0 ]]; then
+	#Remove '.tre' from species tree name
+	sptree=$(cut -d'.' -f1 <<< $astraltree)
+	#Copy species tree
+	echo -e "\nCopying species tree..."
+	if [[ $update =~ "yes" ]]; then
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree} .
+	else
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree} .
+	fi
+	#Modify Astral tree (replace ' ' back to '-' and '_')
+	sed -i 's/ \([^ ]*\) / \1_/g' ${sptree}.tre #replace every second occurrence of ' ' by '_'
+	sed -i 's/ /-/g' ${sptree}.tre #replace all spaces by '-'
+	#Add a space at the end of the line
+	sed -i 's/$/ /' ${sptree}.tre
+	#Removing '_cpDNA' from names
+	sed -i.bak 's/_cpDNA//g' ${sptree}.tre
+	#Reroot Astral tree with $OUTGROUP (if set)
+	if [ ! -z "$OUTGROUP" ]; then
+		nw_reroot -s ${sptree}.tre $OUTGROUP > tmp && mv tmp ${sptree}.tre
+	fi
+	#Rename species tree input file
+	mv ${sptree}.tre sptree.tre
 fi
 
 #Copy gene trees (file with all gene trees)
@@ -256,17 +313,6 @@ else
 	fi
 fi
 
-#Modify Astral tree (replace ' ' back to '-' and '_')
-sed -i 's/ \([^ ]*\) / \1_/g' ${sptree}.tre #replace every second occurrence of ' ' by '_'
-sed -i 's/ /-/g' ${sptree}.tre #replace all spaces by '-'
-#Add a space at the end of the line
-sed -i 's/$/ /' ${sptree}.tre
-#Removing '_cpDNA' from names
-sed -i.bak 's/_cpDNA//g' ${sptree}.tre
-
-#Reroot Astral tree with $OUTGROUP
-nw_reroot -s ${sptree}.tre $OUTGROUP > tmp && mv tmp ${sptree}.tre
-
 #Modify labels in gene tree
 sed -i.bak 's/XX/-/g' $treefile
 sed -i.bak2 's/YY/_/g' $treefile
@@ -280,16 +326,30 @@ else
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ
 fi
 
-#Rename input files
+#Rename gene tree input file
 mv $treefile trees.newick
-mv ${sptree}.tre sptree.tre
+
+#Download last previous network (if hstart set to higher value than '0')
+if [[ $hstart -gt 0 ]]; then
+	hbefore=$((hstart - 1))
+	if [[ $update =~ "yes" ]]; then
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNaQ/net${hbefore}_${cpu}runs.out .
+	else
+		cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNaQ/net${hbefore}_${cpu}runs.out .
+	fi
+fi
+
+#Set OUTGROUP to 'test' in case no OUTGROUP defined (OUTGROUP has to be set for smooth julia processing)
+if [ -z "$OUTGROUP" ]; then
+	OUTGROUP=test
+fi
 
 #Compute SNaQ network
 echo -e "Computing SNaQ network...\n"
 cp $source/runSNaQ.jl .
 julia runSNaQ.jl "$OUTGROUP" $hstart $hmax $cpu > runSNaQ.log
 
-#Rename 
+#Rename resulting plot with scores
 mv Rplots.pdf NetworkScoresPlot.pdf
 #Create PDF from all SVG
 echo -e "Transforming SVG to PDF...\n"
