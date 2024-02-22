@@ -3,7 +3,7 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: running SNaQ analysis on a set of gene trees
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0d
+# v.1.8.0e
 # Called from HybPhyloMaker8l_SNaQ.sh
 # Requires 'julia' and 'R'
 # Install packages (PhyloNetworks, PhyloPlots, RCall, DataFrames, CSV, Distributed) before running
@@ -43,7 +43,6 @@ addprocs(nruns)
 genetrees = readMultiTopology("trees.newick");
 q,t = countquartetsintrees(genetrees);
 df = writeTableCF(q,t)
-using CSV
 CSV.write("tableCF.csv", df);
 raxmlCF = readTableCF(df);
 
@@ -127,11 +126,15 @@ if outgroup != "test"
 		imagefilename = "$name$r$suffix"
 		println(name)
 		#Reroot the network using outgroup
-		rootatnode!(net, outgroup)
-		R"svg"(imagefilename, width=12, height=6)
-		R"par"(mar=[0.1,0.1,0.1,0.1])
-		plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
-		R"dev.off()"
+		try
+			rootatnode!(net, outgroup)
+			R"svg"(imagefilename, width=12, height=6)
+			R"par"(mar=[0.1,0.1,0.1,0.1])
+			plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+			R"dev.off()"
+		catch e
+			println("Caught an exception for $name: ", e)
+		end
 	end
 else
 	println("Outgroup was not set")
