@@ -3,7 +3,7 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: plotting phylogenetic networks using Julia
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0b
+# v.1.8.0c
 # Called from HybPhyloMaker8m2_PhyloNet_summary.sh
 # Requires 'julia' and 'R'
 # Install packages (PhyloNetworks, PhyloPlots, RCall) before running
@@ -56,11 +56,15 @@ if outgroup != "test"
 		imagefilename = "$file$r$suffix"
 		println(file)
 		#Reroot the network using outgroup
-		rootatnode!(net, outgroup)
-		R"svg"(imagefilename, width=12, height=6)
-		R"par"(mar=[0.1,0.1,0.1,0.1])
-		plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
-		R"dev.off()"
+		try
+			rootatnode!(net, outgroup)
+			R"svg"(imagefilename, width=12, height=6)
+			R"par"(mar=[0.1,0.1,0.1,0.1])
+			plot(net, showgamma=true, tipcex=0.6, tipoffset = 0.2, style = :fulltree);
+			R"dev.off()"
+		catch e
+			println("Caught an exception for $name: ", e)
+		end
 	end
 else
 	println("Outgroup was not set")
