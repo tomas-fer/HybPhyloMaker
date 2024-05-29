@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                           Script 09 - Update trees                           *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0c                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -42,8 +42,9 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
-	module add debian10-compat
+	module add debian11/compat #necessary for R-3.4.3
 	module add R-3.4.3-gcc
+	#module add debian10-compat
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
