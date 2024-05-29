@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.8.0a                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0b                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -45,9 +45,10 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add fasttree-2.1.8
 	module add raxml-8.2.4
 	module add perl-5.10.1
+	module add debian11/compat #necessary for R-3.4.3 
 	module add R-3.4.3-gcc
 	module add python-3.4.1-gcc
-	module add debian8-compat #for proper working of 'python3' on some computing nodes
+	#module add debian8-compat #for proper working of 'python3' on some computing nodes
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
