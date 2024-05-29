@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08a - Astral species tree                       *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -52,6 +52,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#module add python27-modules-gcc
 	#module add python-3.4.1-gcc
 	module add newick-utils-13042016
+	module add debian11/compat #necessary for R-3.4.3
 	module add R-3.4.3-gcc
 	#module add debian8-compat
 	#module add p4 #do not load before running 'python3 AMAS.py'
