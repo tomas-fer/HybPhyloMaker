@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08h - neighbour network in R                      *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -41,17 +41,18 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
-	module add gcc-5.3.0
-	unset LD_LIBRARY_PATH
-	module add R-3.4.3-gcc
-	module add debian10/compat #necessary for R-3.4.3
+	module add r/4.4.0-gcc-10.2.1-ssuwpvb
+	#module add gcc-5.3.0 #necessary for R-3.4.3
+	#unset LD_LIBRARY_PATH #necessary for R-3.4.3
+	#module add R-3.4.3-gcc
+	#module add debian10/compat #necessary for R-3.4.3
 	#module add debian9-compat
 	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker8h is running on Hydra..."
 	#settings for Hydra
@@ -200,18 +201,36 @@ fi
 #Compute NeighbourNetwork using phangorn
 echo -e "Computing NeighbourNetwork for concatenated dataset...\n"
 mv concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.fasta file.fasta
-R -q -e "library(phangorn);a<-read.phyDat('file.fasta',format='fasta',type='DNA');m<-dist.hamming(a);nnet<-neighborNet(m);write.nexus.networx(nnet,file='n.nex')" >> R.log 2>&1
+R -q -e "library(phangorn);a<-read.phyDat('file.fasta',format='fasta',type='DNA');m<-dist.hamming(a);nnet<-neighborNet(m);write.nexus.networx(nnet,file='n.nex');a=8;pdf('net.pdf');par(mar=c(a,a,a,a),xpd=T);plot(nnet,cex=0.3,tip.color='firebrick4',edge.width=0.3,edge.lty=1,direction='axial');dev.off()" >> R.log 2>&1
 mv n.nex NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex
-
+#Crop white margins in PDF using GhostScript
+module add ghostscript
+gs -o null -sDEVICE=bbox net.pdf 2>out #reports crop box coordinates
+#take the four numbers and add/subtract a value ('add')
+add=10
+crop1=$(grep HiRes out | cut -d' ' -f2) #left margin
+crop1x=$(echo "$crop1 - $add" | bc)
+crop2=$(grep HiRes out | cut -d' ' -f3) #bottom margin
+crop2x=$(echo "$crop2 - $add" | bc)
+crop3=$(grep HiRes out | cut -d' ' -f4) #right margin
+crop3x=$(echo "$crop3 + $add" | bc)
+crop4=$(grep HiRes out | cut -d' ' -f5) #upper margin
+crop4x=$(echo "$crop4 + $add" | bc)
+crop=$(echo $crop1x $crop2x $crop3x $crop4x)
+gs -o netcrop.pdf -sDEVICE=pdfwrite -dAutoRotatePages=/None -dUseCropBox=true -c "[/CropBox [$crop] /PAGES pdfmark" -f net.pdf
+mv net.pdf NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.pdf
+mv netcrop.pdf NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_cropped.pdf
 #Removing '_cpDNA' from names in network
 sed -i.bak 's/_cpDNA//g' NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex
 
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
 	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/NeighbourNetwork
+	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}*.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/NeighbourNetwork
 	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/NeighbourNetwork
 else
 	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/NeighbourNetwork
+	cp NeighbourNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}*.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/NeighbourNetwork
 	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/NeighbourNetwork
 fi
 
