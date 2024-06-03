@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 05b - MAFFT and FastTree for paralogs                 *
-# *                                   v.1.6.7                                    *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2020 *
+# *                                   v.1.8.0a                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -39,7 +39,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
@@ -72,6 +72,26 @@ else
 	mkdir -p workdir05b
 	cd workdir05b
 fi
+
+#Write log
+logname=HPM5b
+echo -e "HybPhyloMaker5b: MAFFT and FastTree for paralogs after ParalogWizard" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data cp corrected MISSINGPERCENT SPECIESPRESENCE FastTreeBoot; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+
 #Setting for the case when working with cpDNA
 if [[ $cp =~ "yes" ]]; then
 	echo -en "Working with cpDNA"
@@ -182,6 +202,9 @@ done
 cat *fast.tre > allOPtrees.tre
 cp allOPtrees.tre $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/OPtrees
 
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/${alnpathselected}${MISSINGPERCENT}/deleted_above${MISSINGPERCENT}/OPtrees
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -287,6 +310,8 @@ fi
 #Remove 'debian8-compat' module if on MetaCentrum, otherwise R packages are not correctly loaded
 if [[ $location == "1" ]]; then
 	module rm debian8-compat
+	module add r/4.4.0-gcc-10.2.1-ssuwpvb
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 fi
 #Copy script
 cp $source/tree_props.r .
