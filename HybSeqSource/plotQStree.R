@@ -1,12 +1,12 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: plotting tree after Quartet Sampling
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0a
+# v.1.8.0b
 # Called from HybPhyloMaker8k_quartetsampling.sh
 # Requires 'phytools' under R
 # With function 'node.support' from package 'phyloch' (by Christoph Heibl)
-# Cite 'phytools' and 'phyloch' when using this script!
-# Tomas Fer, 2021
+# Cite 'ape' and 'phyloch' when using this script!
+# Tomas Fer, 2024
 # tomas.fer@natur.cuni.cz
 #--------------------------------------------------------------------------------------------
 
@@ -133,16 +133,16 @@ function(x, transfer, cutoff = 0, digits, mode = "numbers", font = 2, pos = "pre
 
 #--------------------------------------------------------------------------------------------
 #Load library
-library(phytools) #for improved tree reading
+library(ape) #for imp roved tree reading
 #Read arguments from command line (to pass outgroup name)
 args <- commandArgs()
 outgroup <- args[5]
 #Read modified tree with 'qc' values (used for colouring the nodes)
-treeqc<-read.newick("RESULT.labeled.tre.qc.modif")
+treeqc<-read.tree("RESULT.labeled.tre.qc.modif")
 #Root tree (edgelabel=T for correct labels according to Czech et al.)
 treeqc<-root(treeqc, edgelabel=T, outgroup)
 #Read modified tree with all three supprt values (qc/qd/qi)
-tree<-read.newick("RESULT.labeled.tre.figtree.modif.nwk")
+tree<-read.tree("RESULT.labeled.tre.figtree.modif.nwk")
 tree<-root(tree, edgelabel=T, outgroup)
 
 pdf(file="QS.pdf",width=12,height=10)
