@@ -18,8 +18,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.8.0a                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0b                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -41,7 +41,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	raxmlseq=raxmlHPC
@@ -216,7 +216,6 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '#$ -o RAxML_for_'"${group}"'.log' >> ${group}.sh
 		echo '#Complete path and set configuration for selected location' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
-		echo '  . /packages/run/modules-2.0/init/bash' >> ${group}.sh
 		echo '  #Add necessary modules' >> ${group}.sh
 		echo '  module add raxml-8.2.4' >> ${group}.sh
 		echo '  module add perl-5.10.1' >> ${group}.sh
@@ -452,7 +451,9 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  fi' >> ${group}.sh
 		echo 'done' >> ${group}.sh
 		echo 'cp raxml'"$group"'.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
-		echo 'cp bootstop_summary_'"$group"'.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
+		echo 'if [[ $bootstop == "yes" ]]; then' >> ${group}.sh
+		echo '  cp bootstop_summary_'"$group"'.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML' >> ${group}.sh
+		echo 'fi' >> ${group}.sh
 		echo '#Clean scratch/work directory' >> ${group}.sh
 		echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${group}.sh
 		echo '  #delete scratch' >> ${group}.sh
