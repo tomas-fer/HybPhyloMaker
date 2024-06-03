@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=1:0:0
+#PBS -l walltime=4:0:0
 #PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
 #PBS -N Rpackages_setup
@@ -9,22 +9,23 @@
 # ********************************************************************************
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
-# *                 Script 0c - Setup R packages on Metacentrum                  *
-# *                                   v.1.8.0c                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                Script 0c - Setup R-4.4 packages on Metacentrum               *
+# *                                   v.1.8.0d                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 #Download working versions of specific packages and install them to personal library
-#ape 5.0 (IMPORTANT, v 3.4 is not compatible with HybPhyloMaker)
-#data.table 1.9.6
-#phytools 0.5-20
-#seqinr 3.1-3
-#openxlsx 4.0.0
-#phangorn 2.5.5 (this works also with R 3.5 and lower)
-#BiocManager 1.30.14 (for installation of Bioconductor packages like treeio)
-#treeio 1.4.3 (from Bioconductor, this works with R 3.4)
-#gplots 3.0.1.2 (this works with R 3.4)
+#ape 5.8 (necessary for phangorn 3.0.0)
+#data.table 1.15.4
+#phytools 2.1-1
+#seqinr 4.2-36
+#openxlsx 4.2.5.2
+#phangorn 3.0.0 (developmental version from GitHub)
+#BiocManager 1.30.23 (for installation of Bioconductor packages like treeio)
+#treeio 1.28.0 (from Bioconductor)
+#gplots 3.1.3.1
+#all other package are required for smooth installation of these main packages
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	echo -e "\nScript HybPhyloMaker0c is running on Metacentrum..."
@@ -40,116 +41,127 @@ cp $PBS_O_WORKDIR/settings.cfg .
 . settings.cfg
 
 #Add necessary modules
-module add R-3.4.3-gcc
+module add r/4.4.0-gcc-10.2.1-ssuwpvb
 
 #Use this command before running R in HybPhyloMaker scripts
-export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 
-#Get ape 3.5 and other R packages
+#Get R packages
 echo -e "\nDownloading R packages..."
-wget https://cran.r-project.org/src/contrib/Archive/ape/ape_5.0.tar.gz
-wget https://cran.r-project.org/src/contrib/Archive/data.table/data.table_1.9.6.tar.gz
-wget https://cran.r-project.org/src/contrib/Archive/phytools/phytools_0.5-20.tar.gz
-wget https://cran.r-project.org/src/contrib/Archive/seqinr/seqinr_3.1-3.tar.gz
-wget https://cran.r-project.org/src/contrib/Archive/openxlsx/openxlsx_4.0.0.tar.gz
-wget https://cran.r-project.org/src/contrib/Archive/quadprog/quadprog_1.5-7.tar.gz #required by phangorn
-wget https://cran.r-project.org/src/contrib/Archive/igraph/igraph_1.2.5.tar.gz #required by phangorn
-wget https://cran.r-project.org/src/contrib/Archive/fastmatch/fastmatch_1.1-0.tar.gz #required by phangorn
-wget https://cran.r-project.org/src/contrib/Archive/BiocManager/BiocManager_1.30.14.tar.gz #necessary for treeio on Bioconductor
-wget https://cran.r-project.org/src/contrib/Archive/rvcheck/rvcheck_0.1.7.tar.gz #required by treeio
-wget https://cran.r-project.org/src/contrib/Archive/tidytree/tidytree_0.3.3.tar.gz #required by treeio
-wget https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.4.10.tar.gz #required by treeio
-wget https://cran.r-project.org/src/contrib/Archive/bitops/bitops_1.0-6.tar.gz #required by gplots
-wget https://cran.r-project.org/src/contrib/Archive/gdata/gdata_2.17.0.tar.gz #required by gplots
-wget https://cran.r-project.org/src/contrib/Archive/caTools/caTools_1.17.1.4.tar.gz #required by gplots
-wget https://cran.r-project.org/src/contrib/isoband_0.2.5.tar.gz #required by ggplot2
+wget https://cran.r-project.org/src/contrib/lattice_0.22-6.tar.gz #required for ape
+wget https://cran.r-project.org/src/contrib/nlme_3.1-164.tar.gz #required for ape
+wget https://cran.r-project.org/src/contrib/Rcpp_1.0.12.tar.gz #required for ape
+wget https://cran.r-project.org/src/contrib/digest_0.6.35.tar.gz #required for ape
+wget https://cran.r-project.org/src/contrib/ape_5.8.tar.gz
+wget https://cran.r-project.org/src/contrib/data.table_1.15.4.tar.gz
+wget https://cran.r-project.org/src/contrib/maps_3.4.2.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/MASS_7.3-60.2.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/clusterGeneration_1.3.8.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/coda_0.19-4.1.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/combinat_0.0-8.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/iterators_1.0.14.tar.gz #required for doParallel
+wget https://cran.r-project.org/src/contrib/codetools_0.2-20.tar.gz #required for foreach
+wget https://cran.r-project.org/src/contrib/foreach_1.5.2.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/doParallel_1.0.17.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/Matrix_1.7-0.tar.gz #required for expm
+wget https://cran.r-project.org/src/contrib/expm_0.999-9.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/mnormt_2.1.1.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/numDeriv_2016.8-1.1.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/optimParallel_1.0-2.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/remotes_2.5.0.tar.gz
+wget https://cran.r-project.org/src/contrib/BiocManager_1.30.23.tar.gz
+#wget https://klausvigo.r-universe.dev/bin/linux/noble/4.4/src/contrib/phangorn_3.0.0.0.tar.gz #this version not working on MetaCentrum, see below
+wget https://cran.r-project.org/src/contrib/scatterplot3d_0.3-44.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/fastmatch_1.1-4.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/cli_3.6.2.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/glue_1.7.0.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/rlang_1.1.3.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/lifecycle_1.0.4.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/gtable_0.3.5.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/isoband_0.2.7.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/mgcv_1.9-1.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/farver_2.1.2.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/labeling_0.4.3.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/colorspace_2.1-0.tar.gz #required for munsell
+wget https://cran.r-project.org/src/contrib/munsell_0.5.1.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/R6_2.5.1.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/RColorBrewer_1.1-3.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/viridisLite_0.4.2.tar.gz #required for scales
+wget https://cran.r-project.org/src/contrib/scales_1.3.0.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/fansi_1.0.6.tar.gz #required for pillar
+wget https://cran.r-project.org/src/contrib/magrittr_2.0.3.tar.gz #required for pillar
+wget https://cran.r-project.org/src/contrib/vctrs_0.6.5.tar.gz #required for pillar
+wget https://cran.r-project.org/src/contrib/utf8_1.2.4.tar.gz  #required for pillar
+wget https://cran.r-project.org/src/contrib/pillar_1.9.0.tar.gz  #required for ggplot2
+wget https://cran.r-project.org/src/contrib/tibble_3.2.1.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/withr_3.0.0.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/ggplot2_3.5.1.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/ggseqlogo_0.2.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/igraph_2.0.3.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/quadprog_1.5-8.tar.gz #required for phytools
+wget https://cran.r-project.org/src/contrib/phytools_2.1-1.tar.gz
+wget https://cran.r-project.org/src/contrib/pixmap_0.4-13.tar.gz
+wget https://cran.r-project.org/src/contrib/sp_2.1-4.tar.gz
+wget https://cran.r-project.org/src/contrib/RcppArmadillo_0.12.8.4.0.tar.gz
+wget https://cran.r-project.org/src/contrib/ade4_1.7-22.tar.gz #required for seqinr
+wget https://cran.r-project.org/src/contrib/segmented_2.1-0.tar.gz #required for seqinr
+wget https://cran.r-project.org/src/contrib/seqinr_4.2-36.tar.gz
+wget https://cran.r-project.org/src/contrib/stringi_1.8.4.tar.gz #required for openxlsx
+wget https://cran.r-project.org/src/contrib/zip_2.3.1.tar.gz #required for openxlsx
+wget https://cran.r-project.org/src/contrib/openxlsx_4.2.5.2.tar.gz
+wget https://cran.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz #required for dplyr
+wget https://cran.r-project.org/src/contrib/dplyr_1.1.4.tar.gz #required for treeio
+wget https://cran.r-project.org/src/contrib/lazyeval_0.2.2.tar.gz #required for tidytree
+wget https://cran.r-project.org/src/contrib/fs_1.6.4.tar.gz #required for yulab.utils
+wget https://cran.r-project.org/src/contrib/fastmap_1.2.0.tar.gz #required for cachem
+wget https://cran.r-project.org/src/contrib/cachem_1.1.0.tar.gz #required for memoise
+wget https://cran.r-project.org/src/contrib/memoise_2.0.1.tar.gz #required for yulab.utils
+wget https://cran.rstudio.com/src/contrib/yulab.utils_0.1.4.tar.gz #required for treeio
+wget https://cran.r-project.org/src/contrib/purrr_1.0.2.tar.gz #required for tidyr
+wget https://cran.r-project.org/src/contrib/stringr_1.5.1.tar.gz #required for tidyr
+wget https://cran.r-project.org/src/contrib/tidyr_1.3.1.tar.gz #required for tidytree
+wget https://cran.r-project.org/src/contrib/tidytree_0.4.6.tar.gz #required for treeio
+wget https://www.bioconductor.org/packages/release/bioc/src/contrib/treeio_1.28.0.tar.gz
+wget https://cran.r-project.org/src/contrib/gtools_3.9.5.tar.gz #required for gplots
+wget https://cran.r-project.org/src/contrib/bitops_1.0-7.tar.gz #required for caTools
+wget https://cran.r-project.org/src/contrib/caTools_1.18.2.tar.gz #required for gplots
+wget https://cran.r-project.org/src/contrib/KernSmooth_2.23-24.tar.gz #required for gplots
+wget https://cran.r-project.org/src/contrib/gplots_3.1.3.1.tar.gz
 
 #Install packages to personal (writable) library
-mkdir -p /storage/$server/home/$LOGNAME/Rpackages
-for package in $(ls *.tar.gz); do
+mkdir -p /storage/$server/home/$LOGNAME/Rpackages44
+packages=( lattice nlme Rcpp digest ape data.table maps MASS clusterGeneration coda combinat iterators codetools foreach doParallel Matrix expm mnormt numDeriv optimParallel remotes BiocManager )
+for package in "${packages[@]}"; do
 	echo -e "\nInstalling $package..."
-	R CMD INSTALL $package -l /storage/$server/home/$LOGNAME/Rpackages
+	R CMD INSTALL ${package}_* -l /storage/$server/home/$LOGNAME/Rpackages44
 done
 
-#instal 'phangorn'
-wget https://cran.r-project.org/src/contrib/Archive/phangorn/phangorn_2.5.5.tar.gz
-R CMD INSTALL phangorn_2.5.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
+#Now install developmental version of phangorn 3.0.0
+R -q -e "library(BiocManager);BiocManager::install('Biostrings')"
+R -q -e "library(remotes);remotes::install_github('KlausVigo/phangorn')"
 
-#install 'ellipsis'
-wget https://cran.r-project.org/src/contrib/Archive/ellipsis/ellipsis_0.3.1.tar.gz
-R CMD INSTALL ellipsis_0.3.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+packages2=( scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree treeio gtools bitops caTools KernSmooth gplots)
 
-#install 'Rcpp'
-wget https://cran.r-project.org/src/contrib/Archive/Rcpp/Rcpp_1.0.1.tar.gz
-R CMD INSTALL Rcpp_1.0.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
+for package in "${packages2[@]}"; do
+	echo -e "\nInstalling $package..."
+	R CMD INSTALL ${package}* -l /storage/$server/home/$LOGNAME/Rpackages44
+done
 
-#install 'glue'
-wget https://cran.r-project.org/src/contrib/Archive/glue/glue_1.4.1.tar.gz
-R CMD INSTALL glue_1.4.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
-
-#install 'pillar'
-wget https://cran.r-project.org/src/contrib/Archive/pillar/pillar_1.3.1.tar.gz
-R CMD INSTALL pillar_1.3.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by tibble
-
-#install 'tibble'
-wget https://cran.r-project.org/src/contrib/Archive/tibble/tibble_2.1.3.tar.gz
-R CMD INSTALL tibble_2.1.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
-
-#install 'tidyselect'
-wget https://cran.r-project.org/src/contrib/Archive/tidyselect/tidyselect_0.2.5.tar.gz
-R CMD INSTALL tidyselect_0.2.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by dplyr
-
-#install 'dplyr'
-wget https://cran.r-project.org/src/contrib/Archive/dplyr/dplyr_0.8.5.tar.gz #required by rlang
-R CMD INSTALL dplyr_0.8.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'treeio'
-wget https://www.bioconductor.org/packages/3.7/bioc/src/contrib/treeio_1.4.3.tar.gz
-R CMD INSTALL treeio_1.4.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
-
-#instal 'gplots'
-wget https://cran.r-project.org/src/contrib/Archive/gplots/gplots_3.0.1.2.tar.gz
-R CMD INSTALL gplots_3.0.1.2.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #this only works once the previous packages are installed
-
-#instal 'reshape'
-wget https://cran.r-project.org/src/contrib/Archive/reshape/reshape_0.8.8.tar.gz
-R CMD INSTALL reshape_0.8.8.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'reshape2'
-wget https://cran.r-project.org/src/contrib/reshape2_1.4.4.tar.gz
-R CMD INSTALL reshape2_1.4.4.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'ggplot2'
-wget https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.3.5.tar.gz
-R CMD INSTALL ggplot2_3.3.5.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'plyr'
-wget https://cran.r-project.org/src/contrib/Archive/plyr/plyr_1.8.6.tar.gz
-R CMD INSTALL plyr_1.8.6.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'farver'
-wget https://cran.r-project.org/src/contrib/farver_2.1.0.tar.gz
-R CMD INSTALL farver_2.1.0.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
-
-#instal 'lifecycle'
-wget https://cran.r-project.org/src/contrib/lifecycle_1.0.1.tar.gz
-R CMD INSTALL lifecycle_1.0.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
-
-#instal 'munsell'
-wget https://cran.r-project.org/src/contrib/munsell_0.5.0.tar.gz
-R CMD INSTALL munsell_0.5.0.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by scales
-
-#instal 'scales'
-wget https://cran.r-project.org/src/contrib/Archive/scales/scales_1.1.1.tar.gz
-R CMD INSTALL scales_1.1.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
-
-#instal 'getopt'
-wget https://cran.r-project.org/src/contrib/getopt_1.20.3.tar.gz
-R CMD INSTALL getopt_1.20.3.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages #required by optparse
-
-#instal 'optparse'
-wget https://cran.r-project.org/src/contrib/optparse_1.7.1.tar.gz
-R CMD INSTALL optparse_1.7.1.tar.gz -l /storage/$server/home/$LOGNAME/Rpackages
+#Check R packages
+echo -e "\n**************************************************************"
+echo -e "Checking R packages"
+for Rpackage in ape seqinr data.table openxlsx phytools phangorn treeio gplots; do
+	R -q -e "aa <- file('Rtest', open='wt'); sink(aa, type='message'); require($Rpackage); sink(type='message'); close(aa)" > /dev/null
+	if grep -Fq "no package called" Rtest; then
+		echo -e "R package $Rpackage...not found"
+	elif grep -Fq "Error" Rtest; then
+		echo -e "R package $Rpackage...unable to load"
+	else
+		echo -e "R package $Rpackage...OK"
+	fi
+done
+rm Rtest
+echo -e "**************************************************************"
 
 #Delete scratch
 if [[ $PBS_O_HOST == *".cz" ]]; then
