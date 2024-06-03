@@ -1,8 +1,8 @@
 #--------------------------------------------------------------------------------------------
 # HybPhyloMaker: draw phylogenetic tree with pie charts based on 'ASTRAL -t 4'
 # https://github.com/tomas-fer/HybPhyloMaker
-# v.1.8.0
-# Tomas Fer, 2021
+# v.1.8.0a
+# Tomas Fer, 2024
 # tomas.fer@natur.cuni.cz
 #--------------------------------------------------------------------------------------------
 
@@ -25,9 +25,9 @@ tree <- x@phylo
 
 #Plot/save the tree (modify 'adj' and 'cex' values according to your needs)
 pdf("tree.pdf")
-par(lty = "blank") #no lines in pie charts
 scaling = 0.27*((1/length(tree$tip.label))*100) #this should automatically scale tip label according to the number of tips
 if(scaling > 1){scaling = 1} # set scaling to '1' if too few tips
 plot(tree, cex = scaling, label.offset = 1)
+par(lty = "blank") #no lines in pie charts
 nodelabels(pie = pc, adj = c(-0.2, 0.5), piecol = c("blue","red","green"), cex = 0.4)
 dev.off()
