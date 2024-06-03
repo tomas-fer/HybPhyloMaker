@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                   Script 06b - FastTree gene tree building                   *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -38,19 +38,20 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add fasttree-2.1.8
 	module add raxml-8.2.4
 	module add perl-5.10.1
-	module add debian11/compat #necessary for R-3.4.3 
-	module add R-3.4.3-gcc
+	#module add r/4.4.0-gcc-10.2.1-ssuwpvb #added later due to conflict fasttree module
+	#module add debian11/compat #necessary for R-3.4.3 
+	#module add R-3.4.3-gcc
 	module add python-3.4.1-gcc
 	#module add debian8-compat #for proper working of 'python3' on some computing nodes
 	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker6b is running on Hydra..."
 	#settings for Hydra
@@ -295,6 +296,7 @@ fi
 #Remove 'debian8-compat' module if on MetaCentrum, otherwise R packages are not correctly loaded
 if [[ $location == "1" ]]; then
 	module rm debian8-compat
+	module add r/4.4.0-gcc-10.2.1-ssuwpvb
 fi
 #Copy script
 cp $source/tree_props.r .
