@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 0c - Setup R-4.4 packages on Metacentrum               *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -49,7 +49,7 @@ export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 #Get R packages
 echo -e "\nDownloading R packages..."
 wget https://cran.r-project.org/src/contrib/lattice_0.22-6.tar.gz #required for ape
-wget https://cran.r-project.org/src/contrib/nlme_3.1-164.tar.gz #required for ape
+wget https://cran.r-project.org/src/contrib/nlme_3.1-165.tar.gz #required for ape
 wget https://cran.r-project.org/src/contrib/Rcpp_1.0.12.tar.gz #required for ape
 wget https://cran.r-project.org/src/contrib/digest_0.6.35.tar.gz #required for ape
 wget https://cran.r-project.org/src/contrib/ape_5.8.tar.gz
@@ -75,7 +75,7 @@ wget https://cran.r-project.org/src/contrib/scatterplot3d_0.3-44.tar.gz #require
 wget https://cran.r-project.org/src/contrib/fastmatch_1.1-4.tar.gz #required for phytools
 wget https://cran.r-project.org/src/contrib/cli_3.6.2.tar.gz #required for ggplot2
 wget https://cran.r-project.org/src/contrib/glue_1.7.0.tar.gz #required for ggplot2
-wget https://cran.r-project.org/src/contrib/rlang_1.1.3.tar.gz #required for ggplot2
+wget https://cran.r-project.org/src/contrib/rlang_1.1.4.tar.gz #required for ggplot2
 wget https://cran.r-project.org/src/contrib/lifecycle_1.0.4.tar.gz #required for ggplot2
 wget https://cran.r-project.org/src/contrib/gtable_0.3.5.tar.gz #required for ggplot2
 wget https://cran.r-project.org/src/contrib/isoband_0.2.7.tar.gz #required for ggplot2
