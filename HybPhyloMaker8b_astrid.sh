@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -541,8 +541,8 @@ if [[ $collapse -eq "0" ]];then
 					#module rm python-3.4.1-gcc
 					#module add python-2.7.6-gcc
 					#module add python27-modules-gcc
-					module add debian8-compat
-					module add p4
+					#module add debian8-compat
+					module add py-p4phylogenetics/20240606
 				elif [[ $HOSTNAME == compute-*-*.local ]]; then
 					module unload bioinformatics/anaconda3
 					#module load bioinformatics/p4?
