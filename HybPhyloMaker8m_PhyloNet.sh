@@ -18,9 +18,9 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0c                                   *
 # *                                  Tomas Fer                                   *
-# * Dept. of Botany, Charles University, Prague, Czech Republic, 2023            *
+# * Dept. of Botany, Charles University, Prague, Czech Republic, 2024            *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -126,22 +126,49 @@ else
 	fi
 fi
 
+#Settings for collapsed and requisite selection
+if [[ $requisite =~ "yes" ]]; then
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=with_requisite/collapsed${collapse}/
+		treefile=trees_with_requisite_collapsed${collapse}.newick
+	else
+		modif=with_requisite/
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees_with_requisite.newick
+		else
+			treefile=trees_rooted_with_requisite.newick
+		fi
+	fi
+else
+	if [[ ! $collapse -eq "0" ]]; then
+		modif=collapsed${collapse}/
+		treefile=trees_collapsed${collapse}.newick
+	else
+		modif=""
+		if [ -z "$OUTGROUP" ]; then
+			treefile=trees.newick
+		else
+			treefile=trees_rooted.newick
+		fi
+	fi
+fi
+
 #Check necessary file
-echo -ne "\n\nTesting if input data are available..."
+echo -ne "\n\nTesting if gene trees are available..."
 if [[ $update =~ "yes" ]]; then
-	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${treefile}" ]; then
 		echo -e "OK\n"
 	else
-		echo -e "no gene trees file found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
-		rm -d ../workdir08m 2>/dev/null
+		echo -e "no gene trees file called '${modif}${treefile}' found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
+		rm -d ../workdir08l 2>/dev/null
 		exit 3
 	fi
 else
-	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick" ]; then
+	if [ -f "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${treefile}" ]; then
 		echo -e "OK\n"
 	else
-		echo -e "no gene trees file found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
-		rm -d ../workdir08m 2>/dev/null
+		echo -e "no gene trees file called '${modif}${treefile}' found in '${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/'. Run first HybPhyloMaker7_roottrees.sh. Exiting..."
+		rm -d ../workdir08l 2>/dev/null
 		exit 3
 	fi
 fi
@@ -190,33 +217,6 @@ if [ ! -z "$selection" ]; then
 	echo -e "\nList of excluded samples" >> ${logname}.log
 	cat $source/excludelist.txt >> ${logname}.log
 	echo >> ${logname}.log
-fi
-
-#Settings for collapsed and requisite selection
-if [[ $requisite =~ "yes" ]]; then
-	if [[ ! $collapse -eq "0" ]]; then
-		modif=with_requisite/collapsed${collapse}/
-		treefile=trees_with_requisite_collapsed${collapse}.newick
-	else
-		modif=with_requisite/
-		if [ -z "$OUTGROUP" ]; then
-			treefile=trees_with_requisite.newick
-		else
-			treefile=trees_rooted_with_requisite.newick
-		fi
-	fi
-else
-	if [[ ! $collapse -eq "0" ]]; then
-		modif=collapsed${collapse}/
-		treefile=trees_collapsed${collapse}.newick
-	else
-		modif=""
-		if [ -z "$OUTGROUP" ]; then
-			treefile=trees.newick
-		else
-			treefile=trees_rooted.newick
-		fi
-	fi
 fi
 
 #Copy gene trees (file with all gene trees)
@@ -276,7 +276,7 @@ for pn in $(seq $hstart $hmax); do
 	echo -e "NEXUS for $pn hybridization"
 	cp trees.nex PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
 	echo -e "\nBEGIN PHYLONET;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
-	echo -e "InferNetwork_MPL (gt0-gt${nrtrees1}) ${pn} -pl ${cpu} -di ${data1}_${pn}_reticulations.txt;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
+	echo -e "InferNetwork_MPL (gt0-gt${nrtrees1}) ${pn} -pl ${cpu} -x ${numruns} -di ${data1}_${pn}_reticulations.txt;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
 	echo -e "END;" >> PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus
 	if [[ $update =~ "yes" ]]; then
 		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}
@@ -303,8 +303,8 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo -e "Generating PhyloNet job file for $pn hybridizations"
 		echo '#!/bin/bash' >> PhyloNet_${pn}.sh
 		echo '#----------------MetaCentrum----------------' >> PhyloNet_${pn}.sh
-		echo '#PBS -l walltime=48:0:0' >> PhyloNet_${pn}.sh
-		echo '#PBS -l select=1:ncpus=12:mem=200gb:scratch_local=1gb' >> PhyloNet_${pn}.sh
+		echo '#PBS -l walltime=24:0:0' >> PhyloNet_${pn}.sh
+		echo '#PBS -l select=1:ncpus=20:mem=100gb:scratch_local=8gb' >> PhyloNet_${pn}.sh
 		echo '#PBS -j oe' >> PhyloNet_${pn}.sh
 		echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> PhyloNet_${pn}.sh
 		echo '#PBS -N PhyloNet_for_'"${pn}" >> PhyloNet_${pn}.sh
