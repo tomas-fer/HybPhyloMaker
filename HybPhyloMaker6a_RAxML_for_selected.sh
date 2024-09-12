@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 06a - RAxML gene tree building                     *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -185,13 +185,13 @@ fi
 cp $path/${alnpathselected}${MISSINGPERCENT}/selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt .
 mkdir -p $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}
 mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
-#Create new 'submitRAxMLjobs.sh' and make it executable
-touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
-chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
 
 if [[ $location == "1" || $location == "2" ]]; then
 	echo -e "\nGenerating multiple jobs with $raxmlperjob alignments per job..."
 	#Run on cluster: generate many jobs, each calculation only $raxmlperjob trees
+	#Create new 'submitRAxMLjobs.sh' and make it executable
+	touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
+	chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML/submitRAxMLjobs.sh
 	#Divide selected_genes$CUT.txt into files by $raxmlperjob
 	split --lines=$raxmlperjob selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.
 	rm selected_genes_${MISSINGPERCENT}_${SPECIESPRESENCE}.txt
@@ -542,7 +542,9 @@ else
 				mv $file.fas.reduced $file.fas
 			else
 				#rm $filepart.part
-				mv $filepart.part.reduced $filepart.part
+				if [ -f "${filepart}.fas.reduced" ]; then
+					mv $filepart.part.reduced $filepart.part
+				fi
 				#rm $file.fas
 				mv $file.fas.reduced $file.fas
 			fi
