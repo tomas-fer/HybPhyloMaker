@@ -10,7 +10,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 0c - Setup R-4.4 packages on Metacentrum               *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0g                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -48,7 +48,7 @@ export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 
 #Get R packages
 echo -e "\nDownloading R packages (newest versions)...\n"
-packages=( lattice nlme Rcpp digest ape data.table maps MASS clusterGeneration coda combinat iterators codetools foreach doParallel Matrix expm mnormt numDeriv optimParallel remotes BiocManager scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree gtools bitops caTools KernSmooth gplots )
+packages=( lattice nlme Rcpp digest ape data.table maps MASS clusterGeneration coda combinat iterators codetools foreach doParallel Matrix expm mnormt numDeriv optimParallel remotes BiocManager scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree gtools bitops caTools KernSmooth gplots )
 
 for i in "${packages[@]}"; do
 	version=$(wget -qO- https://cran.r-project.org/package=${i} | grep "tar.gz" | cut -d' ' -f6 | cut -d'_' -f2 | cut -d't' -f1)
@@ -159,7 +159,7 @@ done
 R -q -e "library(BiocManager);BiocManager::install('Biostrings')"
 R -q -e "library(remotes);remotes::install_github('KlausVigo/phangorn')"
 
-packages2=( scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree treeio gtools bitops caTools KernSmooth gplots )
+packages2=( scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree treeio gtools bitops caTools KernSmooth gplots )
 
 for package in "${packages2[@]}"; do
 	echo -e "\nInstalling $package..."
@@ -176,12 +176,12 @@ for Rpackage in ape seqinr data.table openxlsx phytools phangorn treeio gplots; 
 	elif grep -Fq "Error" Rtest; then
 		echo -e "R package $Rpackage...unable to load"
 	else
-		ver=$(R -q -e "packageVersion('$Rpackage')" 2> /dev/null | grep "[1]" | sed 's/‘//' | sed 's/.$//' | cut -d' ' -f2)
+		ver=$(R -q -e "packageVersion('$Rpackage')" 2> /dev/null | grep "[1]" | cut -d' ' -f2 | sed 's/^.//' | sed 's/.$//')
 		echo -e "R package $Rpackage...OK...version: ${ver}"
 	fi
 done
 rm Rtest
-echo -e "**************************************************************"
+echo -e "**************************************************************\n"
 
 #Delete scratch
 if [[ $PBS_O_HOST == *".cz" ]]; then
