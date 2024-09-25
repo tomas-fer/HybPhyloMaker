@@ -121,7 +121,7 @@ grep -v "^#" product.txt > tmp && mv tmp product.txt
 mkdir -p $path/cp/00reference
 
 #download GenBank file using efetch
-if [[ -z $cpGBnr ]] | [[ -z $cpGBfile ]]; then
+if [[ "$cpGBnr" == "" && "$cpGBfile" == "" ]]; then
 	echo -e "Name of the GenBank file (cpGBfile) OR GenBank AccessionNumber (cpGBnr) not provided.\nExiting...\n" && exit 3
 elif [[ -z $cpGBfile ]]; then
 	echo -en "Trying to download Accession: ${cpGBnr} ... "
