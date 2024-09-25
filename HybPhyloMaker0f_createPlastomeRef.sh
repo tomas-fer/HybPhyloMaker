@@ -113,11 +113,9 @@ for set in cpGBfile cpGBnr mincplength; do
 done
 
 #Add necessary files
-if [[ ! -f "$source/${cpGBfile}" ]]; then
-	echo -e "File: ${cpGBfile} does not exist.\nExiting...\n" && exit 3
-else
-	cp $source/${cpGBfile} .
-fi
+cp $source/product.txt .
+#remove all comments from product.txt
+grep -v "^#" product.txt > tmp && mv tmp product.txt
 
 #Make dir for results
 mkdir -p $path/cp/00reference
@@ -181,6 +179,7 @@ if [ "$(grep "/gene" ${cpGBfile} | wc -l)" -lt 20 ]; then
 	# change '/product' to '/gene'
 	sed -i 's/\/product/\/gene/' ${cpGBfile}.modif
 fi
+rm product.txt
 
 echo "Extracting features..."
 #select lines containing CDS, tRNA and one following line (the line with gene name)
