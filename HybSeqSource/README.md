@@ -58,5 +58,7 @@ _part of HybPhyloMaker_ and https://github.com/marekborowiec/good_genes/blob/mas
 _part of HybPhyloMaker_  
 **TreeCollapseCL4.jar**  
 http://emmahodcroft.com/TreeCollapseCL.html  
+**treePL_wrapper.sh**  
+https://github.com/tongjial/treepl_wrapper  
 **trimmomatic-0.33.jar**  
 http://www.usadellab.org/cms/?page=trimmomatic  
