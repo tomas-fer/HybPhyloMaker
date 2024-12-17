@@ -8,6 +8,8 @@ _test reference containing 100 nuclear exons_
 _test reference with 11 plastid genes_  
 **excludelist.txt**  
 _list of samples to remove from alignments_  
+**configuration.txt**  
+_calibrations for treePL_  
 
 **Scripts**  
 ---
