@@ -1,0 +1,4 @@
+numsites = 31070
+mrca = root Siphonochilus-aethiopicus_S130 Curcuma-parviflora_S159
+min = root 37.74
+max = root 43.94
