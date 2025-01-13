@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                      Script 05 - Missing data handling                       *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp -f $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
@@ -55,11 +55,12 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	module add trimal-1.4
 	module add mstatx
 	module add seqtk-1.0
-	module add R-3.4.3-gcc
-	module add debian11/compat #necessary for R-3.4.3
+	module add r/4.4.0-gcc-10.2.1-ssuwpvb
+	#module add R-3.4.3-gcc
+	#module add debian11/compat #necessary for R-3.4.3
 	#module add debian8-compat
 	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages"
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker5 is running on Hydra..."
 	#settings for Hydra
