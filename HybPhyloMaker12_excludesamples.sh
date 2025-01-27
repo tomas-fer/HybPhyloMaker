@@ -21,8 +21,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                         Script 12 - Exclude samples                          *
-# *                                   v.1.8.0c                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0d                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -47,7 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Add necessary modules
 	#module add python-2.7.6-gcc
 	#module add python-2.7.6-intel
-	module add debian8-compat
+	#module add debian8-compat
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "\nHybPhyloMaker12 is running on Hydra..."
 	#settings for Hydra
