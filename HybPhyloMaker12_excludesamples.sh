@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                         Script 12 - Exclude samples                          *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -208,12 +208,28 @@ sed -i.bak 's/\x0D$//' excludelist.txt
 sed -i.bak2 '/^$/d' excludelist.txt
 #add LF at the end of last line in excludelist.txt if missing
 sed -i.bak3 '$a\' excludelist.txt
+#remove whitespace characters from excludelist.txt
+cat excludelist.txt | tr -d "[:blank:]" > tmp && mv tmp excludelist.txt
+
+#Check if names in 'excludelist.txt' are correct
+#get name of first *.mafft file
+mafft=$(ls $path/$mafftpath | head -n1)
+#get list of samples from mafft file
+grep "^>" $path/$mafftpath/$mafft | sed 's/>//' | sed 's/_contigs.fas//' > allsamples.txt
+#check if all samples in excludelist are among original samples (allsamples.txt)
+for i in $(cat excludelist.txt); do
+	if [ -z $(grep -E "^${i}$" allsamples.txt) ]; then
+		echo "$i not found in dataset. Check excludelist.txt. Exiting..." && exit 3
+	fi
+done
+
 #add '_contigs.fas' or '_contigs_cpDNA.fas' to the end of each line in excludelist.txt (to match names in mafft files)
 if [[ $cp =~ "yes" ]]; then
 	sed -i.bak4 's/$/_contigs_cpDNA.fas/' excludelist.txt
 else
 	sed -i.bak4 's/$/_contigs.fas/' excludelist.txt
 fi
+
 
 #Download alignments from '60mafft' folder
 if [[ $cp =~ "yes" ]]; then
