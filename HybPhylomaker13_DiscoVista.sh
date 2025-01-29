@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                            Script 13 - DiscoVista                            *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0c                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -33,7 +33,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
@@ -66,13 +66,44 @@ else
 	cd workdir13
 fi
 
+#Write log
+logname=HPM13
+echo -e "HybPhyloMaker13: DiscoVista" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected OUTGROUP; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
+
 #clone DiscoVista repository
 git clone https://github.com/esayyari/DiscoVista
 export WS_HOME=`pwd`
-
-# R
-# install.packages(c("reshape","reshape2","ggplot2","plyr","scales","ape","optparse"))
-# pip install dendropy #Python2
 
 #copy list of folders to compare
 cp $source/comparelist.txt .
@@ -160,6 +191,10 @@ cp -r species/ $path/DiscoVista/speciestree
 cp -r parameters/ $path/DiscoVista/speciestree
 cp -r results/ $path/DiscoVista/speciestree
 cp comparelist.txt $path/DiscoVista/speciestree
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/DiscoVista
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then
