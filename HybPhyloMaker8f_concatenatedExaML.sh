@@ -9,8 +9,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.8.0d                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2022 *
+# *                                   v.1.8.0e                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -38,7 +38,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#Copy file with settings from home and set variables from settings.cfg
 	cp $PBS_O_WORKDIR/settings.cfg .
 	. settings.cfg
-	. /packages/run/modules-2.0/init/bash
+	#. /packages/run/modules-2.0/init/bash
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
@@ -227,7 +227,17 @@ fi
 logname=HPM8f
 echo -e "HybPhyloMaker8f: concatenated species tree using ExaML" > ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
 else
@@ -394,7 +404,7 @@ if [[ $runpf =~ "yes" ]]; then
 	#mv partitionfinder-2.0.0-pre13 partitionfinder
 	
 	if [[ $PBS_O_HOST == *".cz" ]]; then
-		#Remove python3 module and dd python modules necessary for PartitionFinder
+		#Remove python3 module and add python modules necessary for PartitionFinder
 		module rm python-3.4.1-gcc
 		#module add python-2.7.10-gcc
 		module add python27-modules-gcc
