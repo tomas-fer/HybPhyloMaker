@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 05b - MAFFT and FastTree for paralogs                 *
-# *                                   v.1.8.0a                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
+# *                                   v.1.8.0b                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -77,7 +77,17 @@ fi
 logname=HPM5b
 echo -e "HybPhyloMaker5b: MAFFT and FastTree for paralogs after ParalogWizard" > ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
 else
