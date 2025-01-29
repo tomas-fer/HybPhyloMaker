@@ -20,8 +20,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 06a2 - summary of RAxML gene trees                   *
-# *                                   v.1.8.0c                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
+# *                                   v.1.8.0d                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -158,6 +158,41 @@ else
 		fi
 	fi
 fi
+
+#Write log
+logname=HPM6a2
+echo -e "HybPhyloMaker6a2: summary of RAxML gene trees" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected MISSINGPERCENT SPECIESPRESENCE tree genetreepart model raxmlboot bsrep bootstop numbcores raxmlperjob; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
 
 #----------------Checking number of alignments and trees (and stop if not identical)----------------
 echo -e "Checking number of alignments and RAxML trees..."
@@ -604,6 +639,10 @@ if [[ $bootstop == "yes" ]]; then
 	cat bootstop_summary_*.txt > bootstop_summary.txt
 	cp bootstop_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 fi
+
+#Copy log to home
+echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/RAxML
 
 #Clean scratch/work directory
 if [[ $PBS_O_HOST == *".cz" ]]; then

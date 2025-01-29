@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                  Script 01a - Raw data processing in parallel                *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# *                                   v.1.8.0d                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # * based on Weitemier et al. (2014), Applications in Plant Science 2(9): 1400042*
 # ********************************************************************************
@@ -79,7 +79,17 @@ fi
 logname=HPM1a
 echo -e "HybPhyloMaker1a: raw reads filtering in parallel" > ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "run on MetaCentrum: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
 else
@@ -147,7 +157,7 @@ do
 	echo '#!/bin/bash' >> ${file}.sh
 	echo '#----------------MetaCentrum----------------' >> ${file}.sh
 	echo '#PBS -l walltime=2:0:0' >> ${file}.sh
-	echo '#PBS -l select=1:ncpus=2:mem=16gb:scratch_local=24gb' >> ${file}.sh
+	echo '#PBS -l select=1:ncpus=2:mem=24gb:scratch_local=24gb' >> ${file}.sh
 	echo '#PBS -j oe' >> ${file}.sh
 	echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> ${file}.sh
 	echo '#PBS -N rawprocess_for_'"${file}" >> ${file}.sh
@@ -164,12 +174,11 @@ do
 	echo 'if [[ $PBS_O_HOST == *".cz" ]]; then' >> ${file}.sh
 	echo '  #Add necessary modules' >> ${file}.sh
 	echo '  module add bowtie2-2.2.4' >> ${file}.sh
-	echo '  module add samtools-0.1.19' >> ${file}.sh
+	echo '  module add samtools' >> ${file}.sh
 	echo '  module add bam2fastq-1.1.0' >> ${file}.sh
 	echo '  module add trimmomatic-0.32' >> ${file}.sh
 	echo '  module add fastuniq-1.1' >> ${file}.sh
-	echo '  module add jdk-7' >> ${file}.sh
-	echo '  module add perl-5.10.1' >> ${file}.sh
+	echo '  module add jdk-8' >> ${file}.sh
 	echo '  cd $SCRATCHDIR' >> ${file}.sh
 	echo 'else' >> ${file}.sh
 	echo '  #Add necessary modules' >> ${file}.sh
