@@ -92,7 +92,7 @@ if [[ $cp =~ "yes" ]]; then
 	probes=$cpDNACDS
 elif [[ $cp =~ "full" ]]; then
 	echo -e "Working with full plastomes\n"
-	type="fullplastomeT"
+	type="fullplastome"
 elif [[ $cp =~ "no" ]]; then
 	echo -en "Working with exons"
 	type="exons"
