@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 02a2 - Read mapping in parallel summary               *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -80,7 +80,7 @@ echo -e "\nSettings" >> ${logname}.log
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
 fi
-for set in data cp mapping probes cpDNACDS mappingmethod conscall mincov majthres plurality nrns; do
+for set in data cp mapping probes cpDNACDS cpDNA mappingmethod conscall mincov majthres plurality nrns; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
 
@@ -90,10 +90,16 @@ if [[ $cp =~ "yes" ]]; then
 	type="cp"
 	cp $source/$cpDNACDS .
 	probes=$cpDNACDS
-else
+elif [[ $cp =~ "full" ]]; then
+	echo -e "Working with full plastomes\n"
+	type="fullplastomeT"
+elif [[ $cp =~ "no" ]]; then
 	echo -en "Working with exons"
 	type="exons"
 	cp $source/$probes .
+else
+	echo -e "Variable 'cp' is not set to one of allowed values (yes, not, full). Exiting...\n"
+	exit 3
 fi
 echo -n
 
@@ -103,11 +109,17 @@ cp $path/10rawreads/SamplesFileNames.txt .
 cp $path/$type/21mapped_${mappingmethod}/*.fasta .
 #Copy all mapping summaries
 cp $path/$type/21mapped_${mappingmethod}/mapping_summary*.txt .
-#Copy all per target coverages
-mkdir coverage
-cp $path/$type/21mapped_${mappingmethod}/coverage/*_perTarget.txt coverage/
+if [[ $type =~ "exon" || $type =~ "cp" ]]; then
+	#Copy all per target coverages
+	mkdir coverage
+	cp $path/$type/21mapped_${mappingmethod}/coverage/*_perTarget.txt coverage/
+fi
 #Rename the probe file and move it (just for the case it has the suffix *.fasta which would make problems in the next step)
-mv $probes coverage/probes.fa
+if [[ $cp =~ "yes" ]]; then
+	mv $cpDNACDS coverage/probes.fa
+elif [[ $cp =~ "no" ]]; then
+	mv $probes coverage/probes.fa
+fi
 
 #Creating a summary table
 echo -e "\nCreating summary tables..."
@@ -115,8 +127,8 @@ echo -e "\nCreating summary tables..."
 #Write headers (number of reads, nr paired reads, nr forward unpaired reads, nr reverse unpaired reads, nr mapped reads, % of mapped reads)
 echo -e "Sample no.\tGenus\tSpecies\tTotal nr. reads\tNr. paired reads\tNr. forward unpaired reads\tNr. reverse unpaired reads\tNr. mapped reads\tPercentage of mapped reads" > tmpmap
 cat mapping_summary*.txt >> tmpmap
-mv tmpmap mapping_summary.txt
-cp mapping_summary.txt $path/$type/21mapped_${mappingmethod}/
+mv tmpmap mapping_summary_${type}.txt
+cp mapping_summary_${type}.txt $path/$type/21mapped_${mappingmethod}/
 
 #Combine all fasta files into one
 echo -e "\nCombining consensus FASTA files..."
@@ -127,8 +139,31 @@ mkdir -p $path/$type/30consensus
 if [[ $cp =~ "yes" ]]; then
 	cp consensus.fasta consensus_cpDNA.fasta
 	cp consensus_cpDNA.fasta $path/$type/30consensus
+elif [[ $cp =~ "full" ]]; then
+	cp consensus.fasta consensus_fullplastome.fasta
+	cp consensus_fullplastome.fasta $path/$type/30consensus
 else
 	cp consensus.fasta $path/$type/30consensus
+fi
+
+#Calculate percentage of missing data per accession (for fullplastome consensus)
+if [[ $cp =~ "full" ]]; then
+	#Calculate length of alignment: 1. get second line and count length, 2. decrease value by one (because previous command also counted LF)
+	length=$(cat consensus.fasta | head -n 2 | tail -n 1 | wc -c)
+	length=`expr $length - 1`
+	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
+	cat consensus.fasta | sed '/^>/{N; s/\n/ /;}' > consensus.modif.fasta
+	#Cut first part until space, i.e. header, and remove '>'
+	cat consensus.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
+	#Cut only part after the first space, i.e., only sequence, change all missing data (-, ?, N) to 'n', replace all other characters then 'n' by nothing and print percentage of 'n's in each sequence
+	cat consensus.modif.fasta | cut -f2 -d" " | sed 's/[?N-]/n/g' | sed 's/[^n]//g' | awk -v val=$length '{ print (length*100)/val }' > missingpercentage.txt
+	paste headers.txt missingpercentage.txt > fullplastomes_missingperc.txt
+	#Calculate mean of all values
+	echo -e "MEAN\t$(awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }' fullplastomes_missingperc.txt)" > mean.txt
+	cat fullplastomes_missingperc.txt mean.txt > tmp && mv tmp fullplastomes_missingperc.txt
+	rm consensus.modif.fasta headers.txt missingpercentage.txt mean.txt
+	#Copy results to home
+	cp fullplastomes_missingperc.txt $path/$type/30consensus
 fi
 
 #Calculate ambiguous bases (number and percentage) if ConsensusFixer was used
@@ -174,53 +209,53 @@ if [[ $conscall =~ "consensusfixer" ]]; then
 fi
 
 # Make summary table for coverage
-cd coverage
-echo -e "\nCreating summary tables for coverage..."
-ls *perTarget.txt | cut -d"." -f1 | sed 's/_perTarget//' > ListOfCoverageFiles.txt
-cat `ls *perTarget.txt | head -n 1` | cut -f 2,3,4 > infocolumn.txt
-echo -e "taxon\n5\n10\n20\n30\n50\n100" >> firstcolumn.txt
-for i in $(cat ListOfCoverageFiles.txt)
-do
-	# Print header (species name)
-	echo "$i" >> ${i}_exon_meancoverage.txt
-	# Extract 7th column containing mean coverage per exon
-	cat ${i}_perTarget.txt | cut -f7 | sed '1d' >> ${i}_exon_meancoverage.txt
-	# Write samples name to file with 
-	echo $i > ${i}_nrexons.txt
-	for j in 5 10 20 30 50 100
+if [[ $type =~ "exon" || $type =~ "cp" ]]; then
+	cd coverage
+	echo -e "\nCreating summary tables for coverage..."
+	ls *perTarget.txt | cut -d"." -f1 | sed 's/_perTarget//' > ListOfCoverageFiles.txt
+	cat `ls *perTarget.txt | head -n 1` | cut -f 2,3,4 > infocolumn.txt
+	echo -e "taxon\n5\n10\n20\n30\n50\n100" >> firstcolumn.txt
+	for i in $(cat ListOfCoverageFiles.txt)
 	do
-		cat ${i}_perTarget.txt | cut -f7 | awk -v val=$j ' NR>1 {if ($1>val) print $1;}' | wc -l >> ${i}_nrexons.txt
+		# Print header (species name)
+		echo "$i" >> ${i}_exon_meancoverage.txt
+		# Extract 7th column containing mean coverage per exon
+		cat ${i}_perTarget.txt | cut -f7 | sed '1d' >> ${i}_exon_meancoverage.txt
+		# Write samples name to file with 
+		echo $i > ${i}_nrexons.txt
+		for j in 5 10 20 30 50 100
+		do
+			cat ${i}_perTarget.txt | cut -f7 | awk -v val=$j ' NR>1 {if ($1>val) print $1;}' | wc -l >> ${i}_nrexons.txt
+		done
 	done
-done
-
-# Combine information from all samples together
-paste infocolumn.txt *_exon_meancoverage.txt > exon_meancoverageALL.txt
-paste firstcolumn.txt *_nrexons.txt > numberexonsALL.txt
-# Copy summary table to home
-cp exon_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
-cp numberexonsALL.txt $path/$type/21mapped_${mappingmethod}/coverage
-
-# Calculate mean values per locus (a mean from per-exon means)
-# Delete first three rows (i.e., leaving only mean values)
-cut -f4- exon_meancoverageALL.txt | datamash transpose > coverage.txt
-# Prepare header
-echo locus | tr "\n" "\t" > header.txt #print 'locus' and replaces EOL by TAB, i.e., next line prints on the same line
-grep ">" probes.fa | cut -d'_' -f2 | datamash transpose >> header.txt
-echo -e "exon\t" | perl -0pe 's/\n\Z//' >> header.txt #print 'exonTAB' and removes very last character which is EOL, i.e., next line prints on the same line
-grep ">" probes.fa | cut -d'_' -f4 | datamash transpose >> header.txt
-cat header.txt coverage.txt > exon_meancoverageALLmodif.txt
-rm header.txt coverage.txt
-# Calculate mean per locus from per-exon values
-lines=$(wc -l < "exon_meancoverageALLmodif.txt")
-datamash -W transpose < "exon_meancoverageALLmodif.txt" | datamash -H groupby 1 mean 3-"$lines" | datamash transpose > locus_meancoverageALL.txt
-#modify output
-sed -i.bak 's/GroupBy(//' locus_meancoverageALL.txt
-sed -i.bak2 's/mean(//' locus_meancoverageALL.txt
-sed -i.bak3 's/)//' locus_meancoverageALL.txt
-rm *bak*
-cp exon_meancoverageALLmodif.txt $path/$type/21mapped_${mappingmethod}/coverage
-cp locus_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
-cd ..
+	# Combine information from all samples together
+	paste infocolumn.txt *_exon_meancoverage.txt > exon_meancoverageALL.txt
+	paste firstcolumn.txt *_nrexons.txt > numberexonsALL.txt
+	# Copy summary table to home
+	cp exon_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+	cp numberexonsALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+	# Calculate mean values per locus (a mean from per-exon means)
+	# Delete first three rows (i.e., leaving only mean values)
+	cut -f4- exon_meancoverageALL.txt | datamash transpose > coverage.txt
+	# Prepare header
+	echo locus | tr "\n" "\t" > header.txt #print 'locus' and replaces EOL by TAB, i.e., next line prints on the same line
+	grep ">" probes.fa | cut -d'_' -f2 | datamash transpose >> header.txt
+	echo -e "exon\t" | perl -0pe 's/\n\Z//' >> header.txt #print 'exonTAB' and removes very last character which is EOL, i.e., next line prints on the same line
+	grep ">" probes.fa | cut -d'_' -f4 | datamash transpose >> header.txt
+	cat header.txt coverage.txt > exon_meancoverageALLmodif.txt
+	rm header.txt coverage.txt
+	# Calculate mean per locus from per-exon values
+	lines=$(wc -l < "exon_meancoverageALLmodif.txt")
+	datamash -W transpose < "exon_meancoverageALLmodif.txt" | datamash -H groupby 1 mean 3-"$lines" | datamash transpose > locus_meancoverageALL.txt
+	#modify output
+	sed -i.bak 's/GroupBy(//' locus_meancoverageALL.txt
+	sed -i.bak2 's/mean(//' locus_meancoverageALL.txt
+	sed -i.bak3 's/)//' locus_meancoverageALL.txt
+	rm *bak*
+	cp exon_meancoverageALLmodif.txt $path/$type/21mapped_${mappingmethod}/coverage
+	cp locus_meancoverageALL.txt $path/$type/21mapped_${mappingmethod}/coverage
+	cd ..
+fi
 
 #Copy log to home
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
