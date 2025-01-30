@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *            Script 08e - concatenated species tree using FastTree             *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -77,9 +77,83 @@ fi
 if [[ $cp =~ "yes" ]]; then
 	echo -en "Working with cpDNA"
 	type="cp"
-else
+elif [[ $cp =~ "full" ]]; then
+	echo -e "Working with full plastomes\n"
+	type="fullplastome"
+elif [[ $cp =~ "no" ]]; then
 	echo -en "Working with exons"
 	type="exons"
+else
+	echo -e "Variable 'cp' is not set to one of allowed values (yes, not, full). Exiting...\n"
+	rm -d ../workdir08e/ 2>/dev/null
+	exit 3
+fi
+
+#Write log
+logname=HPM8e
+echo -e "HybPhyloMaker8e: concatenated species tree using FastTree" > ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
+	echo -e "From: $PBS_O_HOST" >> ${logname}.log
+	echo -e "Host: $HOSTNAME" >> ${logname}.log
+	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
+	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
+	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
+	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
+		echo -e "Memory: $memM Mb" >> ${logname}.log
+	else
+		echo -e "Memory: $memG Gb" >> ${logname}.log
+	fi
+elif [[ $HOSTNAME == compute-*-*.local ]]; then
+	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
+else
+	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
+fi
+echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+echo -e "\nSettings" >> ${logname}.log
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
+fi
+for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP; do
+	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
+done
+if [ ! -z "$selection" ]; then
+	echo -e "\nList of excluded samples" >> ${logname}.log
+	cat $source/excludelist.txt >> ${logname}.log
+	echo >> ${logname}.log
+fi
+
+#If 'fullplastome' simply run FastTree and exit
+if [[ $cp =~ "full" ]]; then
+	#copy alignment
+	cp $path/fullplastome/60mafft/consensus_fullplastome.mafft .
+	#run FastTree
+	fasttreemp -nt consensus_fullplastome.mafft > consensus_fullplastome.fast.tre
+	#(Re)root a final concatenated species tree with $OUTGROUP
+	if [ -n "$OUTGROUP" ]; then
+		nw_reroot -s consensus_fullplastome.fast.tre $OUTGROUP > tmp && mv tmp consensus_fullplastome.fast.tre
+	fi
+	#modify labels in concatenated trees
+	sed -i.bak 's/-/ /g' consensus_fullplastome.fast.tre
+	sed -i.bak2 's/_/ /g' consensus_fullplastome.fast.tre
+	#copy tree back to home
+	mkdir -p $path/fullplastome/72trees/FastTree/concatenated
+	cp consensus_fullplastome.fast.tre $path/fullplastome/72trees/FastTree/concatenated
+	#Copy log to home
+	echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
+	cp ${logname}.log $path/fullplastome/72trees/FastTree/concatenated
+	#Clean scratch/work directory
+	if [[ $PBS_O_HOST == *".cz" ]]; then
+		#delete scratch
+		if [[ ! $SCRATCHDIR == "" ]]; then
+			rm -rf $SCRATCHDIR/*
+		fi
+	else
+		cd ..
+		rm -r workdir03a
+	fi
+	echo -e "\nScript HybPhyloMaker3a finished...\n"
+	exit 0
 fi
 
 #Settings for selection and (un)corrected reading frame
@@ -166,40 +240,6 @@ if [[ ! $location == "1" ]]; then
 		rm -d ../workdir08e 2>/dev/null
 		exit 3
 	fi
-fi
-
-#Write log
-logname=HPM8e
-echo -e "HybPhyloMaker8e: concatenated species tree using FastTree" > ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	echo -e "Job run on MetaCentrum: $PBS_JOBID" >> ${logname}.log
-	echo -e "From: $PBS_O_HOST" >> ${logname}.log
-	echo -e "Host: $HOSTNAME" >> ${logname}.log
-	echo -e "$PBS_NUM_NODES node(s) with $PBS_NCPUS core(s)" >> ${logname}.log
-	memM=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 ")
-	memG=$(bc <<< "scale=2; $(echo $PBS_RESC_MEM) / 1024 / 1024 / 1024 ")
-	if (( $(echo $memG 1 | awk '{if ($1 < $2) print 1;}') )); then
-		echo -e "Memory: $memM Mb" >> ${logname}.log
-	else
-		echo -e "Memory: $memG Gb" >> ${logname}.log
-	fi
-elif [[ $HOSTNAME == compute-*-*.local ]]; then
-	echo -e "run on Hydra: $HOSTNAME" >> ${logname}.log
-else
-	echo -e "local run: "`hostname`"/"`whoami` >> ${logname}.log
-fi
-echo -e "\nBegin:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
-echo -e "\nSettings" >> ${logname}.log
-if [[ $PBS_O_HOST == *".cz" ]]; then
-	printf "%-25s %s\n" `echo -e "\nServer:\t$server"` >> ${logname}.log
-fi
-for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree OUTGROUP; do
-	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
-done
-if [ ! -z "$selection" ]; then
-	echo -e "\nList of excluded samples" >> ${logname}.log
-	cat $source/excludelist.txt >> ${logname}.log
-	echo >> ${logname}.log
 fi
 
 #Add necessary scripts and files
