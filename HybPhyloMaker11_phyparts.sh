@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                 Script 11 - PhyParts for Astral species tree                 *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -356,7 +356,8 @@ echo -e "Using colours: ${ppcolors}"
 if [[ $location =~ "0" ]]; then
 	#download python script
 	wget https://raw.githubusercontent.com/mossmatters/phyloscripts/master/phypartspiecharts/phypartspiecharts.py 2>/dev/null
-	export QT_QPA_PLATFORM='offscreen'
+	export QT_QPA_PLATFORM='offscreen' #for machines with commandline only
+	export XDG_RUNTIME_DIR=$(echo `pwd`) #current dir
 	if [ -z "$ppcolors" ]; then
 		echo "python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees}"
 		python3 phypartspiecharts.py --svg_name phyparts_${sptree}_BS${phypartsbs}_${nrpptrees}trees.svg ${sptree}.tre trees_res ${nrgenetrees} 2>/dev/null
