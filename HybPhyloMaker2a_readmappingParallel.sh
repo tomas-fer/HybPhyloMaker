@@ -19,10 +19,18 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 02a - Read mapping in parallel                    *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
+
+#Map reads to the (pseudo)reference. Set mapping type (cp=):
+#no - mapping to nuclear exons (set probes=)
+#yes - mapping to partitioned cpDNA (set cpDNACDS=)
+#fullplastome - mapping to full chloroplast as a reference (set cpDNA=)
+#Consider running 'HybPhyloMaker0f_createPlastomeRef.sh' to create cpDNA-derived reference(s)
+#Run first 'HybPhyloMaker0b_preparereference.sh' in case cp=yes or cp=no
+#bowtie2 or BWA can be selected for read mapping (mappingmethod=)
 
 #Complete path and set configuration for selected location
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -105,11 +113,17 @@ if [[ $cp =~ "yes" ]]; then
 	echo -e "Working with cpDNA\n"
 	type="cp"
 	cp $source/$cpDNACDS .
-	
-else
+elif [[ $cp =~ "full" ]]; then
+	echo -e "Working with full plastomes\n"
+	type="fullplastomeT"
+	cp $source/$cpDNA .
+elif [[ $cp =~ "no" ]]; then
 	echo -e "Working with exons\n"
 	type="exons"
 	cp $source/$probes .
+else
+	echo -e "Variable 'cp' is not set to one of allowed values (yes, not, full). Exiting...\n"
+	exit 3
 fi
 
 #Test if folders for results exist
@@ -175,6 +189,12 @@ if [ -f "$path/10rawreads/SamplesFileNames.txt" ]; then
 				exit 3
 			fi
 		fi
+	elif [[ $cp =~ "full" ]]; then
+		if [ ! -f "$source/$cpDNA" ]; then
+			echo -e "'$cpDNA' is missing in 'HybSeqSource'. Exiting...\n"
+			rm -d ../workdir02a/ 2>/dev/null
+			exit 3
+		fi
 	else
 		if [ ! -f "$source/$probes" ]; then
 			echo -e "$probes does not exist within 'HybSeqSource'.\n"
@@ -203,10 +223,11 @@ mkdir -p $path/$type
 if [ ! -d "$path/$type/21mapped_${mappingmethod}" ]; then
 	mkdir $path/$type/21mapped_${mappingmethod}
 fi
-if [ ! -d "$path/$type/21mapped_${mappingmethod}/coverage" ]; then
-	mkdir $path/$type/21mapped_${mappingmethod}/coverage
+if [[ $type =~ "exon" || $type =~ "cp" ]]; then
+	if [ ! -d "$path/$type/21mapped_${mappingmethod}/coverage" ]; then
+		mkdir $path/$type/21mapped_${mappingmethod}/coverage
+	fi
 fi
-
 #Create new 'submitRawProcessJobs.sh' and make it executable
 touch $path/$type/21mapped_${mappingmethod}/submitMappingJobs.sh
 chmod +x $path/$type/21mapped_${mappingmethod}/submitMappingJobs.sh
@@ -218,8 +239,8 @@ for file in $(cat SamplesFileNames.txt); do
 	echo -e "Processing sample $file..."
 	echo '#!/bin/bash' >> ${file}.sh
 	echo '#----------------MetaCentrum----------------' >> ${file}.sh
-	echo '#PBS -l walltime=2:0:0' >> ${file}.sh
-	echo '#PBS -l select=1:ncpus=4:mem=4gb:scratch_local=16gb' >> ${file}.sh
+	echo '#PBS -l walltime=12:0:0' >> ${file}.sh
+	echo '#PBS -l select=1:ncpus=4:mem=48gb:scratch_local=48gb' >> ${file}.sh
 	echo '#PBS -j oe' >> ${file}.sh
 	echo '#PBS -N readmapping_for_'"${file}" >> ${file}.sh
 	echo '#PBS -m abe' >> ${file}.sh
@@ -266,6 +287,7 @@ for file in $(cat SamplesFileNames.txt); do
 	echo 'mapping='"$mapping" >> ${file}.sh
 	echo 'probes='"$probes" >> ${file}.sh
 	echo 'cpDNACDS='"$cpDNACDS" >> ${file}.sh
+	echo 'cpDNA='"$cpDNA" >> ${file}.sh
 	echo 'mappingmethod='"$mappingmethod" >> ${file}.sh
 	echo 'conscall='"$conscall" >> ${file}.sh
 	echo 'mincov='"$mincov" >> ${file}.sh
@@ -276,22 +298,36 @@ for file in $(cat SamplesFileNames.txt); do
 	echo 'if [[ $conscall =~ "consensusfixer" ]]; then' >> ${file}.sh
 	echo '  cp $source/ConsensusFixer.jar .' >> ${file}.sh
 	echo 'fi' >> ${file}.sh
-	echo '#Copy pseudoreference' >> ${file}.sh
+	echo '#Copy pseudoreference/reference' >> ${file}.sh
 	echo 'if [[ $cp =~ "yes" ]]; then' >> ${file}.sh
 	echo '  probes=$cpDNACDS' >> ${file}.sh
 	echo 'fi' >> ${file}.sh
-	echo 'name=$(echo $probes | cut -d"." -f1)' >> ${file}.sh
-	echo 'cp $source/${name}_with${nrns}Ns_beginend.fas .' >> ${file}.sh
-	echo '#Make index from pseudoreference' >> ${file}.sh
-	echo 'if [[ $mappingmethod =~ "bowtie2" ]]; then' >> ${file}.sh
-	echo '  echo -en "Indexing pseudoreference for bowtie2..."' >> ${file}.sh
-	echo '  bowtie2-build ${name}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log' >> ${file}.sh
-	echo '  cp indexing_pseudoreference.log $path/$type/21mapped_bowtie2/' >> ${file}.sh
-	echo 'else' >> ${file}.sh
-	echo '  echo -en "Indexing pseudoreference for bwa...\n"' >> ${file}.sh
-	echo '  bwa index ${name}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log' >> ${file}.sh
-	echo '  cp indexing_pseudoreference.log $path/$type/21mapped_bwa/' >> ${file}.sh
+	echo 'if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '  name=$(echo $probes | cut -d"." -f1)' >> ${file}.sh
+	echo '  cp $source/${name}_with${nrns}Ns_beginend.fas .' >> ${file}.sh
+	echo '  #Make index from pseudoreference' >> ${file}.sh
+	echo '  if [[ $mappingmethod =~ "bowtie2" ]]; then' >> ${file}.sh
+	echo '    echo -en "Indexing pseudoreference for bowtie2..."' >> ${file}.sh
+	echo '    bowtie2-build ${name}_with${nrns}Ns_beginend.fas pseudoreference.index 1>indexing_pseudoreference.log' >> ${file}.sh
+	echo '    cp indexing_pseudoreference.log $path/$type/21mapped_bowtie2/' >> ${file}.sh
+	echo '  else' >> ${file}.sh
+	echo '    echo -en "Indexing pseudoreference for bwa...\n"' >> ${file}.sh
+	echo '    bwa index ${name}_with${nrns}Ns_beginend.fas 2>indexing_pseudoreference.log' >> ${file}.sh
+	echo '    cp indexing_pseudoreference.log $path/$type/21mapped_bwa/' >> ${file}.sh
 	echo '  fi' >> ${file}.sh
+	echo 'elif [[ $cp =~ "full" ]]; then' >> ${file}.sh
+	echo '  cp $source/${cpDNA} .' >> ${file}.sh
+	echo '  #Make index from reference' >> ${file}.sh
+	echo '  if [[ $mappingmethod =~ "bowtie2" ]]; then' >> ${file}.sh
+	echo '    echo -en "Indexing reference for bowtie2..."' >> ${file}.sh
+	echo '    bowtie2-build ${cpDNA} pseudoreference.index 1>indexing_reference.log' >> ${file}.sh
+	echo '    cp indexing_reference.log $path/$type/21mapped_bowtie2/' >> ${file}.sh
+	echo '  else' >> ${file}.sh
+	echo '    echo -en "Indexing reference for bwa...\n"' >> ${file}.sh
+	echo '    bwa index ${cpDNA} 2>indexing_reference.log' >> ${file}.sh
+	echo '    cp indexing_reference.log $path/$type/21mapped_bwa/' >> ${file}.sh
+	echo '  fi' >> ${file}.sh
+	echo 'fi' >> ${file}.sh
 	echo '#Write headers for a summary table (number of reads, nr paired reads, nr forward unpaired reads, nr reverse unpaired reads, nr mapped reads, % of mapped reads)' >> ${file}.sh
 	echo 'echo -e "Sample no.\tGenus\tSpecies\tTotal nr. reads\tNr. paired reads\tNr. forward unpaired reads\tNr. reverse unpaired reads\tNr. mapped reads\tPercentage of mapped reads" > mapping_summary_${file}.txt' >> ${file}.sh
 	echo '#Read mapping' >> ${file}.sh
@@ -322,17 +358,25 @@ for file in $(cat SamplesFileNames.txt); do
 	echo '  #Bowtie2 parameters are derived from --very-sensitive-local' >> ${file}.sh
 	echo '  #set parameters for mapping using bowtie2' >> ${file}.sh
 	echo '  score=G,20,8' >> ${file}.sh
-	echo '  bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq${suffix}  -2 ${file}-2P_no-dups.fastq${suffix} -U ${file}-1U${suffix},${file}-2U${suffix} -S ${file}.sam 2>${file}_bowtie2_out.txt' >> ${file}.sh
+	echo '  bowtie2 --local -D 20 -R 3 -N 0 -L 10 -i S,1,0.50 --score-min $score -x pseudoreference.index -1 ${file}-1P_no-dups.fastq${suffix} -2 ${file}-2P_no-dups.fastq${suffix} -U ${file}-1U${suffix},${file}-2U${suffix} -S ${file}.sam 2>${file}_bowtie2_out.txt' >> ${file}.sh
 	echo 'else' >> ${file}.sh
 	echo '  echo "Mapping pair-end reads using bwa..."' >> ${file}.sh
-	echo '  bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '    bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  elif [[ $cp =~ "full" ]]; then' >> ${file}.sh
+	echo '    bwa mem ${cpDNA} ${file}-1P_no-dups.fastq${suffix} ${file}-2P_no-dups.fastq${suffix} > ${file}_paired.sam 2>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  fi' >> ${file}.sh
 	echo '  echo "Mapping orphaned reads using bwa..."' >> ${file}.sh
 	echo '  if [[ $compressed =~ "yes" ]]; then' >> ${file}.sh
 	echo '    gunzip ${file}-1U.gz' >> ${file}.sh
 	echo '    gunzip ${file}-2U.gz' >> ${file}.sh
 	echo '  fi' >> ${file}.sh
 	echo '  cat ${file}-1U ${file}-2U > ${file}-unpaired' >> ${file}.sh
-	echo '  bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '    bwa mem ${name}_with${nrns}Ns_beginend.fas ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  elif [[ $cp =~ "full" ]]; then' >> ${file}.sh
+	echo '    bwa mem ${cpDNA} ${file}-unpaired > ${file}_unpaired.sam 2>>${file}_bwa_out.txt' >> ${file}.sh
+	echo '  fi' >> ${file}.sh
 	echo 'fi' >> ${file}.sh
 	echo '#create BAM from SAM' >> ${file}.sh
 	echo 'echo "Converting to BAM..."' >> ${file}.sh
@@ -381,7 +425,11 @@ for file in $(cat SamplesFileNames.txt); do
 	echo '    samtools index ${file}.bam' >> ${file}.sh
 	echo '  fi' >> ${file}.sh
 	echo '  #call consensus with ambiguous bases with ConsensusFixer' >> ${file}.sh
-	echo '  java -jar ConsensusFixer.jar -i ${file}.bam -r ${name}_with${nrns}Ns_beginend.fas -plurality $plurality -mcc $mincov -dash' >> ${file}.sh
+	echo '  if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '    java -jar ConsensusFixer.jar -i ${file}.bam -r ${name}_with${nrns}Ns_beginend.fas -plurality $plurality -mcc $mincov -dash' >> ${file}.sh
+	echo '  elif [[ $cp =~ "full" ]]; then' >> ${file}.sh
+	echo '    java -jar ConsensusFixer.jar -i ${file}.bam -r ${cpDNA} -plurality $plurality -mcc $mincov -dash' >> ${file}.sh
+	echo '  fi' >> ${file}.sh
 	echo '  #add EOL at the end of the file' >> ${file}.sh
 	echo "  sed -i '\$a\' consensus.fasta" >> ${file}.sh
 	echo "  #change '-' (introduce by ConsensusFixer when coverage is low) by 'N'" >> ${file}.sh
@@ -398,40 +446,44 @@ for file in $(cat SamplesFileNames.txt); do
 	echo 'rm header.txt' >> ${file}.sh
 	echo '#Remove line breaks from fasta file' >> ${file}.sh
 	echo awk \''!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }'\'' ${file}.fasta > tmp && mv tmp ${file}.fasta' >> ${file}.sh
-	echo '#put $nrns Ns to variable '\'a\'' and $nrns ?s to variable '\'b\''' >> ${file}.sh
-	echo 'a=$(printf "%0.sN" $(seq 1 $nrns))' >> ${file}.sh
-	echo 'b=$(printf "%0.s?" $(seq 1 $nrns))' >> ${file}.sh
-	echo '#replace all Ns separating exons by '?'' >> ${file}.sh
-	echo 'sed -i.bak "s/$a/$b/g" ${file}.fasta' >> ${file}.sh
+	echo 'if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '  #put $nrns Ns to variable '\'a\'' and $nrns ?s to variable '\'b\''' >> ${file}.sh
+	echo '  a=$(printf "%0.sN" $(seq 1 $nrns))' >> ${file}.sh
+	echo '  b=$(printf "%0.s?" $(seq 1 $nrns))' >> ${file}.sh
+	echo '  #replace all Ns separating exons by '?'' >> ${file}.sh
+	echo '  sed -i.bak "s/$a/$b/g" ${file}.fasta' >> ${file}.sh
+	echo 'fi' >> ${file}.sh
 	echo '#copy results to home' >> ${file}.sh
 	echo 'cp ${file}.fasta $path/$type/21mapped_${mappingmethod}' >> ${file}.sh
-	echo '#Per exon coverage calculation' >> ${file}.sh
-	echo 'echo -e "\nPer exon coverage calculation...\n"' >> ${file}.sh
-	echo '#Copy references and BED file' >> ${file}.sh
-	echo 'reference=${name}_with${nrns}Ns_beginend.fas' >> ${file}.sh
-	echo 'cp $source/$reference .' >> ${file}.sh
-	echo 'header=$(grep ">" ${name}_with${nrns}Ns_beginend.fas | sed "s/>//")' >> ${file}.sh
-	echo 'bedfile=${header}_exon_positions.bed' >> ${file}.sh
-	echo 'cp $source/$bedfile .' >> ${file}.sh
-	echo '#Get picard tools' >> ${file}.sh
-	echo 'echo -e "Downloading picard tools...\n"' >> ${file}.sh
-	echo 'wget https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar 2> /dev/null' >> ${file}.sh
-	echo '#Index reference' >> ${file}.sh
-	echo 'samtools faidx ${reference}' >> ${file}.sh
-	echo '#Create sequence dictionary from reference' >> ${file}.sh
-	echo 'echo -e "Creating sequence dictionary from reference\n" > picard_${file}.log' >> ${file}.sh
-	echo 'java -jar picard.jar CreateSequenceDictionary -R ${reference} -O reference.dict 2>> picard_${file}.log' >> ${file}.sh
-	echo 'echo >> picard_${file}.log' >> ${file}.sh
-	echo '#Convert BED file to IntervalList' >> ${file}.sh
-	echo 'echo -e "Converting BED file to IntervalList\n" >> picard_${file}.log' >> ${file}.sh
-	echo 'java -jar picard.jar BedToIntervalList -I ${bedfile} -O list -SD reference.dict 2>> picard_${file}.log' >> ${file}.sh
-	echo 'echo >> picard_${file}.log' >> ${file}.sh
-	echo 'echo -e "Calculating per exon coverage..."' >> ${file}.sh
-	echo '#compute metrics (%GC, coverage)' >> ${file}.sh
-	echo 'java -jar picard.jar CollectHsMetrics -I ${file}.bam -O ${file}_metrics.txt -R ${reference} -BAIT_INTERVALS list -TARGET_INTERVALS list -PER_TARGET_COVERAGE ${file}_perTarget.txt 2>> picard_${file}.log' >> ${file}.sh
-	echo '# Copy results from SCRATCHDIR to HOME' >> ${file}.sh
-	echo 'cp ${file}_perTarget.txt $path/$type/21mapped_${mappingmethod}/coverage' >> ${file}.sh
-	echo 'cp picard_${file}.log $path/$type/21mapped_${mappingmethod}/coverage' >> ${file}.sh
+	echo 'if [[ $type =~ "exon" || $type =~ "cp" ]]; then' >> ${file}.sh
+	echo '  #Per exon coverage calculation' >> ${file}.sh
+	echo '  echo -e "\nPer exon coverage calculation...\n"' >> ${file}.sh
+	echo '  #Copy references and BED file' >> ${file}.sh
+	echo '  reference=${name}_with${nrns}Ns_beginend.fas' >> ${file}.sh
+	echo '  cp $source/$reference .' >> ${file}.sh
+	echo '  header=$(grep ">" ${name}_with${nrns}Ns_beginend.fas | sed "s/>//")' >> ${file}.sh
+	echo '  bedfile=${header}_exon_positions.bed' >> ${file}.sh
+	echo '  cp $source/$bedfile .' >> ${file}.sh
+	echo '  #Get picard tools' >> ${file}.sh
+	echo '  echo -e "Downloading picard tools...\n"' >> ${file}.sh
+	echo '  wget https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar 2> /dev/null' >> ${file}.sh
+	echo '  #Index reference' >> ${file}.sh
+	echo '  samtools faidx ${reference}' >> ${file}.sh
+	echo '  #Create sequence dictionary from reference' >> ${file}.sh
+	echo '  echo -e "Creating sequence dictionary from reference\n" > picard_${file}.log' >> ${file}.sh
+	echo '  java -jar picard.jar CreateSequenceDictionary -R ${reference} -O reference.dict 2>> picard_${file}.log' >> ${file}.sh
+	echo '  echo >> picard_${file}.log' >> ${file}.sh
+	echo '  #Convert BED file to IntervalList' >> ${file}.sh
+	echo '  echo -e "Converting BED file to IntervalList\n" >> picard_${file}.log' >> ${file}.sh
+	echo '  java -jar picard.jar BedToIntervalList -I ${bedfile} -O list -SD reference.dict 2>> picard_${file}.log' >> ${file}.sh
+	echo '  echo >> picard_${file}.log' >> ${file}.sh
+	echo '  echo -e "Calculating per exon coverage..."' >> ${file}.sh
+	echo '  #compute metrics (%GC, coverage)' >> ${file}.sh
+	echo '  java -jar picard.jar CollectHsMetrics -I ${file}.bam -O ${file}_metrics.txt -R ${reference} -BAIT_INTERVALS list -TARGET_INTERVALS list -PER_TARGET_COVERAGE ${file}_perTarget.txt 2>> picard_${file}.log' >> ${file}.sh
+	echo '  # Copy results from SCRATCHDIR to HOME' >> ${file}.sh
+	echo '  cp ${file}_perTarget.txt $path/$type/21mapped_${mappingmethod}/coverage' >> ${file}.sh
+	echo '  cp picard_${file}.log $path/$type/21mapped_${mappingmethod}/coverage' >> ${file}.sh
+	echo 'fi' >> ${file}.sh
 	echo '#delete BAM' >> ${file}.sh
 	echo 'rm ${file}.bam' >> ${file}.sh
 	echo 'rm ${file}.bam.bai' >> ${file}.sh
@@ -443,6 +495,7 @@ for file in $(cat SamplesFileNames.txt); do
 	echo '  cd ..' >> ${file}.sh
 	echo '  rm -r workdir02a_'"${file}" >> ${file}.sh
 	echo 'fi' >> ${file}.sh
+	echo 'echo -e "\nMapping to '"$type"' for '"${file}"' finished.\n"' >> ${file}.sh
 	
 	chmod +x ${file}.sh
 	if [[ $location == "1" ]]; then
