@@ -8,7 +8,7 @@
 # Tomas Fer, 2017, 2018, 2019, 2020, 2021, 2025                                                                          #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0g                                                                                                               #
+# v.1.8.0h                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -75,7 +75,7 @@ if ! [ -x "$(command -v python2)" ]; then
 	if [[ $distribution =~ "Fedora" ]]; then
 		$installer install -y python27 &> python_install.log
 	elif [[ $distribution =~ "Debian" ]]; then
-		echo "deb http://archive.debian.org/debian/ stretch contrib main non-free" | tee -a /etc/apt/sources.list
+		echo "deb http://archive.debian.org/debian/ stretch contrib main non-free" | tee -a /etc/apt/sources.list > /dev/null
 		apt-get update &> python_install.log
 		$installer install -y python &> python_install.log
 	else
@@ -477,6 +477,20 @@ if ! [ -x "$(command -v bcftools)" ]; then
 	fi
 fi
 
+#BEDtools
+if ! [ -x "$(command -v bedtools)" ]; then
+	echo -e "Installing 'bedtools'"
+	wget https://github.com/arq5x/bedtools2/releases/download/v2.29.1/bedtools-2.29.1.tar.gz &> bedtools_install.log
+	if [ -f bedtools-2.29.1.tar.gz ]; then
+		tar -zxvf bedtools-2.29.1.tar.gz 1>/dev/null
+		rm bedtools-2.29.1.tar.gz
+		cd bedtools2
+		make &>> ../bedtools_install.log
+		make install &>> ../bedtools_install.log
+		cd ..
+	fi
+fi
+
 #FastTree
 if ! [ -x "$(command -v FastTree)" ]; then
 	echo -e "Installing 'FastTree'"
@@ -632,6 +646,7 @@ if ! [ -x "$(command -v bam2fastq)" ]; then
 	make &>> ../bam2fastq_install.log
 	chmod +x bam2fastq
 	cp bam2fastq /usr/local/bin
+	cd ..
 fi
 
 #BLAT
@@ -851,7 +866,7 @@ if ! [ -x "$(command -v kindel)" ]; then
 	if [[ $distribution =~ "Fedora" ]]; then
 		python3 -m pip install 'kindel==0.1.4' &>> kindel_install.log
 	else
-		pip3 install 'kindel==0.1.4' &>> kindel_install.log
+		pip3 install 'kindel==0.1.4' --break-system-packages &>> kindel_install.log
 	fi
 fi
 
@@ -890,8 +905,8 @@ if ! [[ `pip3 --disable-pip-version-check show matplotlib 2>/dev/null | grep Ver
 fi
 if ! [[ `pip3 --disable-pip-version-check show cairosvg 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'cairosvg for python3'"
-	#pip3 install cairosvg &> python3-cairosvg_install.log
-	$installer install -y python3-cairosvg &> python3-cairosvg_install.log
+	pip3 install cairosvg --break-system-packages &> python3-cairosvg_install.log
+	#$installer install -y python3-cairosvg &> python3-cairosvg_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show PyQt5 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'PyQt5 for python3'"
@@ -988,10 +1003,10 @@ else
 			wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.1.tar.gz &> openmpi_install.log
 			tar -xvf openmpi-2.1.1.tar.gz 1>/dev/null
 			cd openmpi-2.1.1/
-			./configure &>> openmpi_install.log
-			make &>> openmpi_install.log
-			make install &>> openmpi_install.log
-			ldconfig &>> openmpi_install.log
+			./configure &>> ../openmpi_install.log
+			make &>> ../openmpi_install.log
+			make install &>> ../openmpi_install.log
+			ldconfig &>> ../openmpi_install.log
 			cd ..
 		fi
 	fi
@@ -1009,10 +1024,10 @@ if [[ $instexaml =~ "y" ]]; then
 		make -f Makefile.SSE3.gcc &> ../../examl_install.log
 		cp parse-examl /usr/local/bin
 		cd ../examl
-		make -f Makefile.SSE3.gcc &> ../../examl_install.log
+		make -f Makefile.SSE3.gcc &>> ../../examl_install.log
 		cp examl /usr/local/bin
 		if [[ `grep avx /proc/cpuinfo` ]]; then
-			make -f Makefile.AVX.gcc &> ../../examl_install.log
+			make -f Makefile.AVX.gcc &>> ../../examl_install.log
 			cp examl-AVX /usr/local/bin
 		fi
 		cd ../..
@@ -1078,7 +1093,7 @@ fi
 
 #spectre/SuperQ
 #add metaopt first (see spectre documentation)
-if ! [ -f "../HybPhyloMaker/HybSeqSource/spectre-1.1.5/bin/superq" ]; then
+if ! [ -x "$(command -v superq)" ]; then
 	echo -e "Installing 'spectre/SuperQ'"
 	git clone https://github.com/maplesond/metaopt &>> metaopt_install.log
 	cd metaopt
@@ -1087,7 +1102,7 @@ if ! [ -f "../HybPhyloMaker/HybSeqSource/spectre-1.1.5/bin/superq" ]; then
 	git clone https://github.com/maplesond/spectre.git &>> spectre_install.log
 	cd spectre
 	mvn clean install &>> ../spectre_install.log
-	#cp build/spectre-1.1.5/ /usr/local/bin/
+	cp -r build/spectre-1.1.5/ /usr/local/bin/
 	cd ..
 fi
 
@@ -1131,6 +1146,68 @@ if ! [ -x "$(command -v raxml-ng)" ]; then
 	cd ../..
 fi
 
+#julia
+if ! [ -x "$(command -v julia)" ]; then
+	echo -e "Installing 'julia'"
+	wget https://julialang-s3.julialang.org/bin/linux/x64/1.11/julia-1.11.3-linux-x86_64.tar.gz &> julia_install.log
+	tar -zxvf julia-1.11.3-linux-x86_64.tar.gz &> julia_install.log
+	rm julia-1.11.3-linux-x86_64.tar.gz
+	cd julia-1.11.3
+	ln -s `pwd`/bin/julia /usr/local/bin/julia
+	cd bin
+	export PATH="`pwd`:$PATH"
+	cd ../..
+fi
+
+#julia packages
+cat << EOF | julia
+#check installed packages
+import Pkg; Pkg.status()
+#install packages
+Pkg.add("PhyloNetworks")
+Pkg.add("PhyloPlots")
+Pkg.add("RCall")
+Pkg.add("DataFrames")
+Pkg.add("CSV")
+Pkg.add("Distributed")
+Pkg.build("RCall")
+using PhyloPlots
+Pkg.status()
+EOF
+
+#treePL
+if ! [ -x "$(command -v treepl)" ]; then
+	echo -e "Installing 'treePL'"
+	#NLopt
+	wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz &> NLopt_install.log
+	tar -zxvf v2.7.1.tar.gz &>> NLopt_install.log
+	rm v2.7.1.tar.gz
+	cd nlopt-2.7.1
+	cmake . &>> ../NLopt_install.log
+	make &>> ../NLopt_install.log
+	make install &>> ../NLopt_install.log
+	cd ..
+	#adolc
+	$installer install -y libboost-all-dev &> libboost_install.log
+	wget https://github.com/blackrim/treePL/raw/refs/heads/master/deps/ADOL-C-2.6.3.tgz &> adolc_install.log
+	tar -zxvf ADOL-C-2.6.3.tgz &>> adolc_install.log
+	rm ADOL-C-2.6.3.tgz
+	cd ADOL-C-2.6.3
+	./configure --prefix=/usr/local --with-openmp-flag=-fopenmp &>> ../adolc_install.log
+	make &>> ../adolc_install.log
+	make install &>> ../adolc_install.log
+	cd ..
+	wget https://github.com/blackrim/treePL/archive/refs/tags/1.0.tar.gz &> treepl_install.log
+	tar -zxvf 1.0.tar.gz &>> treepl_install.log
+	rm 1.0.tar.gz
+	cd treePL-1.0/src
+	./configure &>> ../treepl_install.log
+	make &>> ../treepl_install.log
+	make install &>> ../treepl_install.log
+	cd ../..
+	LD_LIBRARY_PATH=/usr/local/lib64:$LD_LIBRARY_PATH
+fi
+
 #Leave 'install' directory
 cd ..
 
@@ -1138,24 +1215,24 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS raxml-ng examl R seqtk p4 bucky bcftools vcftools ruby Dsuite snp-sites cairosvg datamash; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS raxml-ng examl R seqtk p4 bucky bcftools vcftools bedtools ruby Dsuite snp-sites cairosvg datamash superq julia treePL; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
 
-if [ -f "install/phyparts/target/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar" ]; then
+if [ -f "/usr/local/bin/phyparts-0.0.1-SNAPSHOT-jar-with-dependencies.jar" ]; then
 	echo "phyparts...OK"
 else
 	echo "phyparts...not found"
 	echo "phyparts" >> not_installed.txt
 fi
 
-if [ -f "install/spectre/build/spectre-1.1.5/bin/superq" ]; then
-	echo "superq...OK"
-else
-	echo "superq...not found"
-	echo "superq" >> not_installed.txt
-fi
+# if [ -f "install/spectre/build/spectre-1.1.5/bin/superq" ]; then
+	# echo "superq...OK"
+# else
+	# echo "superq...not found"
+	# echo "superq" >> not_installed.txt
+# fi
 
 sed -i.bak 's/transeq/EMBOSS/' not_installed.txt 2>/dev/null
 sed -i.bak2 's/nw_reroot//' not_installed.txt 2>/dev/null
@@ -1203,7 +1280,7 @@ for package in numpy scipy pandas scikit-learn tables parsing pyparsing; do
 done
 echo -e "\nPython3"
 for package in numpy scipy future bitarray pandas matplotlib cairosvg PyQt5 ete3 biopython; do
-	version=$(pip3 --disable-pip-version-check show $package 2>/dev/null | grep Version | sed 's/Version: //')
+	version=$(pip3 --disable-pip-version-check show $package 2>/dev/null | grep Version: | sed 's/Version: //')
 	if [ -z "$version" ]; then
 		echo -e "${package}...not found"
 	else
