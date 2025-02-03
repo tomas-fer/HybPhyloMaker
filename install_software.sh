@@ -5,10 +5,10 @@
 # Without changes works only on 64-bit platforms (x86_64)                                                                #
 # This script MUST be run with root privileges!                                                                          #
 #                                                                                                                        #
-# Tomas Fer, 2017, 2018, 2019, 2020, 2021                                                                                #
+# Tomas Fer, 2017, 2018, 2019, 2020, 2021, 2025                                                                          #
 # tomas.fer@natur.cuni.cz                                                                                                #
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
-# v.1.8.0f                                                                                                               #
+# v.1.8.0g                                                                                                               #
 ##########################################################################################################################
 
 #Carefully set your distribution
@@ -74,6 +74,10 @@ if ! [ -x "$(command -v python2)" ]; then
 	echo -e "Installing 'python2'"
 	if [[ $distribution =~ "Fedora" ]]; then
 		$installer install -y python27 &> python_install.log
+	elif [[ $distribution =~ "Debian" ]]; then
+		echo "deb http://archive.debian.org/debian/ stretch contrib main non-free" | tee -a /etc/apt/sources.list
+		apt-get update &> python_install.log
+		$installer install -y python &> python_install.log
 	else
 		$installer install -y python &> python_install.log
 	fi
@@ -613,15 +617,21 @@ fi
 #bam2fastq
 if ! [ -x "$(command -v bam2fastq)" ]; then
 	echo -e "Installing 'bam2fastq'"
-	wget --no-check-certificate https://gsl.hudsonalpha.org/static/software/bam2fastq-1.1.0.tgz &> bam2fastq_install.log
-	if [ -f bam2fastq-1.1.0.tgz ]; then
-		tar xfz bam2fastq-1.1.0.tgz 1>/dev/null
-		rm bam2fastq-1.1.0.tgz
-		cd bam2fastq-1.1.0
-		make &>> ../bam2fastq_install.log
-		cp bam2fastq /usr/local/bin
-		cd ..
-	fi
+	#This does not work anymore
+	# wget --no-check-certificate https://gsl.hudsonalpha.org/static/software/bam2fastq-1.1.0.tgz &> bam2fastq_install.log
+	# if [ -f bam2fastq-1.1.0.tgz ]; then
+		# tar xfz bam2fastq-1.1.0.tgz 1>/dev/null
+		# rm bam2fastq-1.1.0.tgz
+		# cd bam2fastq-1.1.0
+		# make &>> ../bam2fastq_install.log
+		# cp bam2fastq /usr/local/bin
+		# cd ..
+	# fi
+	git clone --recursive https://github.com/dreamboatyz/bam2fastq &> bam2fastq_install.log
+	cd bam2fastq
+	make &>> ../bam2fastq_install.log
+	chmod +x bam2fastq
+	cp bam2fastq /usr/local/bin
 fi
 
 #BLAT
@@ -745,12 +755,12 @@ if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
-			pip3 install numpy &> numpy_install.log
-			#$installer install -y python-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+			#pip3 install numpy &> numpy_install.log
+			$installer install -y python3-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
 		if  ! [[ `pip3 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
-			pip3 install scipy &> scipy_install.log
-			$installer install -y python-scipy &> scipy_install.log #Debian, OpenSUSE
+			#pip3 install scipy &> scipy_install.log
+			$installer install -y python3-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
@@ -788,10 +798,12 @@ if ! [ -x "$(command -v p4)" ]; then
 	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
-			pip3 install future &> python-future_install.log
+			#pip3 install future &> python-future_install.log
+			$installer install -y python3-future &> python-future_install.log
 		fi
 		if ! [[ `pip3 --disable-pip-version-check show bitarray 2>/dev/null | grep Version` ]]; then
-			pip3 install bitarray &> python-bitarray_install.log
+			#pip3 install bitarray &> python-bitarray_install.log
+			$installer install -y python3-bitarray &> python-bitarray_install.log
 		fi
 	else
 		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
@@ -868,41 +880,56 @@ fi
 #other python3 modules (mainly for Dsuite and phyparts)
 if ! [[ `pip3 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'pandas for python3'"
-	pip3 install pandas &> python3-pandas_install.log
+	#pip3 install pandas &> python3-pandas_install.log
+	$installer install -y python3-pandas &> python3-pandas_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show matplotlib 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'matplotlib for python3'"
-	pip3 install matplotlib &> python3-matplotlib_install.log
+	#pip3 install matplotlib &> python3-matplotlib_install.log
+	$installer install -y python3-matplotlib &> python3-matplotlib_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show cairosvg 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'cairosvg for python3'"
-	pip3 install cairosvg &> python3-cairosvg_install.log
+	#pip3 install cairosvg &> python3-cairosvg_install.log
+	$installer install -y python3-cairosvg &> python3-cairosvg_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show PyQt5 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'PyQt5 for python3'"
 	#older version installed, newer version makes problems with installation (missing dependencies?)
-	pip3 install PyQt5==5.13.2 &> python3-PyQt5_install.log
+	#pip3 install PyQt5==5.13.2 &> python3-PyQt5_install.log
+	$installer install -y python3-PyQt5 &> python3-PyQt5_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show ete3 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'ete3 for python3'"
-	pip3 install ete3 &> python3-ete3_install.log
+	#pip3 install ete3 &> python3-ete3_install.log
+	$installer install -y python3-ete3 &> python3-ete3_install.log
 fi
 
 #other python2 modules (for PartitionFinder)
 if [[ $distribution =~ "Debian" ]]; then
+	if ! [[ `pip2 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
+		echo -e "Installing 'numpy for python2'"
+		pip2 --no-python-version-warning --disable-pip-version-check install numpy &> python-numpy_install.log
+		#$installer install -y python-numpy &> python-numpy_install.log #Debian
+	fi
+	if ! [[ `pip2 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
+		echo -e "Installing 'scipy for python2'"
+		pip2 --no-python-version-warning --disable-pip-version-check install scipy &> python-scipy_install.log
+		#$installer install -y python-scipy &> python-scipy_install.log #Debian
+	fi
 	if ! [[ `pip2 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pandas for python2'"
-		pip2 install pandas &> python-pandas_install.log
+		pip2 --no-python-version-warning --disable-pip-version-check install pandas &> python-pandas_install.log
 		#$installer install -y python-pandas &> python-pandas_install.log #Debian
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show scikit-learn 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'scikit-learn for python2'"
-		pip2 install scikit-learn &> python-sklearn_install.log
+		pip2 --no-python-version-warning --disable-pip-version-check install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show tables 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'tables for python2'"
-		pip2 install tables &> python-tables.log
+		pip2 --no-python-version-warning --disable-pip-version-check install tables &> python-tables.log
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show parsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'parsing for python2'"
@@ -910,7 +937,7 @@ if [[ $distribution =~ "Debian" ]]; then
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show pyparsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pyparsing for python2'"
-		pip2 install pyparsing &> python-pyparsing.log
+		pip2 --no-python-version-warning --disable-pip-version-check install pyparsing &> python-pyparsing.log
 	fi
 elif [[ $distribution =~ "OpenSUSE" ]] || [[ $distribution =~ "Fedora" ]] || [[ $distribution =~ "CentOS" ]]; then
 	if ! [[ `pip2.7 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
@@ -1175,7 +1202,7 @@ for package in numpy scipy pandas scikit-learn tables parsing pyparsing; do
 	fi
 done
 echo -e "\nPython3"
-for package in numpy scipy future bitarray pandas matplotlib cairosvg PyQt5 ete3; do
+for package in numpy scipy future bitarray pandas matplotlib cairosvg PyQt5 ete3 biopython; do
 	version=$(pip3 --disable-pip-version-check show $package 2>/dev/null | grep Version | sed 's/Version: //')
 	if [ -z "$version" ]; then
 		echo -e "${package}...not found"
