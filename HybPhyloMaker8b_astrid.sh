@@ -20,7 +20,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                       Script 08b - Astrid species tree                       *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0g                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -406,7 +406,7 @@ sed -i.bak2 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutB
 
 #Check if OUTGROUP does exist in gene tree files
 if [ ! -z "$OUTGROUP" ]; then #only if outgroup is set
-	if [ -z $(grep $OUTGROUP trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick) ]; then
+	if [ -z $(grep $OUTGROUP trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick | head -n1) ]; then
 		echo -e "$OUTGROUP was not found in gene tree file. Exiting..."
 		exit 3
 	fi
