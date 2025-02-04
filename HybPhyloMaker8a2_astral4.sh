@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08a2 - Astral-IV species tree                     *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -71,9 +71,12 @@ else
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
+	#available processors
+	procavail=$(awk '/^processor/{n+=1}END{print n}' /proc/cpuinfo)
 	#Make and enter work directory
 	mkdir -p workdir08a2
 	cd workdir08a2
+	
 fi
 
 #Setting for the case when working with cpDNA
@@ -324,7 +327,7 @@ if [[ $requisite =~ "no" ]] && [[ $collapse -eq "0" ]];then
 fi
 
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir08a)" ]; then
+	if [ "$(ls -A ../workdir08a2)" ]; then
 		echo -e "Directory 'workdir08a2' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
 		rm -d ../workdir08a2 2>/dev/null
 		exit 3
@@ -396,7 +399,7 @@ sed -i.bak2 's/YY/_/g' trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutB
 
 #Check if OUTGROUP does exist in gene tree files
 if [ ! -z "$OUTGROUP" ]; then #only if outgroup is set
-	if [ -z $(grep $OUTGROUP trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick) ]; then
+	if [ -z $(grep $OUTGROUP trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick | head -n1) ]; then
 		echo -e "$OUTGROUP was not found in gene tree file. Exiting..."
 		exit 3
 	fi
@@ -476,11 +479,11 @@ fi
 
 #Run ASTRAL
 if [ -f "$source/astral4" ]; then
-	echo "Copying ASTRAL-IV from HybSeqSource..."
+	echo -e "Copying ASTRAL-IV from HybSeqSource...\n"
 	cp $source/astral4 .
 else
 	#download and build Astral-IV
-	echo "Building ASTRAL-IV from GitHub..."
+	echo -e "Building ASTRAL-IV from GitHub...\n"
 	git clone -q https://github.com/chaoszhang/ASTER.git
 	cd ASTER
 	if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -488,9 +491,7 @@ else
 		sed -i 's/-march=native/-march=x86-64-v3/g' makefile
 		make -s -j $PBS_NCPUS
 	else
-		#get number of available processors
-		ncpus=$(awk '/^processor/{n+=1}END{print n}' /proc/cpuinfo)
-		make -s -j $ncpus
+		make -s -j $procavail
 	fi
 	cd ..
 	cp ./ASTER/bin/astral4 .
