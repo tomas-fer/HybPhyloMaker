@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08a2 - Astral-IV species tree                     *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -47,18 +47,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
 	#Add necessary modules
 	module add jdk-1.6.0
-	#Python (and its modules) are added later in the script
-	#module add python-2.7.6-gcc
-	#module add python27-modules-gcc
-	#module add python-3.4.1-gcc
 	module add newick-utils-13042016
-	module add r/4.4.0-gcc-10.2.1-oxdi5pz
-	#module add debian11/compat #necessary for R-3.4.3
-	#module add R-3.4.3-gcc
-	#module add debian8-compat
-	#module add p4 #do not load before running 'python3 AMAS.py'
-	#Set package library for R
-	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 	#available processors
 	procavail=`expr $TORQUE_RESC_TOTAL_PROCS - 2`
 elif [[ $HOSTNAME == compute-*-*.local ]]; then
@@ -74,9 +63,7 @@ elif [[ $HOSTNAME == compute-*-*.local ]]; then
 	#Add necessary modules
 	module load java/1.7
 	module load bioinformatics/anaconda3/5.1 #python3 and NewickUtilities
-	module load tools/R/3.4.1
 	#module load bioinformatics/newickutilities/0.0
-	#module load bioinformatics/p4/ #???
 else
 	echo -e "\nHybPhyloMaker8a2 is running locally..."
 	#settings for local run
@@ -488,60 +475,80 @@ else
 fi
 
 #Run ASTRAL
-#download Astral-IV
-wget https://github.com/chaoszhang/ASTER/raw/refs/heads/Linux/bin/astral4
-chmod +x astral4
+if [ -f "$source/astral4" ]; then
+	echo "Copying ASTRAL-IV from HybSeqSource..."
+	cp $source/astral4 .
+else
+	#download and build Astral-IV
+	echo "Building ASTRAL-IV from GitHub..."
+	git clone -q https://github.com/chaoszhang/ASTER.git
+	cd ASTER
+	if [[ $PBS_O_HOST == *".cz" ]]; then
+		#replace '-march' to make a general binary
+		sed -i 's/-march=native/-march=x86-64-v3/g' makefile
+		make -s -j $PBS_NCPUS
+	else
+		#get number of available processors
+		ncpus=$(awk '/^processor/{n+=1}END{print n}' /proc/cpuinfo)
+		make -s -j $ncpus
+	fi
+	cd ..
+	cp ./ASTER/bin/astral4 .
+	#copy binary to HybSeqSource
+	cp ./ASTER/bin/astral4 $source
+fi
+
 if [ ! -z "$OUTGROUP" ]; then
 	echo -e "Computing rooted ASTRAL-IV tree..."
-	./astral4 --root ${OUTGROUP} -t ${procavail} -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	./astral4 --root ${OUTGROUP} -t ${procavail} -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral4.log
 else
 	echo -en "Computing unrooted ASTRAL-IV tree..."
-	./astral4 -t ${procavail} -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral.log
+	./astral4 -t ${procavail} -i trees${MISSINGPERCENT}_${SPECIESPRESENCE}_rooted_withoutBS.newick -o Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre 2> Astral4.log
 	echo -e "and post-ASTRAL re-rooting"
 	nw_reroot -s Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $OUTGROUP > tmp && mv tmp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 fi
 
 #Make a copy of the main Astral tree for future combination(s)
-cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
-sed -i.bak 's/-/XX/g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
-sed -i.bak2 's/_/YY/g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
+cp Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
+sed -i.bak 's/-/XX/g' Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
+sed -i.bak2 's/_/YY/g' Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}main.tre
 
 #Modify labels in Astral trees
-sed -i.bak 's/-/ /g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
-sed -i.bak2 's/_/ /g' Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak 's/-/ /g' Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+sed -i.bak2 's/_/ /g' Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 
 #Rename Astral trees
 if [[ $requisite =~ "yes" ]]; then
 	if [[ ! $collapse -eq "0" ]]; then
-		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}.tre
+		astraltree=Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite_collapsed${collapse}.tre
 	else
-		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.tre
+		astraltree=Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}_with_requisite.tre
 	fi
 else
 	if [[ ! $collapse -eq "0" ]]; then
-		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}.tre
+		astraltree=Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}_collapsed${collapse}.tre
 	else
-		astraltree=Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
+		astraltree=Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre
 	fi
 fi
 
 #Copy species tree and log to home
 if [[ $update =~ "yes" ]]; then
-	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral/${astraltree}
-	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+	cp Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4/${astraltree}
+	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4
 else
-	cp Astral_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral/${astraltree}
-	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+	cp Astral4_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4/${astraltree}
+	cp Astral*.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4
 fi
 
-echo -e "Progress of ASTRAL run is written to Astral.log..."
+echo -e "Progress of ASTRAL-IV run is written to Astral4.log..."
 
 #Copy log to home
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
 if [[ $update =~ "yes" ]]; then
-	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4
 else
-	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral
+	cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4
 fi
 
 #Clean scratch/work directory
