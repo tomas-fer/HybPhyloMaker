@@ -9,7 +9,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 08f - ExaML concatenated tree                     *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -416,6 +416,7 @@ if [[ $runpf =~ "yes" ]]; then
 	if [[ $PBS_O_HOST == *".cz" ]]; then
 		python partitionfinder/PartitionFinder.py -p $TORQUE_RESC_TOTAL_PROCS PartitionFinder --raxml --no-ml-tree
 	else
+		numbcores=$(awk '/^processor/{n+=1}END{print n}' /proc/cpuinfo)
 		python partitionfinder/PartitionFinder.py -p $numbcores PartitionFinder --raxml --no-ml-tree
 	fi
 	#Prepare RAxML (ExaML) partition file from PartitionFinder results
@@ -478,9 +479,9 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	fi
 else
 	if [ ! -z "$constrtree" ]; then
-		examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -g $constrtree -p 12345 -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+		$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -g $constrtree -p 12345 -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
 	else
-		examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
+		$examlbin -t RAxML_parsimonyTree.RandomStartingTree -m GAMMA -s concatenated${MISSINGPERCENT}_${SPECIESPRESENCE}.partitioned.binary -n examl.tre > ExaMLbest.log 2>>ExaML_error.log
 	fi
 fi
 #Measure time
