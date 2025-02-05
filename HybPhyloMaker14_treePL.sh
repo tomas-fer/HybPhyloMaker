@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 14 - treePL divergence dating                     *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -80,6 +80,7 @@ else
 	. settings.cfg
 	path=../$data
 	source=../HybSeqSource
+	export LD_LIBRARY_PATH=/usr/local/lib64
 	#Make and enter work directory
 	mkdir -p workdir14
 	cd workdir14
@@ -281,7 +282,7 @@ nw_reroot -s ${tplt} $OUTGROUP > tmp && mv tmp ${tplt}
 
 # Run PLtree 
 chmod 755 treepl_wrapper.sh
-./treepl_wrapper.sh configuration.txt ${tplt} treePLresult
+./treepl_wrapper.sh configuration.txt ${tplt} treePLresult > treePL_${tpltree}.log
 
 #Finish log
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
@@ -291,25 +292,31 @@ if [[ $tpltree =~ "ExaML" ]]; then
 	if [[ $update =~ "yes" ]]; then
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenatedExaML/treePL
 	else
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenatedExaML/treePL
 	fi
 elif [[ $tpltree =~ "Astral4" ]]; then
 	if [[ $update =~ "yes" ]]; then
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}Astral4/treePL
 	else
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}Astral4/treePL
 	fi
 elif [[ $tpltree =~ "FastTree" ]]; then
 	if [[ $update =~ "yes" ]]; then
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenated/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenated/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenated/treePL
 	else
 		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
+		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
 	fi
 fi
 #Clean scratch/work directory
