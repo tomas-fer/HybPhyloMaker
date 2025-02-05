@@ -895,13 +895,13 @@ fi
 #other python3 modules (mainly for Dsuite and phyparts)
 if ! [[ `pip3 --disable-pip-version-check show pandas 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'pandas for python3'"
-	#pip3 install pandas &> python3-pandas_install.log
-	$installer install -y python3-pandas &> python3-pandas_install.log
+	pip3 install pandas --break-system-packages &> python3-pandas_install.log
+	#$installer install -y python3-pandas &> python3-pandas_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show matplotlib 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'matplotlib for python3'"
-	#pip3 install matplotlib &> python3-matplotlib_install.log
-	$installer install -y python3-matplotlib &> python3-matplotlib_install.log
+	pip3 install matplotlib --break-system-packages &> python3-matplotlib_install.log
+	#$installer install -y python3-matplotlib &> python3-matplotlib_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show cairosvg 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'cairosvg for python3'"
@@ -911,13 +911,13 @@ fi
 if ! [[ `pip3 --disable-pip-version-check show PyQt5 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'PyQt5 for python3'"
 	#older version installed, newer version makes problems with installation (missing dependencies?)
-	#pip3 install PyQt5==5.13.2 &> python3-PyQt5_install.log
-	$installer install -y python3-PyQt5 &> python3-PyQt5_install.log
+	pip3 install PyQt5==5.13.2 --break-system-packages &> python3-PyQt5_install.log
+	#$installer install -y python3-PyQt5 &> python3-PyQt5_install.log
 fi
 if ! [[ `pip3 --disable-pip-version-check show ete3 2>/dev/null | grep Version` ]]; then
 	echo -e "Installing 'ete3 for python3'"
-	#pip3 install ete3 &> python3-ete3_install.log
-	$installer install -y python3-ete3 &> python3-ete3_install.log
+	pip3 install ete3 --break-system-packages &> python3-ete3_install.log
+	#$installer install -y python3-ete3 &> python3-ete3_install.log
 fi
 
 #other python2 modules (for PartitionFinder)
@@ -942,13 +942,18 @@ if [[ $distribution =~ "Debian" ]]; then
 		pip2 --no-python-version-warning --disable-pip-version-check install scikit-learn &> python-sklearn_install.log
 		#$installer install -y python-sklearn &> python-sklearn_install.log #Debian
 	fi
+	
+	echo -e "Installing 'numexpr for python2'"
+	pip2 install --no-python-version-warning --disable-pip-version-check numexpr==2.7.1 --no-cache-dir &> numexpr_install.log
+	
+	
 	if ! [[ `pip2 --disable-pip-version-check show tables 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'tables for python2'"
-		pip2 --no-python-version-warning --disable-pip-version-check install tables &> python-tables.log
+		pip2 --no-python-version-warning --disable-pip-version-check --no-cache-dir install tables &> python-tables.log
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show parsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'parsing for python2'"
-		pip2 install parsing &> python-parsing.log
+		pip2 --no-python-version-warning --disable-pip-version-check install parsing &> python-parsing.log
 	fi
 	if ! [[ `pip2 --disable-pip-version-check show pyparsing 2>/dev/null | grep Version` ]]; then
 		echo -e "Installing 'pyparsing for python2'"
@@ -1208,6 +1213,10 @@ if ! [ -x "$(command -v treepl)" ]; then
 	LD_LIBRARY_PATH=/usr/local/lib64:$LD_LIBRARY_PATH
 fi
 
+if ! [ -x "$(command -v gs)" ]; then
+	$installer install -y ghostscript &> ghostscript_install.log
+fi
+
 #Leave 'install' directory
 cd ..
 
@@ -1215,7 +1224,7 @@ cd ..
 echo -e "\n**************************************************************"
 echo -e "Software installed...checking for binaries in PATH"
 rm not_installed.txt 2>/dev/null
-for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS raxml-ng examl R seqtk p4 bucky bcftools vcftools bedtools ruby Dsuite snp-sites cairosvg datamash superq julia treePL; do
+for i in parallel bowtie2 bwa ococo kindel samtools transeq bam2fastq java fastuniq perl blat mafft python2 python3 trimal mstatx FastTree nw_reroot nw_topology raxmlHPC raxmlHPC-PTHREADS raxml-ng examl R seqtk p4 bucky bcftools vcftools bedtools ruby Dsuite snp-sites cairosvg datamash superq julia treePL ghostscript; do
 	#command -v $i >/dev/null 2>&1 || { echo -n $i; echo >&2 "...not found"; }
 	command -v $i >/dev/null 2>&1 && echo ${i}...OK || { echo -n $i; echo >&2 "...not found"; echo $i >> not_installed.txt; }
 done
