@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 02a - Read mapping in parallel                    *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -115,7 +115,7 @@ if [[ $cp =~ "yes" ]]; then
 	cp $source/$cpDNACDS .
 elif [[ $cp =~ "full" ]]; then
 	echo -e "Working with full plastomes\n"
-	type="fullplastomeT"
+	type="fullplastome"
 	cp $source/$cpDNA .
 elif [[ $cp =~ "no" ]]; then
 	echo -e "Working with exons\n"
