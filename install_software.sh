@@ -10,6 +10,7 @@
 # https://github.com/tomas-fer/HybPhyloMaker                                                                             #
 # v.1.8.0h                                                                                                               #
 ##########################################################################################################################
+#Current version works for Debian12.9 (64-bit)
 
 #Carefully set your distribution
 distribution=Debian #one of: Debian (also for Ubuntu), OpenSUSE, Fedora, CentOS (also for Scientific Linux)
@@ -151,7 +152,7 @@ fi
 #Biopython
 if [ ! `python3 -c "import Bio; print(Bio.__version__)" 2>/dev/null` ]; then
 	echo -e "Installing 'biopython for python3'"
-	pip3 install biopython &> biopython_install.log
+	pip3 install biopython --break-system-packages &> biopython_install.log
 fi
 
 #Java
@@ -770,12 +771,12 @@ if ! [ -x "$(command -v p4)" ]; then
 	echo -e "Installing 'p4'"
 	if [[ $distribution =~ "Debian" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
-			#pip3 install numpy &> numpy_install.log
-			$installer install -y python3-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
+			pip3 install numpy==1.26.4 --break-system-packages &> numpy_install.log
+			#$installer install -y python3-numpy &> numpy_install.log #Debian/Ubuntu/OpenSUSE
 		fi
 		if  ! [[ `pip3 --disable-pip-version-check show scipy 2>/dev/null | grep Version` ]]; then
-			#pip3 install scipy &> scipy_install.log
-			$installer install -y python3-scipy &> scipy_install.log #Debian, OpenSUSE
+			pip3 install scipy --break-system-packages &> scipy_install.log
+			#$installer install -y python3-scipy &> scipy_install.log #Debian, OpenSUSE
 		fi
 	elif [[ $distribution =~ "OpenSUSE" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show numpy 2>/dev/null | grep Version` ]]; then
@@ -813,12 +814,12 @@ if ! [ -x "$(command -v p4)" ]; then
 	#install python modules 'future' and 'bitarray'
 	if [[ $distribution =~ "Debian" ]]; then
 		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
-			#pip3 install future &> python-future_install.log
-			$installer install -y python3-future &> python-future_install.log
+			pip3 install future --break-system-packages &> python-future_install.log
+			#$installer install -y python3-future &> python-future_install.log
 		fi
 		if ! [[ `pip3 --disable-pip-version-check show bitarray 2>/dev/null | grep Version` ]]; then
-			#pip3 install bitarray &> python-bitarray_install.log
-			$installer install -y python3-bitarray &> python-bitarray_install.log
+			pip3 install bitarray --break-system-packages &> python-bitarray_install.log
+			#$installer install -y python3-bitarray &> python-bitarray_install.log
 		fi
 	else
 		if ! [[ `pip3 --disable-pip-version-check show future 2>/dev/null | grep Version` ]]; then
