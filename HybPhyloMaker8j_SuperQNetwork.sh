@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                    Script 08j - SuperQ network in Spectre                    *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -224,15 +224,21 @@ sed -i.bak 's/XX/-/g' SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_splits.
 sed -i.bak 's/YY/_/g' SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_splits.nex
 
 #Plot network using phangorn in R
-module add r/4.4.0-gcc-10.2.1-ssuwpvb
-export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	module add r/4.4.0-gcc-10.2.1-ssuwpvb
+	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
+fi
 cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_splits.nex net.nex
 R -q -e "library(phangorn);nnet<-read.nexus.splits('net.nex');a=8;pdf('net.pdf');par(mar=c(a,a,a,a),xpd=T);plot(as.networx(nnet),cex=0.3,tip.color='firebrick4',edge.width=0.3,edge.lty=1,direction='axial');dev.off();write.nexus.networx(as.networx(nnet),file='n.nex')" >> R.log 2>&1
 mv n.nex SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network.nex
 
 #Crop white margins in PDF using GhostScript
-module add ghostscript
-gs -o null -sDEVICE=bbox net.pdf 2>out #reports crop box coordinates
+echo -e "Cropping white margins in PDF using GhostScript...\n"
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	module add ghostscript
+fi
+gs -o null -sDEVICE=bbox net.pdf 2>out > gs.log #reports crop box coordinates
+echo >> gs.log
 #take the four numbers and add/subtract a value ('add')
 add=10
 crop1=$(grep HiRes out | cut -d' ' -f2) #left margin
@@ -244,7 +250,7 @@ crop3x=$(echo "$crop3 + $add" | bc)
 crop4=$(grep HiRes out | cut -d' ' -f5) #upper margin
 crop4x=$(echo "$crop4 + $add" | bc)
 crop=$(echo $crop1x $crop2x $crop3x $crop4x)
-gs -o netcrop.pdf -sDEVICE=pdfwrite -dAutoRotatePages=/None -dUseCropBox=true -c "[/CropBox [$crop] /PAGES pdfmark" -f net.pdf
+gs -o netcrop.pdf -sDEVICE=pdfwrite -dAutoRotatePages=/None -dUseCropBox=true -c "[/CropBox [$crop] /PAGES pdfmark" -f net.pdf >> gs.log
 mv net.pdf SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network.pdf
 mv netcrop.pdf SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network_cropped.pdf
 
@@ -255,14 +261,14 @@ if [[ $update =~ "yes" ]]; then
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network_cropped.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
 	cp spectre.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
-	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
+	cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SuperQ
 else
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_splits.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network.nex $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 	cp SuperQNetwork_${MISSINGPERCENT}_${SPECIESPRESENCE}_network_cropped.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 	cp spectre.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
-	cp R.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
+	cp *.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SuperQ
 fi
 
 #Copy log to home
