@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08k - quartet sampling                         *
-# *                                   v.1.8.0h                                   *
+# *                                   v.1.8.0i                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -291,7 +291,9 @@ else
 fi
 
 #Plot tree with colour-labelled nodes
-module unload raxml-ng-8 #necessary for R-3.4.3
+if [[ $PBS_O_HOST == *".cz" ]]; then
+	module unload raxml-ng-8 #necessary for R-3.4.3
+fi
 R --slave -f plotQStree.R $OUTGROUP > R.log 2>&1
 rm plotQStree.R
 cd ..
