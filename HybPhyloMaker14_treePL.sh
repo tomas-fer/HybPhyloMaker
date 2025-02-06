@@ -288,7 +288,7 @@ chmod 755 treepl_wrapper.sh
 mv treepl_treePLresult.tre ${tpltree}_treePLresult.tre
 mv treepl_treePLresult.tre.r8s ${tpltree}_treePLresult.tre.r8s
 mv out_dates.tre.r8s ${tpltree}_dates.tre.r8s
-mv out_dates.tre ${tpltree}_dates.tre 
+mv out_dates.tre ${tpltree}_dates.tre
 
 #Delete some files 
 rm ${tplt} treepl_wrapper.sh 
