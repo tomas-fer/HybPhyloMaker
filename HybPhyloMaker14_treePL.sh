@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 14 - treePL divergence dating                     *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -173,7 +173,7 @@ else
 fi
 
 if [[ ! $location == "1" ]]; then
-	if [ "$(ls -A ../workdir08a)" ]; then
+	if [ "$(ls -A ../workdir1$)" ]; then
 		echo -e "Directory 'workdir08a' already exists and is not empty. Delete it or rename before running this script again. Exiting...\n"
 		rm -d ../workdir08a 2>/dev/null
 		exit 3
@@ -283,6 +283,15 @@ nw_reroot -s ${tplt} $OUTGROUP > tmp && mv tmp ${tplt}
 # Run PLtree 
 chmod 755 treepl_wrapper.sh
 ./treepl_wrapper.sh configuration.txt ${tplt} treePLresult > treePL_${tpltree}.log
+
+#Modify names
+mv treepl_treePLresult.tre ${tpltree}_treePLresult.tre
+mv treepl_treePLresult.tre.r8s ${tpltree}_treePLresult.tre.r8s
+mv out_dates.tre.r8s ${tpltree}_dates.tre.r8s
+mv out_dates.tre ${tpltree}_dates.tre 
+
+#Delete some files 
+rm ${tplt} treepl_wrapper.sh 
 
 #Finish log
 echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
