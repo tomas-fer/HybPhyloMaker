@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=2:0:0
+#PBS -l walltime=12:0:0
 #PBS -l select=1:ncpus=12:mem=16gb:scratch_local=400gb
 #PBS -j oe
 #PBS -N HybPhyloMaker0a_datadownloadprepare
@@ -19,19 +19,30 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
-# Download fastq files from BaseSpace (optional), rename them and move to sample folders
+# Download fastq files from SRR (Short Read Archive, NCBI) or BaseSpace (optional), rename them and move to sample folders
+# Or just rename fastq.gz samples in 'home' directory and move them to sample folders
 # i.e., prepare raw reads for running HybPhyloMaker
-# Works for PE reads only (i.e., 2 fastq files per sample) in the following format:
+# Controled by 'download=' option in settings.cfg (yes/no/sra)
+
+# Works for PE reads only (i.e., 2 fastq files per sample), samples are renamed to the following format:
 # samplename_sampleID_L001_R1_001.fastq.gz
 # samplename_sampleID_L001_R2_001.fastq.gz
-#
-# Needs two files (token_header.txt - only when downloading from BaseSpace, and renamelist.txt) to be in the home folder
+
+# If only renaming&moving of the samples is requested (download=no), there has to be the 'renamelist.txt' in the 'home' folder
+# Samples should contain *R1* or *R2* in the name!!!
+
+# For SRA download (download=sra) - needs file 'SRRlist.txt' in HybSeqSource (simple list of SRR codes, one per line)
+# Does not test validity of SRR code (will be implemented in the future?)
+# No 'renamelist.txt' is required
+
+# For BaseSpace download (download=yes)
+# Needs two files (token_header.txt and renamelist.txt) to be in the 'home' folder
 # (at desired data server if running on cluster)
 # Download from BaseSpace is parallelized (via GNU parallel)
 
@@ -54,6 +65,7 @@
 # etc.                                                                                                              #
 # To ensure smooth processing with subsequent scripts in HybPhyloMaker the file names must follow the convention    #
 # genus-species_code                                                                                                #
+# i.e., for samples containing '-' in the name and downloaded from SRA this needs to be corrected manually          #
 #                                                                                                                   #
 #####################################################################################################################
 
@@ -95,6 +107,76 @@ else
 	#Make and enter work directory
 	mkdir -p workdir00_dataprep
 	cd workdir00_dataprep
+fi
+
+#Download from SRA (based on the 'SRAlist.txt' in HybSeqSource)
+if [[ $download =~ "sra" ]]; then
+	if [ -f "$source/SRRlist.txt" ]; then
+		if [[ $PBS_O_HOST == *".cz" ]]; then
+			module add sratoolkit
+			module add entrezdirect
+			ftp-cp ftp.ncbi.nlm.nih.gov /entrez/entrezdirect xtract.Linux.gz
+			gunzip -f xtract.Linux.gz
+			chmod +x xtract.Linux
+			mkdir -p ~/.ncbi
+			cp ${homedir}/.ncbi/user-settings.mkfg ~/.ncbi
+		fi
+		#Make dir for results
+		mkdir $path
+		mkdir 10rawreads
+		#Loop over samples, download, rename, move to folder
+		echo -e "Downloading samples from SRA...\n"
+		#Download SRRlist.txt
+		cp ${source}/SRRlist.txt .
+		for srr in $(cat SRRlist.txt); do
+			#get organism name
+			name=$(esearch -db sra -query ${srr} | esummary | ./xtract.Linux -pattern DocumentSummary -element Organism@ScientificName Run@acc | sed 's/ /-/' | sed 's/\t/_/')
+			echo -e "${name}"
+			#download fastq.gz files
+			echo -e "downloading"
+			fastq-dump --split-3 --gzip ${srr}
+			#unzip
+			echo -e "unzipping"
+			gzip -d ${srr}_{1,2}.fastq.gz
+			#remove everything after '+SRR' on the beginning of line, i.e. make standard fastq format with just '+' on third line
+			echo -e "modifying"
+			sed -i 's/^+SRR.*/+/' ${srr}_{1,2}.fastq
+			#gzip
+			echo -e "gzipping"
+			gzip ${srr}_{1,2}.fastq
+			#rename files
+			mv ${srr}_1.fastq.gz ${name}_L001_R1_001.fastq.gz
+			mv ${srr}_2.fastq.gz ${name}_L001_R2_001.fastq.gz
+			#create a dir and move the fastq.gz files
+			mkdir 10rawreads/${name}
+			mv ${name}_L001_R{1,2}_001.fastq.gz 10rawreads/${name}
+			echo
+		done
+		
+		#Create list of samples
+		ls 10rawreads > 10rawreads/SamplesFileNames.txt
+		#Copy data home
+		cp -r 10rawreads $path
+		
+		#Clean scratch/work directory
+		if [[ $PBS_O_HOST == *".cz" ]]; then
+			#delete scratch
+			if [[ ! $SCRATCHDIR == "" ]]; then
+				rm -rf $SCRATCHDIR/*
+			fi
+		else
+			cd ..
+			rm -r workdir00_dataprep
+		fi
+		
+		echo -e "Script HybPhyloMaker0a finished...\n"
+		
+		exit 0
+	else
+		echo -e "List of SRR numbers for download (SRRlist.txt) is missing. Should be in HybSeqSource...\n"
+		rm -d ../workdir00_dataprep/ 2>/dev/null
+		exit 3
+	fi
 fi
 
 #Check necessary file
