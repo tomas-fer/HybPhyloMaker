@@ -20,7 +20,7 @@
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
 # *                                   v.1.8.0d                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
