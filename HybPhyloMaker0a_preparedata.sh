@@ -19,13 +19,14 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 0a - Download & prepare data                      *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2021 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
 
-# Download fastq files from SRR (Short Read Archive, NCBI) or BaseSpace (optional), rename them and move to sample folders
+# Download fastq files from SRA (Short Read Archive, NCBI), ENA (European Nucleotide Archive, EBI) or BaseSpace (optional)
+# rename them and move to sample folders
 # Or just rename fastq.gz samples in 'home' directory and move them to sample folders
 # i.e., prepare raw reads for running HybPhyloMaker
 # Controled by 'download=' option in settings.cfg (yes/no/sra)
@@ -37,7 +38,7 @@
 # If only renaming&moving of the samples is requested (download=no), there has to be the 'renamelist.txt' in the 'home' folder
 # Samples should contain *R1* or *R2* in the name!!!
 
-# For SRA download (download=sra) - needs file 'SRRlist.txt' in HybSeqSource (simple list of SRR codes, one per line)
+# For SRA/ENA download (download=sra) - needs file 'SRRandERRlist.txt' in HybSeqSource (simple list of SRR/ERR codes, one per line)
 # Does not test validity of SRR code (will be implemented in the future?)
 # No 'renamelist.txt' is required
 
@@ -109,12 +110,13 @@ else
 	cd workdir00_dataprep
 fi
 
-#Download from SRA (based on the 'SRAlist.txt' in HybSeqSource)
+#Download from SRA/ENA (based on the 'SRRandERRlist.txt' in HybSeqSource)
 if [[ $download =~ "sra" ]]; then
-	if [ -f "$source/SRRlist.txt" ]; then
+	if [ -f "$source/SRRandERRlist.txt" ]; then
 		if [[ $PBS_O_HOST == *".cz" ]]; then
 			module add sratoolkit
 			module add entrezdirect
+			module add py-ffq
 			ftp-cp ftp.ncbi.nlm.nih.gov /entrez/entrezdirect xtract.Linux.gz
 			gunzip -f xtract.Linux.gz
 			chmod +x xtract.Linux
@@ -122,35 +124,69 @@ if [[ $download =~ "sra" ]]; then
 			cp ${homedir}/.ncbi/user-settings.mkfg ~/.ncbi
 		fi
 		#Make dir for results
-		mkdir $path
+		mkdir -p $path
 		mkdir 10rawreads
 		#Loop over samples, download, rename, move to folder
 		echo -e "Downloading samples from SRA...\n"
-		#Download SRRlist.txt
-		cp ${source}/SRRlist.txt .
-		for srr in $(cat SRRlist.txt); do
-			#get organism name
-			name=$(esearch -db sra -query ${srr} | esummary | ./xtract.Linux -pattern DocumentSummary -element Organism@ScientificName Run@acc | sed 's/ /-/' | sed 's/\t/_/')
-			echo -e "${name}"
-			#download fastq.gz files
-			echo -e "downloading"
-			fastq-dump --split-3 --gzip ${srr}
-			#unzip
-			echo -e "unzipping"
-			gzip -d ${srr}_{1,2}.fastq.gz
-			#remove everything after '+SRR' on the beginning of line, i.e. make standard fastq format with just '+' on third line
-			echo -e "modifying"
-			sed -i 's/^+SRR.*/+/' ${srr}_{1,2}.fastq
-			#gzip
-			echo -e "gzipping"
-			gzip ${srr}_{1,2}.fastq
-			#rename files
-			mv ${srr}_1.fastq.gz ${name}_L001_R1_001.fastq.gz
-			mv ${srr}_2.fastq.gz ${name}_L001_R2_001.fastq.gz
-			#create a dir and move the fastq.gz files
-			mkdir 10rawreads/${name}
-			mv ${name}_L001_R{1,2}_001.fastq.gz 10rawreads/${name}
-			echo
+		#Download SRRandERRlist.txt
+		cp ${source}/SRRandERRlist.txt .
+		#Remove extrace spaces from SRRandERRlist.txt
+		sed -i 's/ //g' SRRandERRlist.txt
+		for xrr in $(cat SRRandERRlist.txt); do
+			if grep -q "^SRR[0-9]*$" <<< $xrr; then
+				#get organism name
+				if [[ $PBS_O_HOST == *".cz" ]]; then
+					name=$(esearch -db sra -query ${xrr} | esummary | ./xtract.Linux -pattern DocumentSummary -element Organism@ScientificName Run@acc | sed 's/ /-/' | sed 's/\t/_/')
+				else
+					name=$(esearch -db sra -query ${xrr} | esummary | xtract -pattern DocumentSummary -element Organism@ScientificName Run@acc | sed 's/ /-/' | sed 's/\t/_/')
+				fi
+				if [[ -z $name ]]; then
+					echo -e "${xrr} did not return valid accession in SRA...\n"
+				else
+					echo -e "${name}"
+					#download fastq.gz files
+					echo -e "downloading"
+					fastq-dump --split-3 --gzip ${xrr}
+					#unzip
+					echo -e "unzipping"
+					gzip -d ${xrr}_{1,2}.fastq.gz
+					#remove everything after '+SRR' on the beginning of line, i.e. make standard fastq format with just '+' on third line
+					echo -e "modifying"
+					sed -i 's/^+SRR.*/+/' ${xrr}_{1,2}.fastq
+					#gzip
+					echo -e "gzipping"
+					gzip ${xrr}_{1,2}.fastq
+					#rename files
+					mv ${xrr}_1.fastq.gz ${name}_L001_R1_001.fastq.gz
+					mv ${xrr}_2.fastq.gz ${name}_L001_R2_001.fastq.gz
+					#create a dir and move the fastq.gz files
+					mkdir 10rawreads/${name}
+					mv ${name}_L001_R{1,2}_001.fastq.gz 10rawreads/${name}
+					echo
+				fi
+			elif grep -q "^ERR[0-9]*$" <<< $xrr; then
+				#get organism name
+				name=$(n=$(ffq ${xrr} 2>/dev/null | grep ERS | cut -d'"' -f4) && ffq ${n} 2>/dev/null | grep org | head -n1 | cut -d'"' -f4 | sed 's/ /-/')
+				if [[ -z $name ]]; then
+					echo -e "${xrr} did not return valid accession in ENA...\n"
+				else
+					fname=${name}_${xrr}
+					echo -e "${fname}"
+					#download fastq.gz files
+					echo -e "downloading"
+					wget $(ffq --ftp ${xrr} 2>/dev/null | grep '"url"' | cut -d '"' -f4) 2>/dev/null
+					#rename files
+					echo -e "renaming"
+					mv ${xrr}_1.fastq.gz ${fname}_L001_R1_001.fastq.gz
+					mv ${xrr}_2.fastq.gz ${fname}_L001_R2_001.fastq.gz
+					#create a dir and move the fastq.gz files
+					mkdir 10rawreads/${fname}
+					mv ${fname}_L001_R{1,2}_001.fastq.gz 10rawreads/${fname}
+					echo
+				fi
+			else
+				echo -e "${xrr} is not a valid SRR/ERR code...\n"
+			fi
 		done
 		
 		#Create list of samples
@@ -173,7 +209,7 @@ if [[ $download =~ "sra" ]]; then
 		
 		exit 0
 	else
-		echo -e "List of SRR numbers for download (SRRlist.txt) is missing. Should be in HybSeqSource...\n"
+		echo -e "List of SRR/ERR numbers for download (SRRandERRlist.txt) is missing. Should be in HybSeqSource...\n"
 		rm -d ../workdir00_dataprep/ 2>/dev/null
 		exit 3
 	fi
