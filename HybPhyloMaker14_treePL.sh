@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 14 - treePL divergence dating                     *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -180,6 +180,20 @@ if [[ ! $location == "1" ]]; then
 	fi
 fi
 
+#Add necessary programs and files
+if [ -f "$source/configuration.txt" ]; then
+	cp $source/configuration.txt .
+else
+	echo -e "The file 'configuration.txt' is missing in HybSeqSource. Exiting...\n"
+	exit 3
+fi
+if [ -f "$source/treepl_wrapper.sh" ]; then
+	cp $source/treepl_wrapper.sh .
+else
+	echo -e "The script 'treepl_wrapper.sh' is missing in HybSeqSource. Exiting...\n"
+	exit 3
+fi
+
 #Write log
 logname=HPM14
 echo -e "HybPhyloMaker14: treePL divergence dating" > ${logname}.log
@@ -208,6 +222,10 @@ fi
 for set in data selection cp corrected update MISSINGPERCENT SPECIESPRESENCE tree FastTreeBoot OUTGROUP collapse requisite; do
 	printf "%-25s %s\n" `echo -e "${set}:\t" ${!set}` >> ${logname}.log
 done
+
+echo -e "\nSettings for divergence dating:" >> ${logname}.log
+cat configuration.txt >> ${logname}.log
+
 if [[ $requisite =~ "yes" ]]; then
 	echo -e "\nList of requisite samples" >> ${logname}.log
 	echo $requisitetaxa | tr '|' '\n' >> ${logname}.log
@@ -216,20 +234,6 @@ if [ ! -z "$selection" ]; then
 	echo -e "\nList of excluded samples" >> ${logname}.log
 	cat $source/excludelist.txt >> ${logname}.log
 	echo >> ${logname}.log
-fi
-
-#Add necessary programs and files
-if [ -f "$source/configuration.txt" ]; then
-	cp $source/configuration.txt .
-else
-	echo -e "The file 'configuration.txt' is missing in HybSeqSource. Exiting...\n"
-	exit 3
-fi
-if [ -f "$source/treepl_wrapper.sh" ]; then
-	cp $source/treepl_wrapper.sh .
-else
-	echo -e "The script 'treepl_wrapper.sh' is missing in HybSeqSource. Exiting...\n"
-	exit 3
 fi
 
 #Create folder for results & Copy species tree to data (now ExaML tree)
@@ -323,7 +327,7 @@ elif [[ $tpltree =~ "FastTree" ]]; then
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenated/treePL
 		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}concatenated/treePL
 	else
-		mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
+		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
 		cp ${logname}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
 		cp treePL_${tpltree}.log $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}concatenated/treePL
 	fi
