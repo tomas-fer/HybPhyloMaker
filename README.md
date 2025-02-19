@@ -19,7 +19,7 @@
 11:Calculate PhyParts  
 12:Subselect samples based on exclude list  
 13:DiscoVista  
-14:treePL divergence dating of species tree
+14:treePL divergence dating of species tree  
 15:combine bootstrap support values from multiple species trees
   
 Uses many additional software that must be installed and put in the PATH prior to run scripts (see [Table](docs/HybPhyloMaker_software.pdf) located in the docs folder and consider to run [install_software.sh](install_software.sh)).  
