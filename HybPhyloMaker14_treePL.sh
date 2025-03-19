@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                     Script 14 - treePL divergence dating                     *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0g                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -382,7 +382,11 @@ if [[ $tplbs =~ "yes" ]]; then
 		fi
 	done
 	#Prepare job files
-	touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	if [[ $update =~ "yes" ]]; then
+		touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	else
+		touch $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	fi
 	for group in $(ls tree*.tre | cut -d'.' -f1); do
 		echo '#!/bin/bash' >> ${group}.sh
 		echo '#----------------MetaCentrum----------------' >> ${group}.sh
@@ -417,12 +421,18 @@ if [[ $tplbs =~ "yes" ]]; then
 		fi
 	done
 	#Make the submitter executable
-	chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	if [[ $update =~ "yes" ]]; then
+		chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	else
+		chmod +x $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpltf}/treePL/bstrees/submitTreePLjobs.sh
+	fi
 fi
 
 #Run main treePL analysis
 if [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/${tpltree}_treePLresult.tre" ]; then
 	echo -e "The file '${tpltree}_treePLresult.tre' already exist in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL/'. Delete it or rename before running this script again. No treePL analysis now...\n"
+elif [ -f "$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpltf}/treePL/${tpltree}_treePLresult.tre" ]; then
+	echo -e "The file '${tpltree}_treePLresult.tre' already exist in '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpltf}/treePL/'. Delete it or rename before running this script again. No treePL analysis now...\n"
 else
 	echo -e "Running treePL for the main species tree (${tpltree})...\n"
 	chmod 755 treepl_wrapper.sh
@@ -433,7 +443,9 @@ else
 	mv out_dates.tre.r8s ${tpltree}_dates.tre.r8s
 	mv out_dates.tre ${tpltree}_dates.tre
 	#Delete some files
-	rm ${tplt} treepl_wrapper.sh
+	rm ${tplt} treepl_wrapper.sh settings.cfg
+	rm tree*.tre
+	rm tree*.sh
 	# Copy results to home
 	if [[ $update =~ "yes" ]]; then
 		cp * $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpltf}/treePL
