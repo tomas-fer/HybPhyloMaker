@@ -443,7 +443,7 @@ else
 	mv out_dates.tre.r8s ${tpltree}_dates.tre.r8s
 	mv out_dates.tre ${tpltree}_dates.tre
 	#Delete some files
-	rm ${tplt} treepl_wrapper.sh settings.cfg
+	rm bstrees ${tplt} treepl_wrapper.sh settings.cfg
 	rm tree*.tre
 	rm tree*.sh
 	# Copy results to home
