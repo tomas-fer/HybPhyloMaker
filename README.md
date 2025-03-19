@@ -5,7 +5,7 @@
 **Set of bash scripts for analysis of HybSeq data (from raw reads to species trees).** Consists of several steps:   
   
 
-0:  Prepare FASTQ files to folder (optionally download files from Illumina BaseSpace storage)  
+0:  Prepare FASTQ files to folder (optionally download files from Illumina BaseSpace storage or SRA/ENA archives)  
 1:  Processing raw reads (PhiX removal, adaptor removal, quality filtering, summary statistics)  
 2:  Mapping reads to reference (using Bowtie2/BWA), create consensus sequence  
 3:  Recognize sequences matching probes (generate PSLX files using BLAT)  
