@@ -13,13 +13,13 @@
 5:  Treat missing data, select best genes  
 6:  Generate FastTree or RAxML gene trees + calculate/plot trees-alignment properties  
 7:  Root gene trees with outgroup, combine gene trees into a single file  
-8:  Estimate species tree  and other methods... (ASTRAL-III, ASTRAL-IV, ASTRID, MRL, BUCKy, concatenation FastTree/ExaML, NeighbourNetwork, Dsuite, SuperQ network, quartet sampling, SNaQ, PhyloNet)  
-9:  Subselect suitable genes and repeat steps 7+8  
+8:  Estimate species tree  and other methods... (ASTRAL-III, ASTRAL-IV, ASTRID, MRL, BUCKy, concatenation FastTree/ExaML, NeighbourNetwork, Dsuite, SuperQ network, quartet sampling, SNaQ, PhyloNet, SNP heatmap)  
+9:  Subselect suitable genes (and repeat steps 7+8)  
 10:Subselect trees based on samples presence, collapse unsupported branches  
 11:Calculate PhyParts  
 12:Subselect samples based on exclude list  
 13:DiscoVista  
-14:treePL divergence dating of species tree  
+14:treePL divergence dating of a species tree (ASTRAL-IV, FastTree, or ExaML), date all selected gene trees and annotate species tree with 95% HPD intervals  
 15:combine bootstrap support values from multiple species trees
   
 Uses many additional software that must be installed and put in the PATH prior to run scripts (see [Table](docs/HybPhyloMaker_software.pdf) located in the docs folder and consider to run [install_software.sh](install_software.sh)).  
