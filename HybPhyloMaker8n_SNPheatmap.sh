@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                           Script 08n - SNP heatmap                           *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # *                                  Tomas Fer                                   *
 # *       Dept. of Botany, Charles University, Prague, Czech Republic, 2025      *
 # *                           tomas.fer@natur.cuni.cz                            *
@@ -114,18 +114,18 @@ else
 fi
 
 #Check necessary file
-echo -e "\nTesting if input data are available...not yet implemented"
+echo -e "\nTesting if input data are available..."
 #test for folder with alignments
 #Test if folder for results exits
 if [[ $update =~ "yes" ]]; then
-	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap' already exists. Delete it or rename before running this script again. Exiting...\n"
+	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap/${snpmiss}missing" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap/${snpmiss}missing' already exists. Delete it or rename before running this script again. Exiting...\n"
 		rm -d ../workdir08n 2>/dev/null
 		exit 3
 	fi
 else
-	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap" ]; then
-		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap' already exists. Delete it or rename before running this script again. Exiting...\n"
+	if [ -d "${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap/${snpmiss}missing" ]; then
+		echo -e "Directory '$path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap/${snpmiss}missing' already exists. Delete it or rename before running this script again. Exiting...\n"
 		rm -d ../workdir08n 2>/dev/null
 		exit 3
 	fi
@@ -299,6 +299,8 @@ fi
 #CONTINUE HERE !!!
 #Create 0/1 matrix
 echo -e "Creating 0/1 matrix...\n"
+#unzip VCF
+gzip -d -c FILTEREDconcatenated_${snpmiss}missing.vcf.gz > FILTEREDconcatenated_${snpmiss}missing.vcf
 #only take columns 10+ (i.e., genotype data only)
 grep -v "^##" FILTEREDconcatenated_${snpmiss}missing.vcf | cut -f2,10- > SNPmatrix.txt
 #transpose the matrix (lines will be samples)
@@ -320,12 +322,12 @@ END {
 }' SNPmatrix.txt > SNPmatrixTransposed.txt
 
 #Plot heatmap in R
-echo -en "Plotting heatmap in R..."
 if [[ $PBS_O_HOST == *".cz" ]]; then
 	module unload python/3.7.7-gcc-8.3.0-t4loj4a #to avoid conflict with R4.4 (requires python3.9.12)
 	module add r/4.4.0-gcc-10.2.1-ssuwpvb
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 fi
+echo -en "Plotting heatmap in R..."
 if [[ $snpmiss -eq 0 ]]; then
 	echo -e "using DistBinary(PERMANOVA) - no missing data\n"
 	R --slave -f SNPheatmap.R 0 >> R.log 2>&1
@@ -345,7 +347,7 @@ fi
 #Copy results to home
 if [[ $update =~ "yes" ]]; then
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap/${snpmiss}missing
-	cp *.{pdf,gz,fasta,txt,log} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap${snpmiss}missing
+	cp *.{pdf,gz,fasta,txt,log} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/SNPheatmap/${snpmiss}missing
 else
 	mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap/${snpmiss}missing
 	cp *.{pdf,gz,fasta,txt,log} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/SNPheatmap/${snpmiss}missing
