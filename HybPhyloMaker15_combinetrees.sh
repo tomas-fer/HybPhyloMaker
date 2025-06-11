@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 15 - Combine trees with support values                 *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -264,7 +264,7 @@ if [[ $update =~ "yes" ]]; then
 	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/${modif}${tpath2}/${tname2} .
 else
 	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpath1}/${tname1} .
-	ccp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpath2}/${tname2} .
+	cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/${modif}${tpath2}/${tname2} .
 fi
 
 #Modify names in trees (in order to have 'GenusXXspeciesXXcode')
