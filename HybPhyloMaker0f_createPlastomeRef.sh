@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *            Script 0f - Prepare plastome reference from GenBank file          *
-# *                                   v.1.8.0a                                   *
+# *                                   v.1.8.0b                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -381,10 +381,12 @@ echo -e "type\tfull\tlonger${mincplength}" > header.txt
 cat header.txt ${name}_statF.txt > ${name}_stat.txt
 rm header.txt ${name}_statF.txt
 
+#Rename *.fasta to *.fa
+for f in $(ls *.fasta | cut -d'.' -f 1); do mv ${f}.fasta ${f}.fa; done
 #Copy results to home
-cp *.{gb,fasta,txt} $path/cp/00reference
+cp *.{gb,fa,txt} $path/cp/00reference
 #Copy HPM references to HybSeqSource
-cp *HPM*.fasta $source
+cp *HPM*.fa $source
 cp ${cpGBfile} $source
 
 #Copy log to home
