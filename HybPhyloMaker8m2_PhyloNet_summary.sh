@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0c                                   *
+# *                                   v.1.8.0d                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -37,6 +37,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	. settings.cfg
 	path=/storage/$server/home/$LOGNAME/$data
 	source=/storage/$server/home/$LOGNAME/HybSeqSource
+	export JULIA_DEPOT_PATH=/storage/$server/home/$LOGNAME/.julia
 	#Add necessary modules
 	module add r/4.0.0-gcc
 	module add julia
@@ -228,7 +229,7 @@ done
 #download PDFbox
 #wget https://dlcdn.apache.org/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
 wget https://archive.apache.org/dist/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
-mv pdfbox-app-2.0.33.jar pdfbox.jar
+	mv pdfbox-app-2.0.33.jar pdfbox.jar
 #loop over reticulations
 for pn in $(seq $hstart $hmax); do
 	java -jar pdfbox.jar PDFMerger ${pn}reti*_unrooted.pdf ${data1}_PhyloNet_${pn}_unrooted.pdf
