@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0b                                   *
+# *                                   v.1.8.0c                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -226,11 +226,13 @@ done
 
 #Merge PDFs and copy results to home
 #download PDFbox
-wget https://dlcdn.apache.org/pdfbox/2.0.31/pdfbox-app-2.0.31.jar
+#wget https://dlcdn.apache.org/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
+wget https://archive.apache.org/dist/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
+mv pdfbox-app-2.0.33.jar pdfbox.jar
 #loop over reticulations
 for pn in $(seq $hstart $hmax); do
-	java -jar pdfbox-app-2.0.31.jar PDFMerger ${pn}reti*_unrooted.pdf ${data1}_PhyloNet_${pn}_unrooted.pdf
-	java -jar pdfbox-app-2.0.31.jar PDFMerger ${pn}reti*_rooted.pdf ${data1}_PhyloNet_${pn}_rooted.pdf
+	java -jar pdfbox.jar PDFMerger ${pn}reti*_unrooted.pdf ${data1}_PhyloNet_${pn}_unrooted.pdf
+	java -jar pdfbox.jar PDFMerger ${pn}reti*_rooted.pdf ${data1}_PhyloNet_${pn}_rooted.pdf
 	if [[ $update =~ "yes" ]]; then
 		cp ${pn}reti*.{pdf,svg} $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}
 		cp ${data1}_PhyloNet_${pn}_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}
@@ -242,8 +244,8 @@ for pn in $(seq $hstart $hmax); do
 	fi
 done
 #merge merged PDFs
-java -jar pdfbox-app-2.0.31.jar PDFMerger ${data1}_PhyloNet_*_unrooted.pdf ${data1}_PhyloNet_unrooted.pdf
-java -jar pdfbox-app-2.0.31.jar PDFMerger ${data1}_PhyloNet_*_rooted.pdf ${data1}_PhyloNet_rooted.pdf
+java -jar pdfbox.jar PDFMerger ${data1}_PhyloNet_*_unrooted.pdf ${data1}_PhyloNet_unrooted.pdf
+java -jar pdfbox.jar PDFMerger ${data1}_PhyloNet_*_rooted.pdf ${data1}_PhyloNet_rooted.pdf
 #copy to home
 if [[ $update =~ "yes" ]]; then
 	cp ${data1}_PhyloNet_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
