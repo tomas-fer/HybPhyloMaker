@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *            Script 08e - concatenated species tree using FastTree             *
-# *                                   v.1.8.0g                                   *
+# *                                   v.1.8.0h                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -127,6 +127,25 @@ if [[ $cp =~ "full" ]]; then
 	
 	#copy alignment
 	cp $path/fullplastome/60mafft/consensus_fullplastome.mafft .
+	#Calculate proportion of missing data in the concatenated alignment
+	echo -e "Calculating proportion of missing data...\n"
+	cp consensus_fullplastome.mafft consensus_fullplastome.mafft2
+	#Removes line breaks from fasta file
+	awk '!/^>/ { printf "%s", $0; n = "\n" } /^>/ { print n $0; n = "" } END { printf "%s", n }' consensus_fullplastome.mafft2 > tmp && mv tmp consensus_fullplastome.mafft2
+	#Calculate length of alignment: 1. get second line and count length, 2. decrease value by one (because previous command also counted LF)
+	length=$(cat consensus_fullplastome.mafft2 | head -n 2 | tail -n 1 | wc -c)
+	length=`expr $length - 1`
+	#Replace newline with ' ' if line starts with '>' (i.e., merge headers with data into single line separated by space)
+	cat consensus_fullplastome.mafft2 | sed '/^>/{N; s/\n/ /;}' > consensus_fullplastome.modif.fasta
+	#Cut first part until space, i.e. header, and remove '>'
+	cat consensus_fullplastome.modif.fasta | cut -f1 -d" " | sed 's/>//' > headers.txt
+	#Cut only part after the first space, i.e., only sequence, change all missing data (-, ?, N) to 'n', replace all other characters then 'n' by nothing and print percentage of 'n's in each sequence
+	cat consensus_fullplastome.modif.fasta | cut -f2 -d" " | sed 's/[?N-]/n/g' | sed 's/[^n]//g' | awk -v val=$length '{ print (length*100)/val }' > missingpercentage.txt
+	paste headers.txt missingpercentage.txt > consensus_fullplastome_missingperc.txt
+	#Calculate mean of all values
+	echo -e "MEAN\t$(awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }' consensus_fullplastome_missingperc.txt)" > mean.txt
+	cat consensus_fullplastome_missingperc.txt mean.txt > tmp && mv tmp consensus_fullplastome_missingperc.txt
+	rm headers.txt missingpercentage.txt consensus_fullplastome.modif.fasta mean.txt
 	#run FastTree
 	fasttreemp -nt consensus_fullplastome.mafft > consensus_fullplastome.fast.tre
 	#(Re)root a final concatenated species tree with $OUTGROUP
@@ -139,6 +158,7 @@ if [[ $cp =~ "full" ]]; then
 	#copy tree back to home
 	mkdir -p $path/fullplastome/72trees/FastTree/concatenated
 	cp consensus_fullplastome.fast.tre $path/fullplastome/72trees/FastTree/concatenated
+	cp consensus_fullplastome_missingperc.txt $path/fullplastome/72trees/FastTree/concatenated
 	#Copy log to home
 	echo -e "\nEnd:" `date '+%A %d-%m-%Y %X'` >> ${logname}.log
 	cp ${logname}.log $path/fullplastome/72trees/FastTree/concatenated
@@ -150,9 +170,9 @@ if [[ $cp =~ "full" ]]; then
 		fi
 	else
 		cd ..
-		rm -r workdir03a
+		rm -r workdir08e
 	fi
-	echo -e "\nScript HybPhyloMaker3a finished...\n"
+	echo -e "\nScript HybPhyloMaker8e finished...\n"
 	exit 0
 fi
 
