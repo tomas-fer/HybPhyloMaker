@@ -21,7 +21,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                         Script 12 - Exclude samples                          *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0g                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -225,7 +225,7 @@ cat excludelist.txt | tr -d "[:blank:]" > tmp && mv tmp excludelist.txt
 #get name of first *.mafft file
 mafft=$(ls $path/$mafftpath | head -n1)
 #get list of samples from mafft file
-grep "^>" $path/$mafftpath/$mafft | sed 's/>//' | sed 's/_contigs.fas//' > allsamples.txt
+grep "^>" $path/$mafftpath/$mafft | sed 's/>//' | sed 's/_contigs.fas//' | sed 's/.fas//' > allsamples.txt
 #check if all samples in excludelist are among original samples (allsamples.txt)
 for i in $(cat excludelist.txt); do
 	if [ -z $(grep -E "^${i}$" allsamples.txt) ]; then
