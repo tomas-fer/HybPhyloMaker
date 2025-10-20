@@ -152,7 +152,11 @@ if [ ! -z "$selection" ]; then
 	echo >> ${logname}.log
 fi
 
-data1=$(echo $data | sed 's:.*/::') #everything after last slash, for naming purposes
+if [ -z "$selection" ]; then
+	data1=$(echo $data | sed 's:.*/::') #everything after last slash, for naming purposes
+else
+	data1=$selection
+fi
 
 #Check necessary file
 echo -e "\n\nTesting if input data are available..."
@@ -236,7 +240,7 @@ done
 #get version number of the newest PDFbox
 pdfboxver=$(wget -q -O- https://downloads.apache.org/pdfbox/ | grep "2\.0\." | cut -d'"' -f6 | sed 's/.$//')
 #download the newest version and rename
-wget https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-${pdfboxver}.jar
+wget https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-app-${pdfboxver}.jar
 mv pdfbox-app-2.0.35.jar pdfbox.jar
 #loop over reticulations
 for pn in $(seq $hstart $hmax); do
