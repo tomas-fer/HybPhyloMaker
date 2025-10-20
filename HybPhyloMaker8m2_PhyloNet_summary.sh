@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -188,6 +188,7 @@ fi
 cp $source/plotNetworks.jl .
 
 #Summarize PhyloNet runs
+echo -e "\nSummarizing PhyloNet results ($hstart to $hmax reticulations)..."
 for pn in $(seq $hstart $hmax); do
 	#copy data from home
 	if [[ $update =~ "yes" ]]; then
@@ -221,15 +222,17 @@ cat header.txt ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet
 rm header.txt
 
 #Extract networks in Dendroscope format (i.e., without gammas)
+echo -e "\nExtracting networks in Dendroscope format..."
 for j in $(seq $hstart $hmax); do
 	grep Dendroscope ${data1}_${j}_reticulations.networks | cut -d':' -f2 | sed 's/ //' > ${data1}_PhyloNet_${j}_Dendroscope.networks
 done
 
 #Plot networks (in Julia)
+echo -e "\nPlotting networks using PhyloNetworks in julia..."
 julia plotNetworks.jl "$OUTGROUP"
 
 #Create PDF from all SVG
-echo -e "Transforming SVG to PDF...\n"
+echo -e "\nTransforming SVG to PDF...\n"
 for i in $(ls *.svg | cut -d'.' -f1); do
 	cairosvg ${i}.svg -o ${i}.pdf
 done
@@ -240,9 +243,10 @@ done
 #get version number of the newest PDFbox
 pdfboxver=$(wget -q -O- https://downloads.apache.org/pdfbox/ | grep "2\.0\." | cut -d'"' -f6 | sed 's/.$//')
 #download the newest version and rename
-wget https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-app-${pdfboxver}.jar
+wget -q https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-app-${pdfboxver}.jar
 mv pdfbox-app-2.0.35.jar pdfbox.jar
 #loop over reticulations
+echo -e "\nMerging PDFs..."
 for pn in $(seq $hstart $hmax); do
 	java -jar pdfbox.jar PDFMerger ${pn}reti*_unrooted.pdf ${data1}_PhyloNet_${pn}_unrooted.pdf
 	java -jar pdfbox.jar PDFMerger ${pn}reti*_rooted.pdf ${data1}_PhyloNet_${pn}_rooted.pdf
