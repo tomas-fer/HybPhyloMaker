@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -354,7 +354,11 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'tree='"$tree" >> PhyloNet_${pn}.sh
 		echo 'nrtrees='"$nrtrees" >> PhyloNet_${pn}.sh
 		echo 'data='"$data" >> PhyloNet_${pn}.sh
-		echo 'data1=$(echo $data | sed '"'s:.*/::'"')' >> PhyloNet_${pn}.sh
+		echo 'if [ -z "$selection" ]; then' >> PhyloNet_${pn}.sh
+		echo '  data1=$(echo $data | sed '"'s:.*/::'"')' >> PhyloNet_${pn}.sh
+		echo 'else' >> PhyloNet_${pn}.sh
+		echo '  data1=$selection' >> PhyloNet_${pn}.sh
+		echo 'fi' >> PhyloNet_${pn}.sh
 		echo 'pn='"$pn" >> PhyloNet_${pn}.sh
 		echo 'if [ -z "$selection" ]; then' >> PhyloNet_${pn}.sh
 		echo '  if [[ $corrected =~ "yes" ]]; then' >> PhyloNet_${pn}.sh
