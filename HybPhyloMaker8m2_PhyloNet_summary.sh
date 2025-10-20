@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0d                                   *
+# *                                   v.1.8.0e                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -216,6 +216,13 @@ echo -e "NrHybridizations\tNrBranches\tNrGeneTrees\tlogLikelihood\tki\tAIC\tdelt
 cat header.txt ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
 rm header.txt
 
+#Extract networks in Dendroscope format (i.e., without gammas)
+for j in {0..5}; do
+	cd ${j}
+	grep Dendroscope *.networks | cut -d':' -f2 | sed 's/ //' > ../${data1}_PhyloNet_${j}_Dendroscope.networks
+	cd ..
+done
+
 #Plot networks (in Julia)
 julia plotNetworks.jl "$OUTGROUP"
 
@@ -227,9 +234,12 @@ done
 
 #Merge PDFs and copy results to home
 #download PDFbox
-#wget https://dlcdn.apache.org/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
-wget https://archive.apache.org/dist/pdfbox/2.0.33/pdfbox-app-2.0.33.jar
-	mv pdfbox-app-2.0.33.jar pdfbox.jar
+#wget https://archive.apache.org/dist/pdfbox/2.0.35/pdfbox-app-2.0.35.jar
+#get version number of the newest PDFbox
+pdfboxver=$(wget -q -O- https://downloads.apache.org/pdfbox/ | grep "2\.0\." | cut -d'"' -f6 | sed 's/.$//')
+#download the newest version and rename
+wget https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-${pdfboxver}.jar
+mv pdfbox-app-2.0.35.jar pdfbox.jar
 #loop over reticulations
 for pn in $(seq $hstart $hmax); do
 	java -jar pdfbox.jar PDFMerger ${pn}reti*_unrooted.pdf ${data1}_PhyloNet_${pn}_unrooted.pdf
@@ -252,10 +262,12 @@ if [[ $update =~ "yes" ]]; then
 	cp ${data1}_PhyloNet_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_rooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
+	cp ${data1}_PhyloNet_${j}_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 else
 	cp ${data1}_PhyloNet_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_rooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
+	cp ${data1}_PhyloNet_${j}_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 fi
 
 #Copy log to home
