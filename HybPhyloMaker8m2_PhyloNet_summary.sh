@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0g                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -268,12 +268,12 @@ if [[ $update =~ "yes" ]]; then
 	cp ${data1}_PhyloNet_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_rooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
-	cp ${data1}_PhyloNet_${j}_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
+	cp ${data1}_PhyloNet_*_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/
 else
 	cp ${data1}_PhyloNet_unrooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_rooted.pdf $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 	cp ${data1}_PhyloNet_summary.txt $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
-	cp ${data1}_PhyloNet_${j}_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
+	cp ${data1}_PhyloNet_*_Dendroscope.networks $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet/
 fi
 
 #Copy log to home
