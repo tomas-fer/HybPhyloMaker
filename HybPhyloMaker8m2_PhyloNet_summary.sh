@@ -217,10 +217,8 @@ cat header.txt ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet
 rm header.txt
 
 #Extract networks in Dendroscope format (i.e., without gammas)
-for j in {0..5}; do
-	cd ${j}
-	grep Dendroscope *.networks | cut -d':' -f2 | sed 's/ //' > ../${data1}_PhyloNet_${j}_Dendroscope.networks
-	cd ..
+for j in $(seq $hstart $hmax); do
+	grep Dendroscope ${data1}_${j}_reticulations.networks | cut -d':' -f2 | sed 's/ //' > ${data1}_PhyloNet_${j}_Dendroscope.networks
 done
 
 #Plot networks (in Julia)
