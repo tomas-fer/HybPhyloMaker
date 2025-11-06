@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------MetaCentrum----------------
-#PBS -l walltime=4:0:0
+#PBS -l walltime=2:0:0
 #PBS -l select=1:ncpus=1:mem=1gb:scratch_local=1gb
 #PBS -j oe
 #PBS -N Rpackages_setup
@@ -10,8 +10,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 0c - Setup R-4.4 packages on Metacentrum               *
-# *                                   v.1.8.0g                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2024 *
+# *                                   v.1.8.0h                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -25,6 +25,7 @@
 #phangorn 3.0.0 (developmental version from GitHub)
 #BiocManager 1.30.23 (for installation of Bioconductor packages like treeio)
 #treeio 1.28.0 (from Bioconductor)
+#PERMANOVA 0.2.0
 #all other package are required for smooth installation of these main packages
 
 if [[ $PBS_O_HOST == *".cz" ]]; then
@@ -48,7 +49,7 @@ export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
 
 #Get R packages
 echo -e "\nDownloading R packages (newest versions)...\n"
-packages=( lattice nlme Rcpp digest ape data.table maps MASS clusterGeneration coda combinat iterators codetools foreach doParallel Matrix expm mnormt numDeriv optimParallel remotes BiocManager scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree gtools bitops caTools KernSmooth gplots )
+packages=( lattice nlme Rcpp digest ape data.table maps MASS clusterGeneration coda combinat iterators codetools foreach doParallel Matrix expm mnormt numDeriv optimParallel remotes BiocManager scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr S7 ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise rappdirs yulab.utils purrr stringr tidyr tidytree gtools bitops caTools KernSmooth gplots xtable deldir PERMANOVA)
 
 for i in "${packages[@]}"; do
 	version=$(wget -qO- https://cran.r-project.org/package=${i} | grep "tar.gz" | cut -d' ' -f6 | cut -d'_' -f2 | cut -d't' -f1)
@@ -159,7 +160,7 @@ done
 R -q -e "library(BiocManager);BiocManager::install('Biostrings')"
 R -q -e "library(remotes);remotes::install_github('KlausVigo/phangorn')"
 
-packages2=( scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise yulab.utils purrr stringr tidyr tidytree treeio gtools bitops caTools KernSmooth gplots )
+packages2=( scatterplot3d fastmatch cli glue rlang lifecycle gtable isoband mgcv farver labeling colorspace munsell R6 RColorBrewer viridisLite scales fansi magrittr vctrs utf8 pillar tibble withr S7 ggplot2 ggseqlogo igraph quadprog DEoptim phytools pixmap sp RcppArmadillo ade4 segmented seqinr stringi zip openxlsx tidyselect dplyr lazyeval fs fastmap cachem memoise rappdirs yulab.utils purrr stringr tidyr tidytree treeio gtools bitops caTools KernSmooth gplots xtable deldir PERMANOVA)
 
 for package in "${packages2[@]}"; do
 	echo -e "\nInstalling $package..."
