@@ -19,7 +19,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08k - quartet sampling                         *
-# *                                   v.1.8.0i                                   *
+# *                                   v.1.8.0j                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
@@ -54,6 +54,7 @@ if [[ $PBS_O_HOST == *".cz" ]]; then
 	#module add R-3.4.3-gcc
 	#module add debian10/compat #necessary for R-3.4.3
 	module add raxml-ng-8
+	module add newick-utils-13042016
 	#module add debian9-compat
 	#Set package library for R
 	export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
@@ -239,6 +240,10 @@ elif [[ $qstree =~ "ExaML" ]]; then
 		cp ${path}/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/concatenatedExaML/ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre .
 	fi
 	mv ExaML_BestML_${MISSINGPERCENT}_${SPECIESPRESENCE}.tre tree.tre
+	#reroot ExaML tree with OUTGROUP
+	if [ -n "$OUTGROUP" ]; then
+		nw_reroot -s tree.tre $OUTGROUP > tmp && mv tmp tree.tre
+	fi
 else
 	echo -e "No species tree selected. Exiting...\n"
 	exit 3
