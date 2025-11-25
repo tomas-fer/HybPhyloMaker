@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0g                                   *
+# *                                   v.1.8.0h                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -244,7 +244,7 @@ done
 pdfboxver=$(wget -q -O- https://downloads.apache.org/pdfbox/ | grep "2\.0\." | cut -d'"' -f6 | sed 's/.$//')
 #download the newest version and rename
 wget -q https://downloads.apache.org/pdfbox/${pdfboxver}/pdfbox-app-${pdfboxver}.jar
-mv pdfbox-app-2.0.35.jar pdfbox.jar
+mv pdfbox-app-${pdfboxver}.jar pdfbox.jar
 #loop over reticulations
 echo -e "\nMerging PDFs..."
 for pn in $(seq $hstart $hmax); do
