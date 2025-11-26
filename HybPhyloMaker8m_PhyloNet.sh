@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
-# *                                   v.1.8.0e                                   *
+# *                                   v.1.8.0f                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -382,7 +382,8 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo '  fi' >> PhyloNet_${pn}.sh
 		echo 'fi' >> PhyloNet_${pn}.sh
 		echo '#Copy PhyloNet jar file' >> PhyloNet_${pn}.sh
-		echo 'wget https://github.com/NakhlehLab/PhyloNet/releases/latest/download/PhyloNet.jar' >> PhyloNet_${pn}.sh
+		echo 'wget https://phylogenomics.rice.edu/media/PhyloNet.jar' >> PhyloNet_${pn}.sh
+		#echo 'wget https://github.com/NakhlehLab/PhyloNet/releases/latest/download/PhyloNet.jar' >> PhyloNet_${pn}.sh
 		echo '#Copy PhyloNet NEXUS input file' >> PhyloNet_${pn}.sh
 		echo 'if [[ $update =~ "yes" ]]; then' >> PhyloNet_${pn}.sh
 		echo '  cp $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}/PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus .' >> PhyloNet_${pn}.sh
