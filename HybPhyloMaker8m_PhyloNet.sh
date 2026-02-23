@@ -18,9 +18,9 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
-# *                                   v.1.8.0f                                   *
+# *                                   v.1.8.0h                                   *
 # *                                  Tomas Fer                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2026 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -260,7 +260,14 @@ fi
 
 #Rename gene tree file etc.
 mv $treefile trees.nwk
-data1=$(echo $data | sed 's:.*/::') #everything after last slash, for naming purposes
+
+#data1=$(echo $data | sed 's:.*/::') #everything after last slash, for naming purposes
+if [ -z "$selection" ]; then
+  data1=$(echo $data | sed 's:.*/::') #everything after last slash, for naming purposes
+else
+  data1=$selection
+fi
+
 nrh=$(($hmax-$hstart+1)) #number of different reticulation schemes
 #Count number of trees (and decrease by one as they are counted from '0')
 nrtrees=$(wc -l < trees.nwk)
@@ -313,8 +320,8 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo -e "Generating PhyloNet job file for $pn hybridizations"
 		echo '#!/bin/bash' >> PhyloNet_${pn}.sh
 		echo '#----------------MetaCentrum----------------' >> PhyloNet_${pn}.sh
-		echo '#PBS -l walltime=24:0:0' >> PhyloNet_${pn}.sh
-		echo '#PBS -l select=1:ncpus=20:mem=100gb:scratch_local=8gb' >> PhyloNet_${pn}.sh
+		echo '#PBS -l walltime=4:0:0' >> PhyloNet_${pn}.sh
+		echo '#PBS -l select=1:ncpus=4:mem=10gb:scratch_local=8gb' >> PhyloNet_${pn}.sh
 		echo '#PBS -j oe' >> PhyloNet_${pn}.sh
 		echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> PhyloNet_${pn}.sh
 		echo '#PBS -N PhyloNet_for_'"${pn}" >> PhyloNet_${pn}.sh
@@ -396,11 +403,20 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo 'java -Xmx${mem} -jar PhyloNet.jar PhyloNet_${data1}_${nrtrees}genetrees_${pn}reticulations.nexus > ${data1}_${pn}_reticulations.txt' >> PhyloNet_${pn}.sh
 		echo 'sed -ne '"'"'/Inferred/,$ p'"'"' ${data1}_${pn}_reticulations.txt > ${data1}_${pn}_reticulations.networks' >> PhyloNet_${pn}.sh
 		echo 'grep "probability" ${data1}_${pn}_reticulations.networks | cut -d'"' '"' -f4 > ${pn}_logliks.txt' >> PhyloNet_${pn}.sh
-		echo 'grep -A1 '"\"Network\""' ${data1}_${pn}_reticulations.networks | grep '"\"(\""' | grep -on '"\"1\.0\" | cut -d':' -f1 | uniq -c | awk '{"'$1=$1'"};1' | cut -d' ' -f1 > "'${pn}'"_nrbranches.txt" >> PhyloNet_${pn}.sh
-		echo 'for i in $(seq 1 5); do echo ${pn}; done >> ${pn}_nrhyb.txt' >> PhyloNet_${pn}.sh
-		echo 'for i in $(seq 1 5); do echo ${nrtrees}; done >> ${pn}_nrgtrees.txt' >> PhyloNet_${pn}.sh
-		echo 'paste ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_nrgtrees.txt ${pn}_logliks.txt > ${pn}_table.txt' >> PhyloNet_${pn}.sh
-		echo 'rm ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_nrgtrees.txt ${pn}_logliks.txt' >> PhyloNet_${pn}.sh
+		echo 'if [[ $pn -eq "0" ]]; then' >> PhyloNet_${pn}.sh
+		echo '  for i in $(seq 1 5); do echo ${pn}; done >> ${pn}_nrhyb.txt' >> PhyloNet_${pn}.sh
+		echo '  grep -A1 '"\"Network\""' ${data1}_${pn}_reticulations.networks | grep "(" | sed '\'s/:://g\' '| grep -on ":" | cut -d'"':'" -f1 "| uniq -c | "awk \''{$1=$1};1'"' | cut -d' ' -f1 > ${pn}_nrbranches.txt" >> PhyloNet_${pn}.sh
+		echo 'else' >> PhyloNet_${pn}.sh
+		#echo '  grep -A1 '"\"Network\""' ${data1}_${pn}_reticulations.networks | grep '"\"(\""' | grep -on '"\"1\.0\" | cut -d':' -f1 | uniq -c | awk '{"'$1=$1'"};1' | cut -d' ' -f1 > "'${pn}'"_nrbranches.txt" >> PhyloNet_${pn}.sh
+		#echo '  for i in $(seq 1 5); do echo ${pn}; done >> ${pn}_nrhyb.txt' >> PhyloNet_${pn}.sh
+		echo '  grep -A1 '"\"Network\""' ${data1}_${pn}_reticulations.networks | grep "(" | grep -on '\"#H[0-$pn]:\"' | cut -d'\':\' -f1 \| uniq -c \| awk "'{\$1=\$1};1'" \| cut -d\' \' -f1 \| awk "'{print \$1/2}'" '> ${pn}_nrhyb.txt' >> PhyloNet_${pn}.sh
+		echo '  grep -A1 '"\"Network\""' ${data1}_${pn}_reticulations.networks | grep "(" | sed '\'s/:://g\' '| sed "s/#H[1-$pn]://g" | grep -on ":" | cut -d'"':'" -f1 "| uniq -c | "awk \''{$1=$1};1'"' | cut -d' ' -f1 > ${pn}_nrbranches.txt" >> PhyloNet_${pn}.sh
+		echo 'fi' >> PhyloNet_${pn}.sh
+		#echo 'for i in $(seq 1 5); do echo ${nrtrees}; done >> ${pn}_nrgtrees.txt' >> PhyloNet_${pn}.sh
+		#echo 'paste ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_nrgtrees.txt ${pn}_logliks.txt > ${pn}_table.txt' >> PhyloNet_${pn}.sh
+		echo 'paste ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_logliks.txt > ${pn}_table.txt' >> PhyloNet_${pn}.sh
+		#echo 'rm ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_nrgtrees.txt ${pn}_logliks.txt' >> PhyloNet_${pn}.sh
+		echo 'rm ${pn}_nrhyb.txt ${pn}_nrbranches.txt ${pn}_logliks.txt' >> PhyloNet_${pn}.sh
 		echo '#Copy results to home' >> PhyloNet_${pn}.sh
 		echo 'if [[ $update =~ "yes" ]]; then' >> PhyloNet_${pn}.sh
 		echo '  mkdir $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet/${pn}' >> PhyloNet_${pn}.sh
@@ -479,9 +495,9 @@ if [[ $location == "2" ]]; then
 	echo -e "\nAfter all jobs finish run script HybPhyloMaker8m2 in order to summarize PhyloNet results...\n"
 elif [[ $location == "1" ]]; then
 	if [[ $update =~ "yes" ]]; then
-		echo -e "\nGo to $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet and run submitRAxMLjobs.sh..."
+		echo -e "\nGo to $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/update/species_trees/PhyloNet and run submitPhyloNetjobs.sh..."
 	else
-		echo -e "\nGo to $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet and run submitRAxMLjobs.sh..."
+		echo -e "\nGo to $path/${treepath}${MISSINGPERCENT}_${SPECIESPRESENCE}/${tree}/species_trees/PhyloNet and run submitPhyloNetjobs.sh..."
 	fi
 	echo -e "This starts parallel computation of PhyloNet networks with max nr. hybridization from $hstart to $hmax."
 	echo -e "\nAfter all jobs finish run script HybPhyloMaker8m2 in order to summarize PhyloNet results...\n"
