@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                        Script 08m2 - PhyloNet summary                        *
-# *                                   v.1.8.0h                                   *
+# *                                   v.1.8.0i                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -206,18 +206,18 @@ done
 #combine result tables for all hybridizations
 cat *_table.txt > ${data1}_PhyloNet_summary.txt
 rm *_table.txt
-#sum values in the first three columns and add it as the last column (ki values)
-awk '{ sum = $1 + $2 + $3; print $0 "\t" sum }' ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
+#sum values in the first two columns (nr_hybr and nr_branch) and add it as the last column (ki values)
+awk '{ sum = $1 + $2; print $0 "\t" sum }' ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
 #calculate AIC=-2loglik + 2ki and add it as last column
 #OFMT defines that values will be printed as decimals (not in scientific format), aic after a comma introduces a spaces that is then deleted with a sed command
-awk -v OFMT='%f' '{ aic = -2 * $4 + 2 * $5 ; print $0 "\t",aic }' ${data1}_PhyloNet_summary.txt | sed 's/ //' > test && mv test ${data1}_PhyloNet_summary.txt
+awk -v OFMT='%f' '{ aic = -2 * $3 + 2 * $4 ; print $0 "\t",aic }' ${data1}_PhyloNet_summary.txt | sed 's/ //' > test && mv test ${data1}_PhyloNet_summary.txt
 #calculate deltaAIC (subtract minimum AIC from AIC and add it as last column
-minaic=$(awk '{if (min == "") min=$6 ; else if ($6 < min) min=$6}END{print min}' ${data1}_PhyloNet_summary.txt)
-awk -v val=$minaic '{ delta = $6 - val ; print $0 "\t" delta}' ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
+minaic=$(awk '{if (min == "") min=$5 ; else if ($5 < min) min=$5}END{print min}' ${data1}_PhyloNet_summary.txt)
+awk -v val=$minaic '{ delta = $5 - val ; print $0 "\t" delta}' ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
 #sort according deltaAIC (i.e., column 7)
-sort -n -k 7 ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
+sort -n -k 6 ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
 #add header
-echo -e "NrHybridizations\tNrBranches\tNrGeneTrees\tlogLikelihood\tki\tAIC\tdeltaAIC" > header.txt
+echo -e "NrHybridizations\tNrBranches\tlogLikelihood\tki\tAIC\tdeltaAIC" > header.txt
 cat header.txt ${data1}_PhyloNet_summary.txt > test && mv test ${data1}_PhyloNet_summary.txt
 rm header.txt
 
