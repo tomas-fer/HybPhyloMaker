@@ -10,8 +10,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 0c - Setup R-4.4 packages on Metacentrum               *
-# *                                   v.1.8.0h                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
+# *                                   v.1.8.0i                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2026 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -43,6 +43,8 @@ cp $PBS_O_WORKDIR/settings.cfg .
 
 #Add necessary modules
 module add r/4.4.0-gcc-10.2.1-ssuwpvb
+module add cmake #for installing 'fs'
+export USE_BUNDLED_LIBUV=1 #for smooth installing 'fs'
 
 #Use this command before running R in HybPhyloMaker scripts
 export R_LIBS="/storage/$server/home/$LOGNAME/Rpackages44"
