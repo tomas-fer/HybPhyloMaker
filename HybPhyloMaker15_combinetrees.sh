@@ -19,8 +19,8 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *                Script 15 - Combine trees with support values                 *
-# *                                   v.1.8.0b                                   *
-# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2025 *
+# *                                   v.1.8.0c                                   *
+# * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2026 *
 # * tomas.fer@natur.cuni.cz                                                      *
 # ********************************************************************************
 
@@ -296,28 +296,28 @@ nw_reroot -s tree2.tre $OUTGROUP > tmp && mv tmp tree2.tre
 #Round support values in Astral or Astral4 to '$prec' decimals only
 echo -e "\nRounding support values to $prec decimals..."
 if [[ $tree1 =~ "Astral" || $tree1 =~ "Astral4" || $tree1 =~ "FastTree" ]]; then
-	nw_labels -L tree1.tre > bs #export BS values
+	nw_labels -L tree1.tre | awk '{print ")"$0}' > bs #export BS values
 	#this does not correct rounding
 	#nw_labels -L tree1.tre | numfmt --field=1- --format=%.${prec}f | grep -o '.*[1-9]' > bsr #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
 	#AWK is better ('*' before 'f' takes the value after ',')
-	nw_labels -L tree1.tre | awk -v a=${prec} '{printf "%.*f\n", a, $1}' | grep -o '.*[1-9]' > bsr #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
+	nw_labels -L tree1.tre | awk -v a=${prec} '{printf "%.*f\n", a, $1}' | grep -o '.*[1-9]' | awk '{print ")"$0}' > bsr #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
 	paste bs bsr > replace #combine the two files
 	#replace BS in tree1 by rounded BS
 	cat replace | while read -r a b; do
-		sed -i "s/$a/$b/" tree1.tre
+		sed -i "s/$a/$b/g" tree1.tre
 	done
 fi
 
 if [[ $tree2 =~ "Astral" || $tree2 =~ "Astral4" || $tree2 =~ "FastTree" ]]; then
-	nw_labels -L tree2.tre > bs2 #export BS values
+	nw_labels -L tree2.tre | awk '{print ")"$0}' > bs2 #export BS values
 	#this does not correct rounding
 	#nw_labels -L tree1.tre | numfmt --field=1- --format=%.${prec}f | grep -o '.*[1-9]' > bsr #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
 	#AWK is better ('*' before 'f' takes the value after ',')
-	nw_labels -L tree2.tre | awk -v a=${prec} '{printf "%.*f\n", a, $1}' | grep -o '.*[1-9]' > bsr2 #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
+	nw_labels -L tree2.tre | awk -v a=${prec} '{printf "%.*f\n", a, $1}' | grep -o '.*[1-9]' | awk '{print ")"$0}' > bsr2 #export BS values, round to ${prec} decimals and trim off trailing zeroes (grep command)
 	paste bs2 bsr2 > replace2 #combine the two files
 	#replace BS in tree2 by rounded BS
 	cat replace2 | while read -r a b; do
-		sed -i "s/$a/$b/" tree2.tre
+		sed -i "s/$a/$b/g" tree2.tre
 	done
 fi
 
