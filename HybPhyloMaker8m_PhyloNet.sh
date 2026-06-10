@@ -18,7 +18,7 @@
 # *    HybPhyloMaker - Pipeline for Hyb-Seq data processing and tree building    *
 # *                  https://github.com/tomas-fer/HybPhyloMaker                  *
 # *             Script 08m - PhyloNet using maximum pseudo-likelihood            *
-# *                                   v.1.8.0h                                   *
+# *                                   v.1.8.0i                                   *
 # *                                  Tomas Fer                                   *
 # * Tomas Fer, Dept. of Botany, Charles University, Prague, Czech Republic, 2026 *
 # * tomas.fer@natur.cuni.cz                                                      *
@@ -320,7 +320,7 @@ if [[ $location == "1" || $location == "2" ]]; then
 		echo -e "Generating PhyloNet job file for $pn hybridizations"
 		echo '#!/bin/bash' >> PhyloNet_${pn}.sh
 		echo '#----------------MetaCentrum----------------' >> PhyloNet_${pn}.sh
-		echo '#PBS -l walltime=4:0:0' >> PhyloNet_${pn}.sh
+		echo '#PBS -l walltime=24:0:0' >> PhyloNet_${pn}.sh
 		echo '#PBS -l select=1:ncpus=4:mem=10gb:scratch_local=8gb' >> PhyloNet_${pn}.sh
 		echo '#PBS -j oe' >> PhyloNet_${pn}.sh
 		echo '#PBS -o /storage/'"$server/home/$LOGNAME" >> PhyloNet_${pn}.sh
